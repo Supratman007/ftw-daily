@@ -12,6 +12,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Reference material only (the approved UX prototype) -- not part of
+    // the app, never meant to be built or linted.
+    "docs/**",
   ]),
 ]);
 
