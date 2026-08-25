@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { syncCatalog } from "@/lib/sync/syncCatalog";
 
+// Without this, Vercel gives the function a short default window (as low
+// as 10s on some plans) before force-killing it -- too little time to
+// fetch every tour/activity one by one as the catalog grows. A killed
+// function can't run cleanup code, so a run cut off this way leaves its
+// catalog_sync_runs row stuck at "running" forever with no error logged.
+export const maxDuration = 60;
+
 // Vercel Cron calls this on a schedule (see vercel.json). It sends a
 // GET request with `Authorization: Bearer <CRON_SECRET>` automatically --
 // checking that header is what stops anyone else on the internet from

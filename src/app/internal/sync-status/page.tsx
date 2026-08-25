@@ -14,6 +14,12 @@ import { formatIdr, formatUsd, usdToIdr } from "@/lib/currency";
  * open. Revisit once real admin auth exists.
  */
 
+// The "Run sync now" button below runs as a Server Action, which is its
+// own serverless function subject to the same short default time limit
+// as the cron route -- see the matching comment in
+// src/app/api/cron/sync-catalog/route.ts for why this matters.
+export const maxDuration = 60;
+
 async function runSyncAction(formData: FormData) {
   "use server";
   const key = String(formData.get("key") ?? "");
