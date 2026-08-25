@@ -17,16 +17,23 @@ import { formatIdr, formatUsd, usdToIdr } from "@/lib/currency";
 async function runSyncAction(formData: FormData) {
   "use server";
   const key = String(formData.get("key") ?? "");
-  await syncCatalog();
-  redirect(`/internal/sync-status?key=${encodeURIComponent(key)}`);
+  let redirectTarget = `/internal/sync-status?key=${encodeURIComponent(key)}`;
+  try {
+    await syncCatalog();
+  } catch (err) {
+    // Surface the real error on the page instead of a blank Next.js
+    // crash screen -- this page is meant to be debuggable by eye.
+    redirectTarget += `&syncError=${encodeURIComponent((err as Error).message)}`;
+  }
+  redirect(redirectTarget);
 }
 
 export default async function SyncStatusPage({
   searchParams,
 }: {
-  searchParams: Promise<{ key?: string }>;
+  searchParams: Promise<{ key?: string; syncError?: string }>;
 }) {
-  const { key } = await searchParams;
+  const { key, syncError } = await searchParams;
   const expectedKey = process.env.CRON_SECRET;
 
   if (!expectedKey || key !== expectedKey) {
@@ -80,6 +87,13 @@ export default async function SyncStatusPage({
           Run sync now
         </button>
       </form>
+
+      {syncError && (
+        <div className="mt-4 rounded-lg border border-coral bg-[#FCE6DD] p-4 text-sm text-coral-dark">
+          <strong>The sync run failed:</strong>
+          <pre className="mt-2 whitespace-pre-wrap font-mono text-xs">{syncError}</pre>
+        </div>
+      )}
 
       <h2 className="mt-10 font-serif text-lg font-semibold text-ink">Recent sync runs</h2>
       <div className="mt-3 overflow-x-auto rounded-lg border border-sand-deep">
