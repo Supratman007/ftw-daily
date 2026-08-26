@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireCustomer } from "@/lib/customers/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -121,6 +122,13 @@ export default async function ConfirmationPage({
       <p className="mt-6 text-sm text-ink-soft">
         A confirmation email is on its way to you. See you on the trip!
       </p>
+
+      <Link
+        href="/"
+        className="mt-6 rounded-lg bg-coral px-4 py-2 text-sm font-semibold text-white"
+      >
+        Browse more trips
+      </Link>
     </main>
   );
 }

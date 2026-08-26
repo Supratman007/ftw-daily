@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/service";
-import { sendBookingConfirmedEmail } from "@/lib/email/resend";
+import { sendBookingConfirmedEmail, sendNewBookingStaffEmail } from "@/lib/email/resend";
 
 const PAID_STATUSES = new Set(["PAID", "SETTLED"]);
 const FAILED_STATUSES = new Set(["EXPIRED", "FAILED"]);
@@ -56,9 +56,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: updateError.message }, { status: 500 });
     }
 
-    const [{ data: product }, { data: customer }] = await Promise.all([
+    const [{ data: product }, { data: customer }, { data: staff }] = await Promise.all([
       supabase.from("products").select("title").eq("id", booking.product_id).maybeSingle(),
-      supabase.from("customers").select("name, email").eq("id", booking.customer_id).maybeSingle(),
+      supabase
+        .from("customers")
+        .select("name, email, phone")
+        .eq("id", booking.customer_id)
+        .maybeSingle(),
+      // Everyone active gets it for now -- Phase 1 hasn't enforced the
+      // narrower admin roles from spec §6k yet, so there's no
+      // "reservations" vs "accounting" distinction to filter on.
+      supabase.from("admin_users").select("email").eq("status", "active"),
     ]);
 
     if (product && customer) {
@@ -73,6 +81,22 @@ export async function POST(request: NextRequest) {
         bookingCode: booking.booking_code,
         bookingUrl: `${siteUrl}/confirmation/${booking.id}`,
       });
+
+      await Promise.all(
+        (staff ?? []).map((admin) =>
+          sendNewBookingStaffEmail({
+            toEmail: admin.email,
+            productTitle: product.title,
+            slotDate: booking.slot_date,
+            paxCount: booking.pax_count,
+            totalIdr: booking.total_idr,
+            bookingCode: booking.booking_code,
+            customerName: customer.name,
+            customerEmail: customer.email,
+            customerPhone: customer.phone,
+          })
+        )
+      );
     }
 
     return NextResponse.json({ ok: true });
