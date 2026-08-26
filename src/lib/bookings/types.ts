@@ -15,6 +15,8 @@ export interface Booking {
   xendit_invoice_url: string | null;
   discount_code: string | null;
   discount_amount_usd: number;
+  hotel_name: string | null;
+  room_number: string | null;
   created_at: string;
   updated_at: string;
 }

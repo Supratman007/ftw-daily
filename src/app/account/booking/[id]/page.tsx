@@ -89,6 +89,14 @@ export default async function BookingDetailPage({
         {customer.phone && <p className="text-ink-soft">{customer.phone}</p>}
       </div>
 
+      {(b.hotel_name || b.room_number) && (
+        <div className="mt-6 rounded-2xl border border-sand-deep bg-white p-6 text-sm">
+          <p className="font-semibold text-ink">Pickup</p>
+          {b.hotel_name && <p className="mt-1 text-ink-soft">{b.hotel_name}</p>}
+          {b.room_number && <p className="text-ink-soft">Room {b.room_number}</p>}
+        </div>
+      )}
+
       {b.status === "paid_confirmed" && (
         <form action={resendConfirmationEmailAction.bind(null, b.id)} className="mt-6">
           <button

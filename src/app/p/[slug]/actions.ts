@@ -14,6 +14,8 @@ export async function startCheckoutAction(productId: string, slug: string, formD
   const paxRaw = Number(formData.get("pax") ?? "0");
   const pax = Number.isInteger(paxRaw) ? paxRaw : 0;
   const discountCodeInput = String(formData.get("discount_code") ?? "").trim();
+  const hotelName = String(formData.get("hotel_name") ?? "").trim();
+  const roomNumber = String(formData.get("room_number") ?? "").trim();
 
   const returnTo = `/p/${slug}?date=${encodeURIComponent(date)}&pax=${pax}`;
   const customer = await requireCustomer(returnTo);
@@ -21,6 +23,8 @@ export async function startCheckoutAction(productId: string, slug: string, formD
   function fail(message: string): never {
     const params = new URLSearchParams({ date, pax: String(pax), error: message });
     if (discountCodeInput) params.set("discount_code", discountCodeInput);
+    if (hotelName) params.set("hotel_name", hotelName);
+    if (roomNumber) params.set("room_number", roomNumber);
     redirect(`/p/${slug}?${params.toString()}`);
   }
 
@@ -161,6 +165,8 @@ export async function startCheckoutAction(productId: string, slug: string, formD
     discount_code_id: discountCodeId,
     discount_code: discountCodeInput || null,
     discount_amount_usd: discountAmountUsd,
+    hotel_name: hotelName || null,
+    room_number: roomNumber || null,
   });
 
   if (insertError) {

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { requireAdmin } from "@/lib/admin/auth";
 import { logoutAction } from "./actions";
 
@@ -16,10 +17,10 @@ export default async function ProtectedAdminLayout({
             Adventure Lombok Booking — Admin
           </p>
           <nav className="mt-1 flex gap-4 font-serif text-sm font-semibold text-ocean">
-            <a href="/admin">Overview</a>
-            <a href="/admin/bookings">Bookings</a>
-            <a href="/admin/products">Products</a>
-            <a href="/admin/discount-codes">Discount codes</a>
+            <Link href="/admin">Overview</Link>
+            <Link href="/admin/bookings">Bookings</Link>
+            <Link href="/admin/products">Products</Link>
+            <Link href="/admin/discount-codes">Discount codes</Link>
           </nav>
         </div>
         <div className="flex items-center gap-3 text-sm text-ink-soft">

@@ -15,10 +15,24 @@ export default async function ProductPage({
   searchParams,
 }: {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ date?: string; pax?: string; discount_code?: string; error?: string }>;
+  searchParams: Promise<{
+    date?: string;
+    pax?: string;
+    discount_code?: string;
+    hotel_name?: string;
+    room_number?: string;
+    error?: string;
+  }>;
 }) {
   const { slug } = await params;
-  const { date, pax, discount_code: discountCode, error } = await searchParams;
+  const {
+    date,
+    pax,
+    discount_code: discountCode,
+    hotel_name: hotelName,
+    room_number: roomNumber,
+    error,
+  } = await searchParams;
 
   const supabase = await createSupabaseServerClient();
   const { data: product } = await supabase
@@ -100,6 +114,25 @@ export default async function ProductPage({
                   min={1}
                   required
                   defaultValue={pax ?? "2"}
+                  className="mt-1 w-full rounded-lg border border-sand-deep px-3 py-2 text-sm"
+                />
+              </label>
+              <label className="text-xs font-semibold uppercase tracking-wide text-ink-soft">
+                Hotel name (optional)
+                <input
+                  type="text"
+                  name="hotel_name"
+                  defaultValue={hotelName ?? ""}
+                  placeholder="Where should we pick you up?"
+                  className="mt-1 w-full rounded-lg border border-sand-deep px-3 py-2 text-sm"
+                />
+              </label>
+              <label className="text-xs font-semibold uppercase tracking-wide text-ink-soft">
+                Room number (optional)
+                <input
+                  type="text"
+                  name="room_number"
+                  defaultValue={roomNumber ?? ""}
                   className="mt-1 w-full rounded-lg border border-sand-deep px-3 py-2 text-sm"
                 />
               </label>

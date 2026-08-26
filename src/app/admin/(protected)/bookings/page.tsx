@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { requireAdmin } from "@/lib/admin/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { formatIdr } from "@/lib/currency";
@@ -85,6 +86,7 @@ export default async function AdminBookingsPage({
               <th className="px-4 py-2">Total</th>
               <th className="px-4 py-2">Status</th>
               <th className="px-4 py-2">Purchase date</th>
+              <th className="px-4 py-2" />
             </tr>
           </thead>
           <tbody>
@@ -113,11 +115,16 @@ export default async function AdminBookingsPage({
                 <td className="px-4 py-2 text-xs text-ink-soft">
                   {new Date(b.created_at).toLocaleString()}
                 </td>
+                <td className="px-4 py-2 text-right">
+                  <Link href={`/admin/bookings/${b.id}`} className="text-teal underline">
+                    View details
+                  </Link>
+                </td>
               </tr>
             ))}
             {bookings.length === 0 && !error && (
               <tr>
-                <td colSpan={8} className="px-4 py-8 text-center text-ink-soft">
+                <td colSpan={9} className="px-4 py-8 text-center text-ink-soft">
                   No bookings match this filter yet.
                 </td>
               </tr>
