@@ -58,6 +58,14 @@ export default async function LoginPage({
         </button>
       </form>
 
+      {!isSignup && (
+        <p className="mt-3 text-center text-sm">
+          <a href="/forgot-password" className="text-teal hover:underline">
+            Forgot password?
+          </a>
+        </p>
+      )}
+
       <p className="mt-4 text-center text-sm text-ink-soft">
         {isSignup ? "Already have an account? " : "New here? "}
         <a
