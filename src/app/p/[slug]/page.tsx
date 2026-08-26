@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { formatIdr, formatUsd, usdToIdr } from "@/lib/currency";
 import type { Product } from "@/lib/products/types";
+import { SiteHeader } from "@/components/SiteHeader";
 import { startCheckoutAction } from "./actions";
 
 function tomorrow(): string {
@@ -50,7 +51,9 @@ export default async function ProductPage({
   const adultPriceUsd = p.adult_price_usd ?? 0;
 
   return (
-    <main className="mx-auto max-w-4xl px-6 py-10">
+    <>
+      <SiteHeader />
+      <main className="mx-auto max-w-4xl px-6 py-10">
       {p.cover_image_url && (
         // eslint-disable-next-line @next/next/no-img-element -- prototype-stage product page; Next/Image optimization is a later polish pass
         <img
@@ -157,6 +160,7 @@ export default async function ProductPage({
           )}
         </div>
       </div>
-    </main>
+      </main>
+    </>
   );
 }
