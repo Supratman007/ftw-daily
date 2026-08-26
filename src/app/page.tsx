@@ -2,6 +2,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { formatUsd, formatIdr, usdToIdr } from "@/lib/currency";
 import { PRODUCT_TYPE_LABELS } from "@/lib/products/types";
 import type { Product } from "@/lib/products/types";
+import { customerLogoutAction } from "./actions";
 
 /**
  * Minimal "browse trips" list -- just enough to click through to a real
@@ -11,22 +12,44 @@ import type { Product } from "@/lib/products/types";
  */
 export default async function Home() {
   const supabase = await createSupabaseServerClient();
-  const { data: products } = await supabase
-    .from("products")
-    .select("*")
-    .eq("status", "active")
-    .order("created_at", { ascending: false });
+  const [{ data: products }, { data: userData }] = await Promise.all([
+    supabase.from("products").select("*").eq("status", "active").order("created_at", { ascending: false }),
+    supabase.auth.getUser(),
+  ]);
 
   const items = (products ?? []) as Product[];
+  const user = userData.user;
 
   return (
     <main className="mx-auto max-w-5xl px-6 py-10">
-      <p className="font-mono text-xs uppercase tracking-widest text-ink-soft">
-        booking.adventure-lombok.com
-      </p>
-      <h1 className="mt-1 font-serif text-3xl font-semibold text-ocean">
-        Adventure Lombok Booking
-      </h1>
+      <div className="flex items-start justify-between">
+        <div>
+          <p className="font-mono text-xs uppercase tracking-widest text-ink-soft">
+            booking.adventure-lombok.com
+          </p>
+          <h1 className="mt-1 font-serif text-3xl font-semibold text-ocean">
+            Adventure Lombok Booking
+          </h1>
+        </div>
+        <div className="pt-1 text-sm">
+          {user ? (
+            <div className="flex items-center gap-3 text-ink-soft">
+              <span>
+                Hi, {(user.user_metadata?.full_name as string | undefined) || user.email}
+              </span>
+              <form action={customerLogoutAction}>
+                <button type="submit" className="font-semibold text-coral-dark hover:underline">
+                  Log out
+                </button>
+              </form>
+            </div>
+          ) : (
+            <a href="/login" className="font-semibold text-teal hover:underline">
+              Log in
+            </a>
+          )}
+        </div>
+      </div>
 
       {items.length === 0 ? (
         <p className="mt-6 text-sm text-ink-soft">

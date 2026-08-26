@@ -47,6 +47,12 @@ export default async function AdminLoginPage({
           Sign in
         </button>
       </form>
+
+      <p className="mt-3 text-center text-sm">
+        <a href="/forgot-password" className="text-teal hover:underline">
+          Forgot password?
+        </a>
+      </p>
     </main>
   );
 }
