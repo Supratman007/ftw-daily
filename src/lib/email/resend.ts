@@ -2,14 +2,13 @@ import "server-only";
 import { formatIdr, formatUsd } from "@/lib/currency";
 
 /**
- * Shared send -- both templates below go through this. Uses Resend's
- * shared onboarding@resend.dev sender, which works without verifying a
- * domain first -- but Resend then only actually delivers to the email
- * address the Resend account itself was signed up with. Fine for
- * proving the flow works; before real customers or staff rely on this,
- * a real sending domain (e.g. booking.adventure-lombok.com) needs to be
- * verified in Resend via a DNS record, the same kind of step as the
- * Vercel subdomain setup.
+ * Shared send -- both templates below go through this. Sends from
+ * RESEND_FROM_EMAIL once a real domain is verified in Resend (e.g.
+ * "Adventure Lombok Booking <no-reply@booking.adventure-lombok.com>").
+ * Falls back to Resend's shared onboarding@resend.dev sender, which
+ * works without verifying a domain but only actually delivers to the
+ * email address the Resend account itself was signed up with -- fine
+ * for proving the flow works, not for real customers or staff.
  *
  * Never throws -- a failed email should never block or undo a
  * successful payment. Logs the failure for later attention instead.
@@ -29,7 +28,8 @@ async function sendEmail(params: { to: string; subject: string; html: string }):
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: "Adventure Lombok Booking <onboarding@resend.dev>",
+        from:
+          process.env.RESEND_FROM_EMAIL ?? "Adventure Lombok Booking <onboarding@resend.dev>",
         to: [params.to],
         subject: params.subject,
         html: params.html,
