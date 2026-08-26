@@ -14,8 +14,13 @@ type RecentBooking = Booking & { products: { title: string } | null };
  * a reasonable Phase 1 shape: today's confirmed-revenue snapshot and
  * the most recent bookings, not a full analytics dashboard.
  */
-export default async function AdminOverviewPage() {
+export default async function AdminOverviewPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string }>;
+}) {
   await requireAdmin();
+  const { error } = await searchParams;
   const supabase = await createSupabaseServerClient();
 
   const [confirmedCount, pendingCount, revenue, recent] = await Promise.all([
@@ -35,6 +40,12 @@ export default async function AdminOverviewPage() {
   return (
     <div>
       <h1 className="font-serif text-2xl font-semibold text-ink">Overview</h1>
+
+      {error === "super_admin_only" && (
+        <p className="mt-4 rounded-lg border border-coral bg-[#FCE6DD] p-3 text-sm text-coral-dark">
+          Only Super Admin accounts can manage the team.
+        </p>
+      )}
 
       <div className="mt-6 grid gap-4 sm:grid-cols-3">
         <div className="rounded-2xl border border-sand-deep bg-white p-5">

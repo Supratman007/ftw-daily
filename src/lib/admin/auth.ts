@@ -3,13 +3,22 @@ import { cache } from "react";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
+export type AdminRole = "super_admin" | "reservations" | "accounting" | "support";
+
 export interface AdminUser {
   id: string;
   name: string;
   email: string;
-  role: "super_admin" | "reservations" | "accounting" | "support";
+  role: AdminRole;
   status: "active" | "suspended";
 }
+
+export const ADMIN_ROLE_LABELS: Record<AdminRole, string> = {
+  super_admin: "Super Admin",
+  reservations: "Reservations",
+  accounting: "Accounting",
+  support: "Support",
+};
 
 /**
  * The real admin check (src/proxy.ts only does the fast "is anyone
@@ -45,4 +54,18 @@ export const requireAdmin = cache(async (): Promise<AdminUser> => {
   }
 
   return adminUser as AdminUser;
+});
+
+/**
+ * Spec §6k names Super Admin as the role that manages "other admin
+ * accounts and their roles." Call this instead of requireAdmin() on any
+ * page/action that creates, edits, or lists staff accounts -- being an
+ * active admin isn't enough for those, only super_admin is.
+ */
+export const requireSuperAdmin = cache(async (): Promise<AdminUser> => {
+  const admin = await requireAdmin();
+  if (admin.role !== "super_admin") {
+    redirect("/admin?error=super_admin_only");
+  }
+  return admin;
 });

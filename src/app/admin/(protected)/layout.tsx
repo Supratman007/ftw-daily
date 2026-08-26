@@ -21,6 +21,7 @@ export default async function ProtectedAdminLayout({
             <Link href="/admin/bookings">Bookings</Link>
             <Link href="/admin/products">Products</Link>
             <Link href="/admin/discount-codes">Discount codes</Link>
+            {admin.role === "super_admin" && <Link href="/admin/team">Team</Link>}
           </nav>
         </div>
         <div className="flex items-center gap-3 text-sm text-ink-soft">
