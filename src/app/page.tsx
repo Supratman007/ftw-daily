@@ -8,8 +8,8 @@ export default function Home() {
         Adventure Lombok Booking
       </h1>
       <p className="max-w-md text-sm text-ink-soft">
-        Phase 1 is under construction. The WordPress catalog sync is being
-        built and tested first — the product catalog, checkout, and account
+        Phase 1 is under construction. The admin product catalog is being
+        built first — the customer-facing catalog, checkout, and account
         pages come next.
       </p>
     </main>

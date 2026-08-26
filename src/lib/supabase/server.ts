@@ -7,8 +7,8 @@ import { cookies } from "next/headers";
  * ever sees what that logged-in user is allowed to see (enforced by
  * Supabase Row Level Security policies on each table).
  *
- * Do NOT use this for the WordPress catalog sync job or other
- * behind-the-scenes writes — those need admin-level access. Use
+ * Do NOT use this for admin product-management writes or other
+ * behind-the-scenes tasks — those need admin-level access. Use
  * `createServiceRoleClient` from `./service.ts` for that instead.
  */
 export async function createSupabaseServerClient() {

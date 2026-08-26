@@ -69,18 +69,19 @@ booking.adventure-lombok.com/
 
 ---
 
-## 5. Product catalog & sync from adventure-lombok.com
+## 5. Product catalog — manually entered, not synced (revised)
 
-Your site is **WordPress**, running the **Traveler** theme with custom post types: `st_tour`, `st_activity`, and taxonomies for location and tour type. It already has a **"Partner User"** account type — worth reusing conceptually for agent identity if you want single sign-on later.
+**This section originally specced a live sync from adventure-lombok.com's WordPress REST API. Based on testing Phase 1, that's being replaced.**
 
-**Recommended sync approach (not scraping):**
+The original design already avoided querying WordPress on every page load (a normalized copy was meant to be stored and refreshed periodically) — but even a background sync job is still a dependency on WordPress being fast and reachable, and it introduces a category of problem that's genuinely hard for a non-technical, solo operator to debug: *why didn't my new tour show up*, *why does the app show an old price*, *why did the sync fail overnight and nobody noticed*. Testing surfaced this as a real risk, especially on slow connections, and the fix is simpler than trying to make the sync more robust: **remove the dependency entirely.**
 
-1. Install a small companion plugin on adventure-lombok.com (or use **WPGraphQL** / **WP REST API** with custom post types exposed) that publishes: title, slug, description, price, currency, duration, images, location, category, and per-date inventory/capacity to a REST endpoint. **Confirmed:** your current theme already tracks per-date capacity, so Phase 1 can enforce real, hard availability limits from day one — no manual buffer needed while this gets built.
-2. The booking app pulls this on a schedule (every 15–30 min) via a sync job, **or** WordPress pushes a webhook on publish/update for instant sync.
-3. Store a normalized copy in the booking app's own database — the booking app should **never** query WordPress live on each page load (too slow, single point of failure).
-4. **Car Hire and Transport are both exceptions to this section.** Neither syncs from WordPress. Car Hire pricing is manually entered per §6a. Transport (airport/port transfers) pricing is also entered manually, directly in the booking app's admin, once that admin screen is built — there's no WordPress source for it to sync from, so this isn't a "sync vs. manual" decision, it's manual by default.
+**New approach:** every product — Tours, Activities, Car Hire, Transport — is added directly into the booking app's own admin, by hand, copying the content over from adventure-lombok.com. This makes Tours and Activities consistent with how Car Hire (§6a) and Transport were already being handled; there's no longer a "synced vs. manual" split between product types at all. The booking app becomes fully **standalone** — it never talks to WordPress at runtime, for anything, and its uptime and speed no longer depend on your website's.
 
-This sync layer is the first thing to build and test — everything else depends on it.
+**The one real tradeoff, worth naming plainly:** update a tour's price, description, or photos on adventure-lombok.com, and it does **not** automatically appear in the booking app — you (or whoever manages content) has to make that same edit twice. For a catalog of the size a single tour operator actually runs (tens of products, not thousands), this is a manageable amount of manual work, and it's a far more predictable failure mode than a silent sync job breaking in the background. **The booking app is now the source of truth for anything related to booking** (price, availability, description as shown to a paying customer); adventure-lombok.com remains your marketing site and content, independently maintained.
+
+**Admin screen needed:** an "Add/edit product" form covering title, description, price, duration, images, location, category, and per-date capacity — the same shape of admin screen already planned for Car Hire (§6a) and Transport, just now used for all four product types uniformly. Capacity is entered and tracked natively in the booking app's own database going forward, not pulled from WordPress.
+
+**Optional link back to the source page:** each product can optionally store the URL of its corresponding adventure-lombok.com page (`source_url`) — not for syncing anything, just so the product listing can show a "See more photos on our main site" link if useful, and so the review push-back feature below knows which page to attach a review to.
 
 ---
 
@@ -297,7 +298,7 @@ Booking (add fields, for car_hire and transport types)
  ├─ car_type_id, car_package_id (car_hire only)
  ├─ pickup_datetime
  ├─ meeting_point_id (nullable — set if chosen from the list; also the pricing key for §6a/§6e)
- ├─ meeting_point_custom (nullable — free text, set if "Other" was chosen; no fixed price applies)
+ ├─ meeting_point_custom (nullable — free text, set if "Other" was chosen; no fixed price applies; required to contain a full name/property and address before the booking can be submitted — a half-typed location isn't something a driver can act on)
  └─ pickup_change_log[]: { old_datetime, new_datetime, changed_at } — an audit trail, since a driver dispatch depends on this being accurate and disputes ("I never changed it") should be resolvable
 ```
 
@@ -472,6 +473,22 @@ The original core flow (§1) starts with "Sign-up/Login," which implied an accou
 
 ---
 
+## 6i-a. Logout, and browsing while logged in
+
+Two things worth being explicit about, since neither was actually specced despite being basic navigation:
+
+**Logout needs to be visibly reachable, not buried.** For the customer, a "Log out" control sits in the header itself, next to "My account" — visible wherever they are, not something they have to dig into a settings screen to find. For the agent and admin portals, "Log out" lives in their respective Profile/settings area (§6l for agents), which is the expected location for that kind of account-level action in a business dashboard.
+
+**Where logout sends each person — this differs by portal, deliberately:**
+- **Customer → public Home.** Browsing never required login in the first place (§6i), so there's no reason to land someone on a login wall right after they chose to log out — they may well still want to keep browsing.
+- **Agent / Admin → their own login screen.** Neither has a public equivalent to fall back to — an agency dashboard or the admin panel isn't something with a logged-out browsing mode. Landing a business partner or staff member on the public consumer storefront after they log out of their tools would be a confusing non-sequitur; a login screen is the unambiguous "you're logged out, here's how to get back in" signal.
+
+**Agent and admin need their own login screens, parallel to §6i's customer one but distinct.** This wasn't previously specced — §6i only covered the customer entry points. The key difference: **agent and admin accounts aren't self-service signups.** An agent account is created through the `/agent/signup` application + verification flow in §6m, and admin accounts are provisioned by a Super Admin (§6k) — so their login screens don't need the "New here? Create an account" toggle or the Google option that make sense for a public consumer signup; they're login-only, pointing anyone without an existing account to the appropriate application process instead.
+
+**Browsing while logged in — the case you specifically flagged:** a customer sitting inside their account dashboard deciding to book something else shouldn't have to log out and back in, or hunt for a way out. The brand logo/name in the header is a standard, always-available link back to the public Home — clicking it from anywhere, including deep inside the account dashboard, takes them there without touching their session. The Overview tab (§6h) also gets an explicit **"Browse trips"** shortcut alongside its existing "All bookings / Messages / Edit profile" shortcuts, so the option is visible without relying on someone noticing the logo is clickable.
+
+---
+
 ## 6j. Password reset & change — customers and agents
 
 Both missing from earlier drafts: a "Forgot password?" path on login, and a way to change a password once logged in. Same pattern for customers and agents, since both sit on the same Supabase Auth foundation.
@@ -567,6 +584,27 @@ AgentVerification
 
 ---
 
+## 6n. Pushing reviews to adventure-lombok.com
+
+With product sync removed (§5), the booking app and the website are now fully independent — except for one deliberate exception you asked for: **reviews collected in the booking app (§6d) should also appear on the corresponding product page on adventure-lombok.com.** This is the one place data flows *out* of the app and back into WordPress, the reverse direction from the sync this spec used to have.
+
+**How it works:**
+1. A small companion plugin on adventure-lombok.com (a much smaller version of the one originally proposed for pull-sync in §5 — this one just accepts incoming data, it doesn't expose your catalog) adds one endpoint that accepts a review (rating, text, reviewer name, which product) and displays it on that product's page, using whatever the Traveler theme's existing review/comment display already is.
+2. When a review **publishes** in the booking app — immediately for 4–5 stars, or after admin approval for 3-and-below (§6d) — the app calls that endpoint to push it across.
+3. This only works for a product that has a `source_url` set (§5) pointing to its adventure-lombok.com page, since that's how the plugin knows which page to attach the review to. A product added to the booking app with no real counterpart on the website (there shouldn't be many, but it's possible) simply won't have anywhere to push to, and that's fine — the review still lives and displays fine inside the app either way.
+4. If the push fails (site down, plugin error), the review still publishes normally in the app — this should never block or delay a customer's review from going live in the one place that matters most. Retry the push a few times in the background, and if it keeps failing, quietly log it for you to notice rather than surfacing an error to the customer.
+
+**Data model addition:**
+
+```
+Review (add field)
+ └─ pushed_to_website: not_applicable | pending | pushed | failed
+```
+
+**Phasing:** Phase 3, since it depends on the review system in §6d, which is already Phase 3.
+
+---
+
 ## 6. Data model (core entities)
 
 ```
@@ -575,7 +613,7 @@ Product
  ├─ base_price, currency (IDR default, USD display optional)
  ├─ duration, location, images[], category
  ├─ capacity_per_date (nullable — null = unlimited)
- └─ source: wp_post_id (nullable — null for Car Hire, see §6a)
+ └─ source_url (nullable — optional link to the corresponding adventure-lombok.com page, per §5; not used for syncing, only for an optional "see more on our site" link and to target review push-back, §6n)
 
   Note: for type = car_hire, pricing does not use base_price directly —
   see CarType / CarPackage in §6a. Tour/Activity/Transport use base_price as-is.
@@ -690,10 +728,11 @@ This whole stack can be run and paid for at low monthly cost during the pilot (r
 You said you want the full system including automated tiered commissions from day one — here's how to sequence that so it's still buildable solo without everything breaking at once. Each phase should be a fully working, testable milestone before moving to the next.
 
 **Phase 1 — Foundation**
-- WordPress sync layer (pull Tours + Activities first, since those already exist as structured posts)
+- Manual product catalog admin (§5) — add/edit form for Tours, Activities, Car Hire, and Transport, all entered by hand; no WordPress dependency at runtime
 - Product catalog UI: search, filters, listing detail
 - Customer auth (email/social login via Supabase) — open browsing with no login wall, account required only at checkout, with the two entry points and post-auth redirect logic in §6i
 - Password reset (login) and change-password (Profile) for customers (§6j)
+- Logout (header) and the "Browse trips" shortcut from the account dashboard (§6i-a)
 - Xendit checkout for a booking with no agent attribution yet
 - Booking confirmation + booking history, including the customer "booking confirmed" email (§6g) — ships with the first instant-book flow, not deferred
 - Customer account dashboard (§6h): Overview and My Bookings, plus the Profile basics (name/email/phone/language)
@@ -701,6 +740,7 @@ You said you want the full system including automated tiered commissions from da
 **Phase 2 — Agency layer + manual-confirmation bookings**
 - Agent signup + admin approval flow
 - Agent code + QR generation + printable ID card
+- Agent login screen (§6i-a) and logout, in the Profile tab
 - Agent verification (§6m): NIB/PIC upload for companies, ID+selfie for individuals, admin review queue — gates `Agent.status` moving to `approved`
 - `/r/[code]` redirect + attribution cookie
 - Agent dashboard: catalog view, live sales report, and the Profile tab (business details, payout bank account, change password — §6l)
@@ -742,7 +782,7 @@ You said you want the full system including automated tiered commissions from da
 
 These were open questions in an earlier draft; all five are now settled:
 
-1. **Per-date capacity**: your current theme already tracks this, so Phase 1 syncs and enforces real, hard availability limits from day one (§5).
+1. **Per-date capacity**: entered and tracked natively in the booking app's own admin (§5) — no longer synced from WordPress, consistent with the manual-entry approach now used for all product types.
 2. **Transport pricing**: manually entered in the app's admin, added once that screen is built (§5) — not synced from WordPress.
 3. **Cancellation/refund policy**: a defined fee schedule (0% refund same-day/no-show, 65% at 1 day before, 90% at 2+ days before), calculated automatically but confirmed by manual staff review before a refund is issued. Force majeure (illness, etc.) bypasses the fee schedule entirely and offers reschedule or gift-voucher transfer instead — full details in §6f.
 4. **WordPress "Partner User" accounts**: kept fully separate from the new Agent accounts for now, to avoid coupling two unproven systems together.
@@ -752,4 +792,4 @@ These were open questions in an earlier draft; all five are now settled:
 
 ## 15. What I'd suggest right now
 
-Build **Phase 1 only** first, end-to-end, live on the subdomain with real Xendit payments — even with just 2–3 real tours synced from WordPress. That proves the riskiest parts (WP sync, real payment, real booking) before agents are ever involved. Then Phase 2's agency layer sits on top of a foundation you've already validated with real money moving through it.
+Build **Phase 1 only** first, end-to-end, live on the subdomain with real Xendit payments — even with just 2–3 real tours entered manually into the app's own admin. That proves the riskiest parts (real payment, real booking, a standalone app that doesn't depend on WordPress at runtime) before agents are ever involved. Then Phase 2's agency layer sits on top of a foundation you've already validated with real money moving through it.
