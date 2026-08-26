@@ -1,0 +1,95 @@
+import Link from "next/link";
+import { requireAdmin } from "@/lib/admin/auth";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { formatIdr } from "@/lib/currency";
+import { BOOKING_STATUS_LABELS, type Booking } from "@/lib/bookings/types";
+
+type RecentBooking = Booking & { products: { title: string } | null };
+
+/**
+ * "Not meant to be analyzed, just oriented" -- same spirit as the
+ * customer account Overview (§6h), just for you: what needs attention
+ * right now, and where to go for more. No spec section defines this
+ * page's exact contents (unlike §6h for the customer side), so this is
+ * a reasonable Phase 1 shape: today's confirmed-revenue snapshot and
+ * the most recent bookings, not a full analytics dashboard.
+ */
+export default async function AdminOverviewPage() {
+  await requireAdmin();
+  const supabase = await createSupabaseServerClient();
+
+  const [confirmedCount, pendingCount, revenue, recent] = await Promise.all([
+    supabase.from("bookings").select("*", { count: "exact", head: true }).eq("status", "paid_confirmed"),
+    supabase.from("bookings").select("*", { count: "exact", head: true }).eq("status", "pending_payment"),
+    supabase.from("bookings").select("total_idr").eq("status", "paid_confirmed"),
+    supabase
+      .from("bookings")
+      .select("*, products(title)")
+      .order("created_at", { ascending: false })
+      .limit(5),
+  ]);
+
+  const totalRevenueIdr = (revenue.data ?? []).reduce((sum, r) => sum + r.total_idr, 0);
+  const recentBookings = (recent.data ?? []) as RecentBooking[];
+
+  return (
+    <div>
+      <h1 className="font-serif text-2xl font-semibold text-ink">Overview</h1>
+
+      <div className="mt-6 grid gap-4 sm:grid-cols-3">
+        <div className="rounded-2xl border border-sand-deep bg-white p-5">
+          <p className="font-mono text-xs uppercase tracking-widest text-ink-soft">
+            Confirmed bookings
+          </p>
+          <p className="mt-1 font-serif text-2xl font-semibold text-ink">
+            {confirmedCount.count ?? 0}
+          </p>
+        </div>
+        <div className="rounded-2xl border border-sand-deep bg-white p-5">
+          <p className="font-mono text-xs uppercase tracking-widest text-ink-soft">
+            Pending payment
+          </p>
+          <p className="mt-1 font-serif text-2xl font-semibold text-ink">
+            {pendingCount.count ?? 0}
+          </p>
+        </div>
+        <div className="rounded-2xl border border-sand-deep bg-white p-5">
+          <p className="font-mono text-xs uppercase tracking-widest text-ink-soft">
+            Total confirmed revenue
+          </p>
+          <p className="mt-1 font-serif text-2xl font-semibold text-ink">
+            {formatIdr(totalRevenueIdr)}
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-8 flex items-center justify-between">
+        <h2 className="font-serif text-lg font-semibold text-ink">Recent bookings</h2>
+        <Link href="/admin/bookings" className="text-sm font-semibold text-teal hover:underline">
+          View all →
+        </Link>
+      </div>
+
+      <div className="mt-2 overflow-hidden rounded-lg border border-sand-deep bg-white">
+        {recentBookings.length === 0 ? (
+          <p className="px-4 py-6 text-sm text-ink-soft">No bookings yet.</p>
+        ) : (
+          recentBookings.map((b) => (
+            <div
+              key={b.id}
+              className="flex items-center justify-between border-t border-sand-deep px-4 py-3 text-sm first:border-t-0"
+            >
+              <div>
+                <p className="font-semibold text-ink">{b.products?.title ?? "Trip"}</p>
+                <p className="text-ink-soft">
+                  {b.booking_code} · {b.slot_date} · {BOOKING_STATUS_LABELS[b.status]}
+                </p>
+              </div>
+              <span className="text-ink-soft">{formatIdr(b.total_idr)}</span>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
