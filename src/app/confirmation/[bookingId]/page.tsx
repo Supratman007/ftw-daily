@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireCustomer } from "@/lib/customers/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { formatIdr } from "@/lib/currency";
+import { formatIdr, formatUsd } from "@/lib/currency";
 
 interface BookingRow {
   id: string;
@@ -12,6 +12,8 @@ interface BookingRow {
   total_idr: number;
   status: "pending_payment" | "paid_confirmed" | "expired" | "cancelled";
   product_id: string;
+  discount_code: string | null;
+  discount_amount_usd: number;
 }
 
 /**
@@ -34,7 +36,9 @@ export default async function ConfirmationPage({
   const supabase = await createSupabaseServerClient();
   const { data: booking } = await supabase
     .from("bookings")
-    .select("id, booking_code, slot_date, pax_count, total_idr, status, product_id")
+    .select(
+      "id, booking_code, slot_date, pax_count, total_idr, status, product_id, discount_code, discount_amount_usd"
+    )
     .eq("id", bookingId)
     .eq("customer_id", customer.id)
     .maybeSingle();
@@ -113,6 +117,12 @@ export default async function ConfirmationPage({
           <span className="text-ink-soft">Travelers</span>
           <span className="text-ink">{b.pax_count}</span>
         </div>
+        {b.discount_code && b.discount_amount_usd > 0 && (
+          <div className="flex justify-between border-b border-sand-deep py-2">
+            <span className="text-ink-soft">Discount ({b.discount_code})</span>
+            <span className="text-teal">-{formatUsd(b.discount_amount_usd)}</span>
+          </div>
+        )}
         <div className="flex justify-between py-2">
           <span className="text-ink-soft">Total paid</span>
           <span className="font-semibold text-ink">{formatIdr(b.total_idr)}</span>

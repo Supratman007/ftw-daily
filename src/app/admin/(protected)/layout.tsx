@@ -17,6 +17,7 @@ export default async function ProtectedAdminLayout({
           </p>
           <nav className="mt-1 flex gap-4 font-serif text-sm font-semibold text-ocean">
             <a href="/admin/products">Products</a>
+            <a href="/admin/discount-codes">Discount codes</a>
           </nav>
         </div>
         <div className="flex items-center gap-3 text-sm text-ink-soft">

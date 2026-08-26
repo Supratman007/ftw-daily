@@ -31,7 +31,9 @@ export async function POST(request: NextRequest) {
   const supabase = createSupabaseServiceRoleClient();
   const { data: booking } = await supabase
     .from("bookings")
-    .select("id, status, product_id, customer_id, slot_date, pax_count, total_idr, booking_code")
+    .select(
+      "id, status, product_id, customer_id, slot_date, pax_count, total_idr, booking_code, discount_code_id, discount_code, discount_amount_usd"
+    )
     .eq("booking_code", externalId)
     .maybeSingle();
 
@@ -80,6 +82,8 @@ export async function POST(request: NextRequest) {
         totalIdr: booking.total_idr,
         bookingCode: booking.booking_code,
         bookingUrl: `${siteUrl}/confirmation/${booking.id}`,
+        discountCode: booking.discount_code,
+        discountAmountUsd: booking.discount_amount_usd,
       });
 
       await Promise.all(
@@ -113,6 +117,12 @@ export async function POST(request: NextRequest) {
       p_slot_date: booking.slot_date,
       p_pax: booking.pax_count,
     });
+
+    if (booking.discount_code_id) {
+      await supabase.rpc("release_discount_code", {
+        p_discount_code_id: booking.discount_code_id,
+      });
+    }
 
     return NextResponse.json({ ok: true });
   }

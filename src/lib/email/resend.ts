@@ -1,5 +1,5 @@
 import "server-only";
-import { formatIdr } from "@/lib/currency";
+import { formatIdr, formatUsd } from "@/lib/currency";
 
 /**
  * Shared send -- both templates below go through this. Uses Resend's
@@ -54,10 +54,17 @@ interface BookingConfirmedEmailParams {
   totalIdr: number;
   bookingCode: string;
   bookingUrl: string;
+  discountCode?: string | null;
+  discountAmountUsd?: number;
 }
 
 /** Sends the "booking confirmed" email (spec §6g) to the customer. */
 export async function sendBookingConfirmedEmail(params: BookingConfirmedEmailParams): Promise<void> {
+  const discountRow =
+    params.discountCode && params.discountAmountUsd
+      ? `<tr><td style="padding: 6px 0; color: #4B5854;">Discount (${escapeHtml(params.discountCode)})</td><td style="padding: 6px 0; text-align: right;">-${formatUsd(params.discountAmountUsd)}</td></tr>`
+      : "";
+
   const html = `
     <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
       <h1 style="color: #0F3A3D;">Booking confirmed</h1>
@@ -67,6 +74,7 @@ export async function sendBookingConfirmedEmail(params: BookingConfirmedEmailPar
         <tr><td style="padding: 6px 0; color: #4B5854;">Booking code</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">${escapeHtml(params.bookingCode)}</td></tr>
         <tr><td style="padding: 6px 0; color: #4B5854;">Date</td><td style="padding: 6px 0; text-align: right;">${escapeHtml(params.slotDate)}</td></tr>
         <tr><td style="padding: 6px 0; color: #4B5854;">Travelers</td><td style="padding: 6px 0; text-align: right;">${params.paxCount}</td></tr>
+        ${discountRow}
         <tr><td style="padding: 6px 0; color: #4B5854;">Total paid</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">${escapeHtml(formatIdr(params.totalIdr))}</td></tr>
       </table>
       <p><a href="${params.bookingUrl}" style="display: inline-block; background: #E1613C; color: #fff; padding: 10px 18px; border-radius: 8px; text-decoration: none;">View your booking</a></p>

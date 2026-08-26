@@ -15,10 +15,10 @@ export default async function ProductPage({
   searchParams,
 }: {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ date?: string; pax?: string; error?: string }>;
+  searchParams: Promise<{ date?: string; pax?: string; discount_code?: string; error?: string }>;
 }) {
   const { slug } = await params;
-  const { date, pax, error } = await searchParams;
+  const { date, pax, discount_code: discountCode, error } = await searchParams;
 
   const supabase = await createSupabaseServerClient();
   const { data: product } = await supabase
@@ -101,6 +101,17 @@ export default async function ProductPage({
                   required
                   defaultValue={pax ?? "2"}
                   className="mt-1 w-full rounded-lg border border-sand-deep px-3 py-2 text-sm"
+                />
+              </label>
+              <label className="text-xs font-semibold uppercase tracking-wide text-ink-soft">
+                Discount code (optional)
+                <input
+                  type="text"
+                  name="discount_code"
+                  defaultValue={discountCode ?? ""}
+                  placeholder="e.g. WELCOME10"
+                  className="mt-1 w-full rounded-lg border border-sand-deep px-3 py-2 text-sm uppercase"
+                  style={{ textTransform: "uppercase" }}
                 />
               </label>
               <button

@@ -13,12 +13,15 @@ export async function startCheckoutAction(productId: string, slug: string, formD
   const date = String(formData.get("date") ?? "");
   const paxRaw = Number(formData.get("pax") ?? "0");
   const pax = Number.isInteger(paxRaw) ? paxRaw : 0;
+  const discountCodeInput = String(formData.get("discount_code") ?? "").trim();
 
   const returnTo = `/p/${slug}?date=${encodeURIComponent(date)}&pax=${pax}`;
   const customer = await requireCustomer(returnTo);
 
   function fail(message: string): never {
-    redirect(`/p/${slug}?date=${encodeURIComponent(date)}&pax=${pax}&error=${encodeURIComponent(message)}`);
+    const params = new URLSearchParams({ date, pax: String(pax), error: message });
+    if (discountCodeInput) params.set("discount_code", discountCodeInput);
+    redirect(`/p/${slug}?${params.toString()}`);
   }
 
   if (!date || Number.isNaN(Date.parse(date))) {
@@ -69,10 +72,63 @@ export async function startCheckoutAction(productId: string, slug: string, formD
   }
 
   const subtotalUsd = p.adult_price_usd * pax;
-  const totalIdr = usdToIdr(subtotalUsd);
+
+  // Same atomic-reservation pattern as capacity above, so a
+  // limited-use code can't be redeemed twice by two people at once.
+  let discountCodeId: string | null = null;
+  let discountAmountUsd = 0;
+  if (discountCodeInput) {
+    const { data: discountRows, error: discountError } = await serviceClient.rpc(
+      "reserve_discount_code",
+      { p_code: discountCodeInput }
+    );
+
+    if (discountError) {
+      await serviceClient.rpc("release_booking_capacity", {
+        p_product_id: p.id,
+        p_slot_date: date,
+        p_pax: pax,
+      });
+      fail(`Couldn't check that discount code: ${discountError.message}`);
+    }
+
+    const discountRow = discountRows?.[0];
+    if (!discountRow) {
+      await serviceClient.rpc("release_booking_capacity", {
+        p_product_id: p.id,
+        p_slot_date: date,
+        p_pax: pax,
+      });
+      fail("That discount code isn't valid, has expired, or has already been fully used.");
+    }
+
+    discountCodeId = discountRow.id;
+    discountAmountUsd =
+      discountRow.discount_type === "percent"
+        ? subtotalUsd * (discountRow.discount_value / 100)
+        : Math.min(discountRow.discount_value, subtotalUsd);
+  }
+
+  const finalSubtotalUsd = Math.max(0, subtotalUsd - discountAmountUsd);
+  const totalIdr = usdToIdr(finalSubtotalUsd);
   const bookingCode = generateBookingCode();
   const bookingId = crypto.randomUUID();
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+
+  // Undoes everything reserved so far (capacity, and the discount code
+  // use if one was applied) -- called from every failure path below the
+  // point of reservation, so nothing leaks as "used" with no booking
+  // behind it.
+  async function releaseReservations() {
+    await serviceClient.rpc("release_booking_capacity", {
+      p_product_id: p.id,
+      p_slot_date: date,
+      p_pax: pax,
+    });
+    if (discountCodeId) {
+      await serviceClient.rpc("release_discount_code", { p_discount_code_id: discountCodeId });
+    }
+  }
 
   let invoice;
   try {
@@ -85,13 +141,7 @@ export async function startCheckoutAction(productId: string, slug: string, formD
       failureRedirectUrl: `${siteUrl}/p/${slug}`,
     });
   } catch (err) {
-    // The reservation from above would otherwise leak (counted as
-    // booked with no booking behind it) if we stopped here.
-    await serviceClient.rpc("release_booking_capacity", {
-      p_product_id: p.id,
-      p_slot_date: date,
-      p_pax: pax,
-    });
+    await releaseReservations();
     fail(`Couldn't start payment: ${(err as Error).message}`);
   }
 
@@ -103,19 +153,18 @@ export async function startCheckoutAction(productId: string, slug: string, formD
     slot_date: date,
     pax_count: pax,
     subtotal_usd: subtotalUsd,
-    total_usd: subtotalUsd,
+    total_usd: finalSubtotalUsd,
     total_idr: totalIdr,
     status: "pending_payment",
     xendit_invoice_id: invoice.id,
     xendit_invoice_url: invoice.invoice_url,
+    discount_code_id: discountCodeId,
+    discount_code: discountCodeInput || null,
+    discount_amount_usd: discountAmountUsd,
   });
 
   if (insertError) {
-    await serviceClient.rpc("release_booking_capacity", {
-      p_product_id: p.id,
-      p_slot_date: date,
-      p_pax: pax,
-    });
+    await releaseReservations();
     fail(`Couldn't create your booking: ${insertError.message}`);
   }
 
