@@ -4,12 +4,13 @@ import { redirect } from "next/navigation";
 import { requireAdmin } from "@/lib/admin/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { slugify } from "@/lib/products/slugify";
+import { decodeHtmlEntities } from "@/lib/products/decode-html-entities";
 import type { ProductType } from "@/lib/products/types";
 
 const PRODUCT_TYPES: ProductType[] = ["tour", "activity", "car_hire", "transport"];
 
 function optionalText(formData: FormData, key: string): string | null {
-  const value = String(formData.get(key) ?? "").trim();
+  const value = decodeHtmlEntities(String(formData.get(key) ?? "")).trim();
   return value === "" ? null : value;
 }
 
@@ -52,7 +53,7 @@ function toProductRow(formData: FormData, productType: ProductType, title: strin
  * form (never both). */
 function buildProductRow(formData: FormData): BuildProductRowResult {
   const productType = String(formData.get("product_type") ?? "");
-  const title = String(formData.get("title") ?? "").trim();
+  const title = decodeHtmlEntities(String(formData.get("title") ?? "")).trim();
   const slugInput = String(formData.get("slug") ?? "").trim();
   const adultPrice = optionalNumber(formData, "adult_price_usd");
 
