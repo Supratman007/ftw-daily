@@ -79,12 +79,12 @@ export default async function AdminBookingsPage({
             <tr>
               <th className="px-4 py-2">Booking code</th>
               <th className="px-4 py-2">Trip</th>
-              <th className="px-4 py-2">Date</th>
+              <th className="px-4 py-2">Trip date</th>
               <th className="px-4 py-2">Pax</th>
               <th className="px-4 py-2">Customer</th>
               <th className="px-4 py-2">Total</th>
               <th className="px-4 py-2">Status</th>
-              <th className="px-4 py-2">Booked</th>
+              <th className="px-4 py-2">Purchase date</th>
             </tr>
           </thead>
           <tbody>
