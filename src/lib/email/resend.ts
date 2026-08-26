@@ -88,6 +88,46 @@ export async function sendBookingConfirmedEmail(params: BookingConfirmedEmailPar
   });
 }
 
+interface PaymentFailedEmailParams {
+  toEmail: string;
+  customerName: string;
+  productTitle: string;
+  slotDate: string;
+  bookingCode: string;
+  productUrl: string;
+}
+
+/**
+ * Not in the original spec -- added because a customer who abandons an
+ * invoice (or whose payment is declined) previously got no signal at
+ * all that their booking didn't go through, beyond whatever Xendit's
+ * own page showed them in the moment. Covers both an active decline and
+ * a silently-expired, never-completed invoice with the same email,
+ * since the outcome for the customer is identical either way: nothing
+ * was charged, and the spot was released.
+ */
+export async function sendPaymentFailedEmail(params: PaymentFailedEmailParams): Promise<void> {
+  const html = `
+    <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
+      <h1 style="color: #B3441E;">Payment didn&rsquo;t go through</h1>
+      <p>Hi ${escapeHtml(params.customerName)},</p>
+      <p>
+        Your booking attempt for <strong>${escapeHtml(params.productTitle)}</strong> on
+        ${escapeHtml(params.slotDate)} (${escapeHtml(params.bookingCode)}) wasn&rsquo;t completed,
+        so nothing was charged.
+      </p>
+      <p>If you&rsquo;d still like to book, you&rsquo;re welcome to try again.</p>
+      <p><a href="${params.productUrl}" style="display: inline-block; background: #E1613C; color: #fff; padding: 10px 18px; border-radius: 8px; text-decoration: none;">Try booking again</a></p>
+    </div>
+  `;
+
+  await sendEmail({
+    to: params.toEmail,
+    subject: `Payment didn't go through — ${params.productTitle}`,
+    html,
+  });
+}
+
 interface NewBookingStaffEmailParams {
   toEmail: string;
   productTitle: string;

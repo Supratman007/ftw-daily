@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/service";
-import { sendBookingConfirmedEmail, sendNewBookingStaffEmail } from "@/lib/email/resend";
+import {
+  sendBookingConfirmedEmail,
+  sendNewBookingStaffEmail,
+  sendPaymentFailedEmail,
+} from "@/lib/email/resend";
 
 const PAID_STATUSES = new Set(["PAID", "SETTLED"]);
 const FAILED_STATUSES = new Set(["EXPIRED", "FAILED"]);
@@ -121,6 +125,23 @@ export async function POST(request: NextRequest) {
     if (booking.discount_code_id) {
       await supabase.rpc("release_discount_code", {
         p_discount_code_id: booking.discount_code_id,
+      });
+    }
+
+    const [{ data: product }, { data: customer }] = await Promise.all([
+      supabase.from("products").select("title, slug").eq("id", booking.product_id).maybeSingle(),
+      supabase.from("customers").select("name, email").eq("id", booking.customer_id).maybeSingle(),
+    ]);
+
+    if (product && customer) {
+      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+      await sendPaymentFailedEmail({
+        toEmail: customer.email,
+        customerName: customer.name,
+        productTitle: product.title,
+        slotDate: booking.slot_date,
+        bookingCode: booking.booking_code,
+        productUrl: `${siteUrl}/p/${product.slug}`,
       });
     }
 
