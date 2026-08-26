@@ -1,24 +1,52 @@
+import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { formatUsd, formatIdr, usdToIdr } from "@/lib/currency";
 import { PRODUCT_TYPE_LABELS } from "@/lib/products/types";
 import type { Product } from "@/lib/products/types";
 import { customerLogoutAction } from "./actions";
 
+const inputClass =
+  "w-full rounded-lg border border-sand-deep px-3 py-2 text-sm outline-none focus:border-teal";
+
 /**
- * Minimal "browse trips" list -- just enough to click through to a real
- * product and test checkout. This is intentionally bare-bones: no
- * search, filters, or categories yet. Those come later, once the
- * riskier parts (real payment, real booking) are proven out first.
+ * Matches spec §3/§4's "Smart Search & Filters" step of the core flow.
+ * The catalog here is small (tens of products, not thousands, per
+ * spec §5) so this fetches every active product once and filters in
+ * plain JS -- simpler than building out Supabase query-building for a
+ * dataset this size, and it's what lets the location dropdown list only
+ * locations that actually have something in them, without a second
+ * "distinct" query.
  */
-export default async function Home() {
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string; type?: string; location?: string }>;
+}) {
+  const { q, type, location } = await searchParams;
+
   const supabase = await createSupabaseServerClient();
   const [{ data: products }, { data: userData }] = await Promise.all([
     supabase.from("products").select("*").eq("status", "active").order("created_at", { ascending: false }),
     supabase.auth.getUser(),
   ]);
 
-  const items = (products ?? []) as Product[];
+  const allItems = (products ?? []) as Product[];
   const user = userData.user;
+
+  const locations = Array.from(new Set(allItems.map((p) => p.location).filter((l): l is string => !!l))).sort();
+
+  const query = (q ?? "").trim().toLowerCase();
+  const items = allItems.filter((p) => {
+    if (type && type !== "all" && p.product_type !== type) return false;
+    if (location && location !== "all" && p.location !== location) return false;
+    if (query) {
+      const haystack = `${p.title} ${p.location ?? ""} ${p.category ?? ""}`.toLowerCase();
+      if (!haystack.includes(query)) return false;
+    }
+    return true;
+  });
+
+  const hasFilters = Boolean(q || (type && type !== "all") || (location && location !== "all"));
 
   return (
     <main className="mx-auto max-w-5xl px-6 py-10">
@@ -51,9 +79,59 @@ export default async function Home() {
         </div>
       </div>
 
-      {items.length === 0 ? (
+      <form method="GET" className="mt-6 flex flex-wrap gap-3">
+        <input
+          type="text"
+          name="q"
+          defaultValue={q ?? ""}
+          placeholder="Search trips, activities, locations…"
+          className={`${inputClass} flex-1 basis-64`}
+        />
+        <select name="type" defaultValue={type ?? "all"} className={`${inputClass} w-auto`}>
+          <option value="all">All types</option>
+          {Object.entries(PRODUCT_TYPE_LABELS).map(([value, label]) => (
+            <option key={value} value={value}>
+              {label}
+            </option>
+          ))}
+        </select>
+        <select name="location" defaultValue={location ?? "all"} className={`${inputClass} w-auto`}>
+          <option value="all">All locations</option>
+          {locations.map((loc) => (
+            <option key={loc} value={loc}>
+              {loc}
+            </option>
+          ))}
+        </select>
+        <button
+          type="submit"
+          className="rounded-lg bg-coral px-4 py-2 text-sm font-semibold text-white"
+        >
+          Search
+        </button>
+        {hasFilters && (
+          <Link
+            href="/"
+            className="flex items-center px-2 text-sm font-semibold text-teal hover:underline"
+          >
+            Clear
+          </Link>
+        )}
+      </form>
+
+      {hasFilters && (
+        <p className="mt-4 text-sm text-ink-soft">
+          {items.length} trip{items.length === 1 ? "" : "s"} found
+        </p>
+      )}
+
+      {allItems.length === 0 ? (
         <p className="mt-6 text-sm text-ink-soft">
           No trips published yet — check back soon.
+        </p>
+      ) : items.length === 0 ? (
+        <p className="mt-6 text-sm text-ink-soft">
+          No trips match those filters — try clearing one and searching again.
         </p>
       ) : (
         <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
