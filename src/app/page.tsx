@@ -62,9 +62,9 @@ export default async function Home({
         <div className="pt-1 text-sm">
           {user ? (
             <div className="flex items-center gap-3 text-ink-soft">
-              <span>
-                Hi, {(user.user_metadata?.full_name as string | undefined) || user.email}
-              </span>
+              <Link href="/account" className="font-semibold text-teal hover:underline">
+                My account
+              </Link>
               <form action={customerLogoutAction}>
                 <button type="submit" className="font-semibold text-coral-dark hover:underline">
                   Log out
