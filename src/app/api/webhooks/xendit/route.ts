@@ -12,10 +12,35 @@ const FAILED_STATUSES = new Set(["EXPIRED", "FAILED"]);
  * between "a real payment happened" and "anyone on the internet POSTing
  * here can mark a booking paid," so it's checked before anything else.
  */
+/**
+ * TEMPORARY debug helper -- shows enough about a token to spot a typo,
+ * stray whitespace, or a missing env var WITHOUT printing the whole
+ * secret. Delete this once the webhook token mismatch is solved.
+ */
+function describeToken(label: string, value: string | undefined | null) {
+  if (!value) return { [label]: "MISSING" };
+  return {
+    [label]: {
+      length: value.length,
+      preview: `${value.slice(0, 4)}...${value.slice(-4)}`,
+      hasLeadingOrTrailingWhitespace: value !== value.trim(),
+    },
+  };
+}
+
 export async function POST(request: NextRequest) {
   const token = request.headers.get("x-callback-token");
   if (!token || token !== process.env.XENDIT_WEBHOOK_TOKEN) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json(
+      {
+        error: "Unauthorized",
+        debug: {
+          ...describeToken("receivedFromXendit", token),
+          ...describeToken("configuredInVercel", process.env.XENDIT_WEBHOOK_TOKEN),
+        },
+      },
+      { status: 401 }
+    );
   }
 
   const payload = await request.json();
