@@ -13,7 +13,7 @@ const ROLES: AdminRole[] = ["super_admin", "reservations", "accounting", "suppor
  * Supabase's invite-by-email (Admin API, service-role only -- there's
  * no self-service admin signup) and the matching admin_users row.
  * Supabase sends its own invite email with a set-password link -- same
- * infrastructure as the password-reset flow, reusing /auth/callback and
+ * infrastructure as the password-reset flow, reusing /auth/confirm and
  * /reset-password rather than building a second flow.
  */
 export async function inviteStaffAction(formData: FormData) {
@@ -40,7 +40,7 @@ export async function inviteStaffAction(formData: FormData) {
   const { data: invited, error: inviteError } = await serviceClient.auth.admin.inviteUserByEmail(
     email,
     {
-      redirectTo: `${siteUrl}/auth/callback?next=/reset-password`,
+      redirectTo: `${siteUrl}/auth/confirm?next=/reset-password`,
       data: { full_name: name },
     }
   );

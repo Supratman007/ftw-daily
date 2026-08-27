@@ -12,10 +12,10 @@ export default async function ResetPasswordPage({
 }) {
   const { error } = await searchParams;
 
-  // Reaching this page requires the recovery session /auth/callback
-  // just established -- landing here with no session (link already
-  // used, expired, or someone just typed the URL) means there's nothing
-  // to reset yet.
+  // Reaching this page requires the recovery session /auth/confirm just
+  // established -- landing here with no session (link already used,
+  // expired, or someone just typed the URL) means there's nothing to
+  // reset yet.
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },
