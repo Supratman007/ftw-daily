@@ -17,10 +17,10 @@ type RecentBooking = Booking & { products: { title: string } | null };
 export default async function AdminOverviewPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; password_set?: string }>;
 }) {
   await requireAdmin();
-  const { error } = await searchParams;
+  const { error, password_set } = await searchParams;
   const supabase = await createSupabaseServerClient();
 
   const [confirmedCount, pendingCount, revenue, recent] = await Promise.all([
@@ -44,6 +44,11 @@ export default async function AdminOverviewPage({
       {error === "super_admin_only" && (
         <p className="mt-4 rounded-lg border border-coral bg-[#FCE6DD] p-3 text-sm text-coral-dark">
           Only Super Admin accounts can manage the team.
+        </p>
+      )}
+      {password_set === "1" && (
+        <p className="mt-4 rounded-lg border border-teal bg-[#E3F2F1] p-3 text-sm text-teal">
+          Your password has been set. Welcome!
         </p>
       )}
 

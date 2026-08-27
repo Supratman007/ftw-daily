@@ -9,8 +9,13 @@ type BookingWithProduct = Booking & { products: { title: string; slug: string } 
 /** Spec §6h Overview: "their next upcoming trip surfaced prominently
  * (if they have one), with quick links into the other three sections
  * below. Not meant to be analyzed, just oriented." */
-export default async function AccountOverviewPage() {
+export default async function AccountOverviewPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ password_reset?: string }>;
+}) {
   const customer = await requireCustomer("/account");
+  const { password_reset } = await searchParams;
   const supabase = await createSupabaseServerClient();
 
   const today = new Date().toISOString().slice(0, 10);
@@ -29,6 +34,12 @@ export default async function AccountOverviewPage() {
   return (
     <div>
       <h1 className="font-serif text-2xl font-semibold text-ink">Welcome back, {customer.name}</h1>
+
+      {password_reset === "1" && (
+        <p className="mt-4 rounded-lg border border-teal bg-[#E3F2F1] p-3 text-sm text-teal">
+          Your password has been updated.
+        </p>
+      )}
 
       {b ? (
         <div className="mt-6 rounded-2xl border border-sand-deep bg-white p-6">

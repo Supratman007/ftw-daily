@@ -14,6 +14,20 @@ export async function SiteHeader() {
     data: { user },
   } = await supabase.auth.getUser();
 
+  // Staff accounts are Supabase Auth users too, so a plain "is anyone
+  // logged in" check would send them into the customer /account area
+  // (requireCustomer() would even silently create a customers row for
+  // them). Route them to their own dashboard instead.
+  let isStaff = false;
+  if (user) {
+    const { data: admin } = await supabase
+      .from("admin_users")
+      .select("id")
+      .eq("id", user.id)
+      .maybeSingle();
+    isStaff = !!admin;
+  }
+
   return (
     <header className="flex items-center justify-between border-b border-sand-deep bg-white px-6 py-4">
       <Link
@@ -25,8 +39,11 @@ export async function SiteHeader() {
       <div className="text-sm">
         {user ? (
           <div className="flex items-center gap-3 text-ink-soft">
-            <Link href="/account" className="font-semibold text-teal hover:underline">
-              My account
+            <Link
+              href={isStaff ? "/admin" : "/account"}
+              className="font-semibold text-teal hover:underline"
+            >
+              {isStaff ? "Staff dashboard" : "My account"}
             </Link>
             <form action={customerLogoutAction}>
               <button type="submit" className="font-semibold text-coral-dark hover:underline">
