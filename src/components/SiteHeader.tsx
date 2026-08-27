@@ -14,18 +14,25 @@ export async function SiteHeader() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Staff accounts are Supabase Auth users too, so a plain "is anyone
-  // logged in" check would send them into the customer /account area
-  // (requireCustomer() would even silently create a customers row for
-  // them). Route them to their own dashboard instead.
-  let isStaff = false;
+  // Staff and Sales Agent accounts are Supabase Auth users too, so a
+  // plain "is anyone logged in" check would send them into the
+  // customer /account area (requireCustomer() would even silently
+  // create a customers row for them). Route each to their own
+  // dashboard instead.
+  let dashboardHref = "/account";
+  let dashboardLabel = "My account";
   if (user) {
-    const { data: admin } = await supabase
-      .from("admin_users")
-      .select("id")
-      .eq("id", user.id)
-      .maybeSingle();
-    isStaff = !!admin;
+    const [{ data: admin }, { data: agent }] = await Promise.all([
+      supabase.from("admin_users").select("id").eq("id", user.id).maybeSingle(),
+      supabase.from("sales_agents").select("id").eq("id", user.id).maybeSingle(),
+    ]);
+    if (admin) {
+      dashboardHref = "/admin";
+      dashboardLabel = "Staff dashboard";
+    } else if (agent) {
+      dashboardHref = "/agent";
+      dashboardLabel = "Agent dashboard";
+    }
   }
 
   return (
@@ -39,11 +46,8 @@ export async function SiteHeader() {
       <div className="text-sm">
         {user ? (
           <div className="flex items-center gap-3 text-ink-soft">
-            <Link
-              href={isStaff ? "/admin" : "/account"}
-              className="font-semibold text-teal hover:underline"
-            >
-              {isStaff ? "Staff dashboard" : "My account"}
+            <Link href={dashboardHref} className="font-semibold text-teal hover:underline">
+              {dashboardLabel}
             </Link>
             <form action={customerLogoutAction}>
               <button type="submit" className="font-semibold text-coral-dark hover:underline">
@@ -52,9 +56,14 @@ export async function SiteHeader() {
             </form>
           </div>
         ) : (
-          <Link href="/login" className="font-semibold text-teal hover:underline">
-            Log in
-          </Link>
+          <div className="flex items-center gap-3 text-ink-soft">
+            <Link href="/login" className="font-semibold text-teal hover:underline">
+              Log in
+            </Link>
+            <Link href="/agent/register" className="font-semibold text-coral-dark hover:underline">
+              Become a Sales Agent
+            </Link>
+          </div>
         )}
       </div>
     </header>
