@@ -4,6 +4,11 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { formatIdr } from "@/lib/currency";
 import { BOOKING_STATUS_LABELS, type Booking } from "@/lib/bookings/types";
 
+const cardClass =
+  "rounded-2xl border border-sand-deep bg-white p-5 transition hover:shadow-md";
+const pendingAgentCardClass =
+  "rounded-2xl border border-coral bg-[#FCE6DD] p-5 transition hover:shadow-md";
+
 type RecentBooking = Booking & { products: { title: string } | null };
 
 /**
@@ -23,7 +28,7 @@ export default async function AdminOverviewPage({
   const { error, password_set } = await searchParams;
   const supabase = await createSupabaseServerClient();
 
-  const [confirmedCount, pendingCount, revenue, recent] = await Promise.all([
+  const [confirmedCount, pendingCount, revenue, recent, pendingAgentCount] = await Promise.all([
     supabase.from("bookings").select("*", { count: "exact", head: true }).eq("status", "paid_confirmed"),
     supabase.from("bookings").select("*", { count: "exact", head: true }).eq("status", "pending_payment"),
     supabase.from("bookings").select("total_idr").eq("status", "paid_confirmed"),
@@ -32,10 +37,12 @@ export default async function AdminOverviewPage({
       .select("*, products(title)")
       .order("created_at", { ascending: false })
       .limit(5),
+    supabase.from("sales_agents").select("*", { count: "exact", head: true }).eq("status", "pending"),
   ]);
 
   const totalRevenueIdr = (revenue.data ?? []).reduce((sum, r) => sum + r.total_idr, 0);
   const recentBookings = (recent.data ?? []) as RecentBooking[];
+  const pendingAgents = pendingAgentCount.count ?? 0;
 
   return (
     <div>
@@ -52,8 +59,8 @@ export default async function AdminOverviewPage({
         </p>
       )}
 
-      <div className="mt-6 grid gap-4 sm:grid-cols-3">
-        <div className="rounded-2xl border border-sand-deep bg-white p-5">
+      <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className={cardClass}>
           <p className="font-mono text-xs uppercase tracking-widest text-ink-soft">
             Confirmed bookings
           </p>
@@ -61,7 +68,7 @@ export default async function AdminOverviewPage({
             {confirmedCount.count ?? 0}
           </p>
         </div>
-        <div className="rounded-2xl border border-sand-deep bg-white p-5">
+        <div className={cardClass}>
           <p className="font-mono text-xs uppercase tracking-widest text-ink-soft">
             Pending payment
           </p>
@@ -69,7 +76,7 @@ export default async function AdminOverviewPage({
             {pendingCount.count ?? 0}
           </p>
         </div>
-        <div className="rounded-2xl border border-sand-deep bg-white p-5">
+        <div className={cardClass}>
           <p className="font-mono text-xs uppercase tracking-widest text-ink-soft">
             Total confirmed revenue
           </p>
@@ -77,6 +84,19 @@ export default async function AdminOverviewPage({
             {formatIdr(totalRevenueIdr)}
           </p>
         </div>
+        <Link
+          href="/admin/agents"
+          className={pendingAgents > 0 ? pendingAgentCardClass : cardClass}
+        >
+          <p className="font-mono text-xs uppercase tracking-widest text-ink-soft">
+            Sales Agent applications
+          </p>
+          <p
+            className={`mt-1 font-serif text-2xl font-semibold ${pendingAgents > 0 ? "text-coral-dark" : "text-ink"}`}
+          >
+            {pendingAgents} pending
+          </p>
+        </Link>
       </div>
 
       <div className="mt-8 flex items-center justify-between">
