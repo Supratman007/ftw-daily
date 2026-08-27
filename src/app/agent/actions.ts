@@ -2,15 +2,19 @@
 
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabaseServiceRoleClient } from "@/lib/supabase/service";
 import { generateReferralCode } from "@/lib/agents/referralCode";
 
 /**
- * Self-service agent registration. Mirrors the customer signupAction in
- * /login/actions.ts (auth.signUp(), then immediately usable -- this
- * project doesn't require email confirmation), but also creates the
- * sales_agents row that makes this a Sales Agent rather than a plain
- * customer account, with a generated referral code and status='pending'
- * until an admin approves them on /admin/agents.
+ * Self-service agent registration. Uses auth.signUp() same as the
+ * customer signupAction in /login/actions.ts, but the sales_agents row
+ * insert goes through the service-role client rather than the
+ * session's own client: if this Supabase project requires email
+ * confirmation, signUp() returns a user with no session yet, so an
+ * insert on the session client would run unauthenticated and get
+ * rejected by RLS ("new row violates row-level security policy") --
+ * service role sidesteps that entirely, same as the staff-invite flow
+ * in admin/team/actions.ts.
  */
 export async function registerAgentAction(formData: FormData) {
   const name = String(formData.get("name") ?? "").trim();
@@ -42,9 +46,10 @@ export async function registerAgentAction(formData: FormData) {
 
   // Retry with a fresh code on the rare unique-constraint collision;
   // any other error isn't worth retrying.
+  const serviceClient = createSupabaseServiceRoleClient();
   let insertError: { code?: string; message: string } | null = null;
   for (let attempt = 0; attempt < 5; attempt++) {
-    const { error } = await supabase.from("sales_agents").insert({
+    const { error } = await serviceClient.from("sales_agents").insert({
       id: signedUp.user.id,
       name,
       email,
@@ -62,6 +67,18 @@ export async function registerAgentAction(formData: FormData) {
 
   if (insertError) {
     fail(`Account created, but couldn't finish registration: ${insertError.message}`);
+  }
+
+  // signUp() only returns a session if this project doesn't require
+  // email confirmation. If it does, there's no session to land them in
+  // /agent with -- say so instead of silently bouncing them to
+  // /agent/login with no explanation.
+  if (!signedUp.session) {
+    redirect(
+      `/agent/login?notice=${encodeURIComponent(
+        "Registration received! Check your email to confirm your account, then sign in."
+      )}`
+    );
   }
 
   redirect("/agent");
