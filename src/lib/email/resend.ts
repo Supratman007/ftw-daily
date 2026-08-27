@@ -175,6 +175,48 @@ export async function sendNewBookingStaffEmail(params: NewBookingStaffEmailParam
   });
 }
 
+interface NewAgentStaffEmailParams {
+  toEmail: string;
+  agentName: string;
+  agentEmail: string;
+  agentPhone: string | null;
+  referralCode: string;
+}
+
+/**
+ * Internal "someone applied to become a Sales Agent" notice -- goes to
+ * every active admin_users row, same reasoning as
+ * sendNewBookingStaffEmail. Sales Agents don't confirm their own email
+ * (Confirm email is off project-wide) -- an admin reviewing and
+ * approving them at /admin/agents is the actual gate, so this is what
+ * tells staff there's an application waiting.
+ */
+export async function sendNewAgentStaffEmail(params: NewAgentStaffEmailParams): Promise<void> {
+  const html = `
+    <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
+      <h1 style="color: #0F3A3D;">New Sales Agent application</h1>
+      <p><strong>${escapeHtml(params.agentName)}</strong> just applied to become a Sales Agent.</p>
+      <table style="width: 100%; border-collapse: collapse; margin: 16px 0;">
+        <tr><td style="padding: 6px 0; color: #4B5854;">Name</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">${escapeHtml(params.agentName)}</td></tr>
+        <tr><td style="padding: 6px 0; color: #4B5854;">Email</td><td style="padding: 6px 0; text-align: right;">${escapeHtml(params.agentEmail)}</td></tr>
+        ${
+          params.agentPhone
+            ? `<tr><td style="padding: 6px 0; color: #4B5854;">Phone</td><td style="padding: 6px 0; text-align: right;">${escapeHtml(params.agentPhone)}</td></tr>`
+            : ""
+        }
+        <tr><td style="padding: 6px 0; color: #4B5854;">Referral code</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">${escapeHtml(params.referralCode)}</td></tr>
+      </table>
+      <p>Review and approve them at /admin/agents before their referral link goes live.</p>
+    </div>
+  `;
+
+  await sendEmail({
+    to: params.toEmail,
+    subject: `New Sales Agent application — ${params.agentName}`,
+    html,
+  });
+}
+
 function escapeHtml(input: string): string {
   return input
     .replace(/&/g, "&amp;")

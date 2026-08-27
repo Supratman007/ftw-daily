@@ -2,6 +2,8 @@
 
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabaseServiceRoleClient } from "@/lib/supabase/service";
+import { sendNewAgentStaffEmail } from "@/lib/email/resend";
 
 /**
  * Self-service agent registration. The sales_agents row itself is
@@ -16,6 +18,13 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
  * to that separate insert) and failed every time with "violates
  * foreign key constraint sales_agents_id_fkey". A trigger is the
  * pattern Supabase itself recommends for exactly this.
+ *
+ * No email-confirmation step here -- Confirm email is off project-wide
+ * (Supabase's own "Confirm signup" mailer turned out to be unreliable
+ * with custom SMTP, unrelated to anything in this app's config). An
+ * admin reviewing and approving the application at /admin/agents is
+ * the actual gate before the referral link goes live, so staff get
+ * notified by email instead of the applicant needing to confirm one.
  */
 export async function registerAgentAction(formData: FormData) {
   const name = String(formData.get("name") ?? "").trim();
@@ -35,34 +44,38 @@ export async function registerAgentAction(formData: FormData) {
   }
 
   const supabase = await createSupabaseServerClient();
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
   const { data: signedUp, error: signUpError } = await supabase.auth.signUp({
     email,
     password,
-    options: {
-      data: { full_name: name, phone, signup_kind: "agent" },
-      // Without this, Supabase's "Confirm signup" email falls back to
-      // its dashboard-configured Site URL (localhost in dev) instead
-      // of wherever this app is actually deployed.
-      emailRedirectTo: `${siteUrl}/auth/confirm?next=/agent`,
-    },
+    options: { data: { full_name: name, phone, signup_kind: "agent" } },
   });
 
   if (signUpError || !signedUp.user) {
     fail(signUpError?.message ?? "Couldn't create your account.");
   }
 
-  // signUp() only returns a session if this project doesn't require
-  // email confirmation. If it does, there's no session to land them in
-  // /agent with -- say so instead of silently bouncing them to
-  // /agent/login with no explanation.
-  if (!signedUp.session) {
-    redirect(
-      `/agent/login?notice=${encodeURIComponent(
-        "Registration received! Check your email to confirm your account, then sign in."
-      )}`
-    );
-  }
+  // Service role: this new agent's own session can't read admin_users
+  // (RLS only allows admins to read that table) or is guaranteed to
+  // see the trigger-created sales_agents row yet from a plain select
+  // under RLS timing -- bypass both concerns the same way the booking
+  // webhook does for its own staff notification.
+  const serviceClient = createSupabaseServiceRoleClient();
+  const [{ data: staff }, { data: agentRow }] = await Promise.all([
+    serviceClient.from("admin_users").select("email").eq("status", "active"),
+    serviceClient.from("sales_agents").select("referral_code").eq("id", signedUp.user.id).maybeSingle(),
+  ]);
+
+  await Promise.all(
+    (staff ?? []).map((admin) =>
+      sendNewAgentStaffEmail({
+        toEmail: admin.email,
+        agentName: name,
+        agentEmail: email,
+        agentPhone: phone || null,
+        referralCode: agentRow?.referral_code ?? "—",
+      })
+    )
+  );
 
   redirect("/agent");
 }
