@@ -1,6 +1,7 @@
+import Link from "next/link";
 import { requireAdmin } from "@/lib/admin/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { AGENT_STATUS_LABELS, type SalesAgent } from "@/lib/agents/types";
+import { AGENT_STATUS_LABELS, AGENT_TYPE_LABELS, type SalesAgent } from "@/lib/agents/types";
 import { updateAgentStatusAction } from "./actions";
 
 const selectClass =
@@ -21,7 +22,7 @@ export default async function AdminAgentsPage({
   const supabase = await createSupabaseServerClient();
   const { data, error: loadError } = await supabase
     .from("sales_agents")
-    .select("id, name, email, phone, referral_code, status, created_at")
+    .select("id, name, email, phone, referral_code, status, agent_type, created_at")
     .order("created_at", { ascending: false });
 
   const agents = (data ?? []) as SalesAgent[];
@@ -54,6 +55,7 @@ export default async function AdminAgentsPage({
           <thead className="bg-sand text-xs uppercase text-ink-soft">
             <tr>
               <th className="px-4 py-2">Name</th>
+              <th className="px-4 py-2">Type</th>
               <th className="px-4 py-2">Email</th>
               <th className="px-4 py-2">Referral code</th>
               <th className="px-4 py-2">Status</th>
@@ -63,7 +65,12 @@ export default async function AdminAgentsPage({
           <tbody>
             {agents.map((a) => (
               <tr key={a.id} className="border-t border-sand-deep">
-                <td className="px-4 py-2 font-medium text-ink">{a.name}</td>
+                <td className="px-4 py-2 font-medium text-ink">
+                  <Link href={`/admin/agents/${a.id}`} className="text-teal hover:underline">
+                    {a.name}
+                  </Link>
+                </td>
+                <td className="px-4 py-2 text-ink-soft">{AGENT_TYPE_LABELS[a.agent_type]}</td>
                 <td className="px-4 py-2 text-ink-soft">{a.email}</td>
                 <td className="px-4 py-2 font-mono text-ink-soft">{a.referral_code}</td>
                 <td colSpan={2} className="px-4 py-2">
@@ -90,7 +97,7 @@ export default async function AdminAgentsPage({
             ))}
             {agents.length === 0 && !loadError && (
               <tr>
-                <td colSpan={5} className="px-4 py-8 text-center text-ink-soft">
+                <td colSpan={6} className="px-4 py-8 text-center text-ink-soft">
                   No Sales Agent applications yet.
                 </td>
               </tr>
