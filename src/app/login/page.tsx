@@ -6,9 +6,9 @@ const inputClass =
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ mode?: string; return_to?: string; error?: string }>;
+  searchParams: Promise<{ mode?: string; return_to?: string; error?: string; notice?: string }>;
 }) {
-  const { mode, return_to, error } = await searchParams;
+  const { mode, return_to, error, notice } = await searchParams;
   const isSignup = mode === "signup";
   const returnTo = return_to ?? "/";
 
@@ -24,6 +24,11 @@ export default async function LoginPage({
         {isSignup ? "Takes less than a minute." : "Log in to continue."}
       </p>
 
+      {notice && (
+        <p className="mt-4 rounded-lg border border-teal bg-[#E3F2F1] p-3 text-sm text-teal">
+          {notice}
+        </p>
+      )}
       {error && (
         <p className="mt-4 rounded-lg border border-coral bg-[#FCE6DD] p-3 text-sm text-coral-dark">
           {error}

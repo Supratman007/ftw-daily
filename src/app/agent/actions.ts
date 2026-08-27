@@ -34,10 +34,17 @@ export async function registerAgentAction(formData: FormData) {
   }
 
   const supabase = await createSupabaseServerClient();
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
   const { data: signedUp, error: signUpError } = await supabase.auth.signUp({
     email,
     password,
-    options: { data: { full_name: name, phone } },
+    options: {
+      data: { full_name: name, phone },
+      // Without this, Supabase's "Confirm signup" email falls back to
+      // its dashboard-configured Site URL (localhost in dev) instead
+      // of wherever this app is actually deployed.
+      emailRedirectTo: `${siteUrl}/auth/confirm?next=/agent`,
+    },
   });
 
   if (signUpError || !signedUp.user) {
