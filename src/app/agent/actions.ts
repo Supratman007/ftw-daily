@@ -2,19 +2,20 @@
 
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { createSupabaseServiceRoleClient } from "@/lib/supabase/service";
-import { generateReferralCode } from "@/lib/agents/referralCode";
 
 /**
- * Self-service agent registration. Uses auth.signUp() same as the
- * customer signupAction in /login/actions.ts, but the sales_agents row
- * insert goes through the service-role client rather than the
- * session's own client: if this Supabase project requires email
- * confirmation, signUp() returns a user with no session yet, so an
- * insert on the session client would run unauthenticated and get
- * rejected by RLS ("new row violates row-level security policy") --
- * service role sidesteps that entirely, same as the staff-invite flow
- * in admin/team/actions.ts.
+ * Self-service agent registration. The sales_agents row itself is
+ * created by a database trigger on auth.users (migration 0010),
+ * triggered by signup_kind: "agent" in this signUp() call's metadata
+ * -- it runs in the same transaction as the new auth user, so by the
+ * time signUp() returns the row is guaranteed to already exist.
+ *
+ * An earlier version inserted the row from here, immediately after
+ * signUp() -- on a project that requires email confirmation, that ran
+ * into a real race (the new auth.users row wasn't always visible yet
+ * to that separate insert) and failed every time with "violates
+ * foreign key constraint sales_agents_id_fkey". A trigger is the
+ * pattern Supabase itself recommends for exactly this.
  */
 export async function registerAgentAction(formData: FormData) {
   const name = String(formData.get("name") ?? "").trim();
@@ -39,7 +40,7 @@ export async function registerAgentAction(formData: FormData) {
     email,
     password,
     options: {
-      data: { full_name: name, phone },
+      data: { full_name: name, phone, signup_kind: "agent" },
       // Without this, Supabase's "Confirm signup" email falls back to
       // its dashboard-configured Site URL (localhost in dev) instead
       // of wherever this app is actually deployed.
@@ -49,31 +50,6 @@ export async function registerAgentAction(formData: FormData) {
 
   if (signUpError || !signedUp.user) {
     fail(signUpError?.message ?? "Couldn't create your account.");
-  }
-
-  // Retry with a fresh code on the rare unique-constraint collision;
-  // any other error isn't worth retrying.
-  const serviceClient = createSupabaseServiceRoleClient();
-  let insertError: { code?: string; message: string } | null = null;
-  for (let attempt = 0; attempt < 5; attempt++) {
-    const { error } = await serviceClient.from("sales_agents").insert({
-      id: signedUp.user.id,
-      name,
-      email,
-      phone: phone || null,
-      referral_code: generateReferralCode(),
-      status: "pending",
-    });
-    if (!error) {
-      insertError = null;
-      break;
-    }
-    insertError = error;
-    if (error.code !== "23505") break;
-  }
-
-  if (insertError) {
-    fail(`Account created, but couldn't finish registration: ${insertError.message}`);
   }
 
   // signUp() only returns a session if this project doesn't require
