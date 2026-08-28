@@ -19,6 +19,7 @@ export default async function ProtectedAgentLayout({
           <nav className="mt-1 flex gap-4 font-serif text-sm font-semibold text-ocean">
             <Link href="/agent">Overview</Link>
             <Link href="/agent/bookings">Sales report</Link>
+            <Link href="/agent/profile">Profile</Link>
           </nav>
         </div>
         <div className="flex items-center gap-3 text-sm text-ink-soft">

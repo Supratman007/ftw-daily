@@ -24,7 +24,7 @@ export const requireAgent = cache(async (): Promise<SalesAgent> => {
   const { data: agent } = await supabase
     .from("sales_agents")
     .select(
-      "id, name, email, phone, referral_code, status, agent_type, pic_name, pic_phone, id_document_path, business_document_path, created_at"
+      "id, name, email, phone, referral_code, status, agent_type, pic_name, pic_phone, id_document_path, business_document_path, bank_name, bank_account_number, bank_account_holder, bank_change_requested_at, created_at"
     )
     .eq("id", user.id)
     .maybeSingle();

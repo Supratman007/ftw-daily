@@ -13,6 +13,15 @@ export interface SalesAgent {
   pic_phone: string | null;
   id_document_path: string | null;
   business_document_path: string | null;
+  bank_name: string | null;
+  bank_account_number: string | null;
+  bank_account_holder: string | null;
+  /** Set while a bank account change is staged, awaiting the agent
+   * clicking the confirm link emailed to them -- the pending values
+   * themselves and the confirm token are never selected into this
+   * type; the profile page only needs to know a change is in flight
+   * and roughly when it expires. */
+  bank_change_requested_at: string | null;
   created_at: string;
 }
 

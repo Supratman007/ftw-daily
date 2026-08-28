@@ -26,7 +26,7 @@ export default async function AdminAgentDetailPage({
   const { data } = await supabase
     .from("sales_agents")
     .select(
-      "id, name, email, phone, referral_code, status, agent_type, pic_name, pic_phone, id_document_path, business_document_path, created_at"
+      "id, name, email, phone, referral_code, status, agent_type, pic_name, pic_phone, id_document_path, business_document_path, bank_name, bank_account_number, bank_account_holder, bank_change_requested_at, created_at"
     )
     .eq("id", id)
     .maybeSingle();
@@ -119,6 +119,37 @@ export default async function AdminAgentDetailPage({
             </dl>
           </div>
         )}
+
+        <div className="rounded-2xl border border-sand-deep bg-white p-5">
+          <p className="font-mono text-xs uppercase tracking-widest text-ink-soft">
+            Payout bank account
+          </p>
+          {agent.bank_name ? (
+            <dl className="mt-2 space-y-1 text-sm">
+              <div className="flex justify-between">
+                <dt className="text-ink-soft">Bank</dt>
+                <dd className="font-semibold text-ink">{agent.bank_name}</dd>
+              </div>
+              <div className="flex justify-between">
+                <dt className="text-ink-soft">Account number</dt>
+                <dd className="font-mono text-ink">{agent.bank_account_number}</dd>
+              </div>
+              <div className="flex justify-between">
+                <dt className="text-ink-soft">Account holder</dt>
+                <dd className="text-ink">{agent.bank_account_holder}</dd>
+              </div>
+            </dl>
+          ) : (
+            <p className="mt-2 text-sm text-ink-soft">Not provided yet.</p>
+          )}
+          {agent.bank_change_requested_at &&
+            new Date().getTime() - new Date(agent.bank_change_requested_at).getTime() <
+              24 * 60 * 60 * 1000 && (
+              <p className="mt-2 text-xs font-semibold text-coral-dark">
+                A bank account change is pending the agent&apos;s email confirmation.
+              </p>
+            )}
+        </div>
       </div>
 
       <h2 className="mt-8 font-serif text-lg font-semibold text-ink">Documents</h2>

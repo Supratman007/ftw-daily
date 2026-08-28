@@ -251,6 +251,46 @@ export async function sendAgentApprovedEmail(params: AgentApprovedEmailParams): 
   });
 }
 
+interface AgentBankChangeConfirmEmailParams {
+  toEmail: string;
+  agentName: string;
+  bankName: string;
+  maskedAccountNumber: string;
+  confirmUrl: string;
+}
+
+/**
+ * Sent when an agent submits a new payout bank account (§6l). The
+ * change is only staged in pending_bank_* columns until this link is
+ * clicked -- a deliberate speed bump, since redirecting someone's
+ * commission payout is exactly the kind of mistake, or fraud vector,
+ * worth confirming out-of-band for. Expires after 24 hours
+ * (enforced in agent_confirm_bank_change, not just in this copy).
+ */
+export async function sendAgentBankChangeConfirmEmail(
+  params: AgentBankChangeConfirmEmailParams
+): Promise<void> {
+  const html = `
+    <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
+      <h1 style="color: #0F3A3D;">Confirm your payout bank account</h1>
+      <p>Hi ${escapeHtml(params.agentName)}, you asked to change the bank account your commission gets paid to:</p>
+      <table style="width: 100%; border-collapse: collapse; margin: 16px 0;">
+        <tr><td style="padding: 6px 0; color: #4B5854;">Bank</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">${escapeHtml(params.bankName)}</td></tr>
+        <tr><td style="padding: 6px 0; color: #4B5854;">Account number</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">${escapeHtml(params.maskedAccountNumber)}</td></tr>
+      </table>
+      <p>If this was you, confirm below. This link expires in 24 hours.</p>
+      <p><a href="${params.confirmUrl}" style="display: inline-block; background: #E1613C; color: #fff; padding: 10px 18px; border-radius: 8px; text-decoration: none;">Confirm bank account change</a></p>
+      <p style="color: #4B5854; font-size: 13px;">If you didn't request this, ignore this email -- your payout account won't change unless this link is clicked.</p>
+    </div>
+  `;
+
+  await sendEmail({
+    to: params.toEmail,
+    subject: "Confirm your payout bank account change",
+    html,
+  });
+}
+
 function escapeHtml(input: string): string {
   return input
     .replace(/&/g, "&amp;")
