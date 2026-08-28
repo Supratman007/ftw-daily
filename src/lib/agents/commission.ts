@@ -1,4 +1,14 @@
+import { formatIdr, usdToIdr } from "@/lib/currency";
 import type { CommissionTier } from "./types";
+
+/** Commission is stored (and tier math is done) in USD -- same
+ * single-source-of-truth reasoning as product prices -- but agents get
+ * paid via local IDR bank transfer, so every agent- and admin-facing
+ * display converts at render time rather than storing a second,
+ * potentially-stale IDR figure. */
+export function formatCommissionAmount(usdAmount: number): string {
+  return formatIdr(usdToIdr(usdAmount));
+}
 
 /** The highest tier an agent with this many *confirmed* referrals
  * qualifies for -- shared by the webhook (stamps commission on a

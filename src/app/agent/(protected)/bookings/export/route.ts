@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAgent } from "@/lib/agents/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { usdToIdr } from "@/lib/currency";
 
 /** Quotes a field for CSV only when it actually needs it (contains a
  * comma, quote, or newline) -- doubling any embedded quotes per the
@@ -27,7 +28,7 @@ export async function GET(request: NextRequest) {
   let query = supabase
     .from("bookings")
     .select(
-      "booking_code, slot_date, pax_count, total_idr, commission_amount_usd, commission_status, created_at, products(title), customers(name)"
+      "booking_code, slot_date, pax_count, total_idr, hotel_name, room_number, commission_amount_usd, commission_status, created_at, products(title), customers(name)"
     )
     .eq("referred_by_agent_id", agent.id)
     .eq("status", "paid_confirmed")
@@ -43,6 +44,8 @@ export async function GET(request: NextRequest) {
     slot_date: string;
     pax_count: number;
     total_idr: number;
+    hotel_name: string | null;
+    room_number: string | null;
     commission_amount_usd: number | null;
     commission_status: string | null;
     created_at: string;
@@ -57,8 +60,10 @@ export async function GET(request: NextRequest) {
     "Trip date",
     "Travelers",
     "Customer",
+    "Hotel",
+    "Room",
     "Total (IDR)",
-    "Commission (USD)",
+    "Commission (IDR)",
     "Commission status",
   ];
   const lines = [
@@ -71,8 +76,10 @@ export async function GET(request: NextRequest) {
         r.slot_date,
         r.pax_count,
         r.customers?.name ?? "",
+        r.hotel_name ?? "",
+        r.room_number ?? "",
         r.total_idr,
-        r.commission_amount_usd ?? "",
+        r.commission_amount_usd != null ? usdToIdr(r.commission_amount_usd) : "",
         r.commission_status === "paid" ? "Paid" : "Pending",
       ]
         .map(csvField)

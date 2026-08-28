@@ -1,6 +1,7 @@
 import { requireAgent } from "@/lib/agents/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { formatIdr, formatUsd } from "@/lib/currency";
+import { formatIdr } from "@/lib/currency";
+import { formatCommissionAmount } from "@/lib/agents/commission";
 import { PrintButton } from "@/components/agent/PrintButton";
 import type { CommissionStatus } from "@/lib/agents/types";
 
@@ -10,6 +11,8 @@ type ReportRow = {
   slot_date: string;
   pax_count: number;
   total_idr: number;
+  hotel_name: string | null;
+  room_number: string | null;
   commission_amount_usd: number | null;
   commission_status: CommissionStatus | null;
   created_at: string;
@@ -30,6 +33,12 @@ const STATUS_FILTERS: Array<{ value: CommissionStatus | "all"; label: string }> 
  * it isn't a "sale" yet) -- the from/to/status filters here are
  * mirrored exactly by the CSV export route so a downloaded file always
  * matches whatever's on screen.
+ *
+ * Customer name + hotel/room (not email/phone -- an agent doesn't need
+ * a customer's private contact details, just enough to cross-check a
+ * sale against what they remember booking) so an agent can validate
+ * this report against their own records if a commission is ever
+ * disputed.
  */
 export default async function AgentBookingsPage({
   searchParams,
@@ -44,7 +53,7 @@ export default async function AgentBookingsPage({
   let query = supabase
     .from("bookings")
     .select(
-      "id, booking_code, slot_date, pax_count, total_idr, commission_amount_usd, commission_status, created_at, products(title), customers(name)"
+      "id, booking_code, slot_date, pax_count, total_idr, hotel_name, room_number, commission_amount_usd, commission_status, created_at, products(title), customers(name)"
     )
     .eq("referred_by_agent_id", agent.id)
     .eq("status", "paid_confirmed")
@@ -105,7 +114,7 @@ export default async function AgentBookingsPage({
             Avg. commission
           </p>
           <p className="mt-1 font-serif text-xl font-semibold text-ink">
-            {formatUsd(avgCommissionUsd)}
+            {formatCommissionAmount(avgCommissionUsd)}
           </p>
         </div>
         <div className="rounded-xl border border-sand-deep bg-white p-4">
@@ -113,7 +122,10 @@ export default async function AgentBookingsPage({
             Commission paid
           </p>
           <p className="mt-1 font-serif text-xl font-semibold text-ink">
-            {formatUsd(paidCommissionUsd)} <span className="text-sm font-normal text-ink-soft">/ {formatUsd(totalCommissionUsd)}</span>
+            {formatCommissionAmount(paidCommissionUsd)}{" "}
+            <span className="text-sm font-normal text-ink-soft">
+              / {formatCommissionAmount(totalCommissionUsd)}
+            </span>
           </p>
         </div>
       </div>
@@ -166,7 +178,7 @@ export default async function AgentBookingsPage({
       )}
 
       <div className="mt-6 overflow-x-auto rounded-lg border border-sand-deep bg-white">
-        <table className="w-full min-w-[720px] text-left text-sm">
+        <table className="w-full min-w-[920px] text-left text-sm">
           <thead className="bg-sand text-xs uppercase text-ink-soft print:bg-white">
             <tr>
               <th className="px-4 py-2">Purchase date</th>
@@ -174,6 +186,8 @@ export default async function AgentBookingsPage({
               <th className="px-4 py-2">Trip</th>
               <th className="px-4 py-2">Trip date</th>
               <th className="px-4 py-2">Customer</th>
+              <th className="px-4 py-2">Hotel</th>
+              <th className="px-4 py-2">Room</th>
               <th className="px-4 py-2">Total</th>
               <th className="px-4 py-2">Commission</th>
               <th className="px-4 py-2">Status</th>
@@ -187,9 +201,13 @@ export default async function AgentBookingsPage({
                 <td className="px-4 py-2 text-ink">{r.products?.title ?? "—"}</td>
                 <td className="px-4 py-2 text-ink-soft">{r.slot_date}</td>
                 <td className="px-4 py-2 text-ink">{r.customers?.name ?? "—"}</td>
+                <td className="px-4 py-2 text-ink-soft">{r.hotel_name ?? "—"}</td>
+                <td className="px-4 py-2 text-ink-soft">{r.room_number ?? "—"}</td>
                 <td className="px-4 py-2 text-ink-soft">{formatIdr(r.total_idr)}</td>
                 <td className="px-4 py-2 font-semibold text-ink">
-                  {r.commission_amount_usd != null ? formatUsd(r.commission_amount_usd) : "—"}
+                  {r.commission_amount_usd != null
+                    ? formatCommissionAmount(r.commission_amount_usd)
+                    : "—"}
                 </td>
                 <td className="px-4 py-2 text-ink-soft">
                   {r.commission_status === "paid" ? "Paid" : "Pending"}
@@ -198,7 +216,7 @@ export default async function AgentBookingsPage({
             ))}
             {rows.length === 0 && !error && (
               <tr>
-                <td colSpan={8} className="px-4 py-8 text-center text-ink-soft">
+                <td colSpan={10} className="px-4 py-8 text-center text-ink-soft">
                   No sales match this filter yet.
                 </td>
               </tr>
@@ -207,10 +225,10 @@ export default async function AgentBookingsPage({
           {rows.length > 0 && (
             <tfoot>
               <tr className="border-t border-sand-deep font-semibold">
-                <td colSpan={6} className="px-4 py-2 text-right text-ink-soft">
+                <td colSpan={8} className="px-4 py-2 text-right text-ink-soft">
                   Total
                 </td>
-                <td className="px-4 py-2 text-ink">{formatUsd(totalCommissionUsd)}</td>
+                <td className="px-4 py-2 text-ink">{formatCommissionAmount(totalCommissionUsd)}</td>
                 <td className="px-4 py-2" />
               </tr>
             </tfoot>

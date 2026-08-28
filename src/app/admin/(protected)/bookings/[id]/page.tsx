@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { requireAdmin } from "@/lib/admin/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { formatIdr, formatUsd } from "@/lib/currency";
+import { formatCommissionAmount } from "@/lib/agents/commission";
 import { BOOKING_STATUS_LABELS, type Booking } from "@/lib/bookings/types";
 
 type BookingRow = Booking & {
@@ -110,7 +111,7 @@ export default async function AdminBookingDetailPage({
             <span className="text-ink-soft">Commission</span>
             <span className="text-ink">
               {b.commission_amount_usd != null
-                ? `${formatUsd(b.commission_amount_usd)} — ${
+                ? `${formatCommissionAmount(b.commission_amount_usd)} — ${
                     b.commission_status === "paid" ? "Paid" : "Pending"
                   }`
                 : "Not confirmed yet"}

@@ -2,8 +2,12 @@ import Link from "next/link";
 import { requireAgent } from "@/lib/agents/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { generateReferralQrCodeDataUrl } from "@/lib/agents/qrCode";
-import { resolveCommissionTier, nextCommissionTier, monthlyEarnings } from "@/lib/agents/commission";
-import { formatUsd } from "@/lib/currency";
+import {
+  resolveCommissionTier,
+  nextCommissionTier,
+  monthlyEarnings,
+  formatCommissionAmount,
+} from "@/lib/agents/commission";
 import { CopyLinkButton } from "@/components/agent/CopyLinkButton";
 import type { CommissionTier, CommissionStatus } from "@/lib/agents/types";
 
@@ -196,7 +200,7 @@ export default async function AgentOverviewPage({
                 Pending payout
               </p>
               <p className="mt-1 font-serif text-2xl font-semibold text-ink">
-                {formatUsd(pendingUsd)}
+                {formatCommissionAmount(pendingUsd)}
               </p>
               <p className="mt-3 text-xs text-ink-soft">Earned, not yet paid out</p>
             </div>
@@ -204,10 +208,10 @@ export default async function AgentOverviewPage({
             <div className={`${statCardBase} border-ocean/20 bg-[#EAF1F1]`}>
               <p className="font-mono text-xs uppercase tracking-widest text-ocean">Paid out</p>
               <p className="mt-1 font-serif text-2xl font-semibold text-ink">
-                {formatUsd(paidUsd)}
+                {formatCommissionAmount(paidUsd)}
               </p>
               <p className="mt-3 text-xs text-ink-soft">
-                Lifetime earned: {formatUsd(totalEarnedUsd)}
+                Lifetime earned: {formatCommissionAmount(totalEarnedUsd)}
               </p>
             </div>
           </div>
@@ -219,7 +223,7 @@ export default async function AgentOverviewPage({
               {bestMonth && (
                 <p className="text-xs text-ink-soft">
                   Best month: <span className="font-semibold text-ink">{bestMonth.label}</span> (
-                  {formatUsd(bestMonth.totalUsd)})
+                  {formatCommissionAmount(bestMonth.totalUsd)})
                 </p>
               )}
             </div>
@@ -234,7 +238,7 @@ export default async function AgentOverviewPage({
                   return (
                     <div key={m.key} className="flex flex-1 flex-col items-center gap-2">
                       <p className="text-xs font-semibold text-ink">
-                        {m.totalUsd > 0 ? formatUsd(m.totalUsd) : ""}
+                        {m.totalUsd > 0 ? formatCommissionAmount(m.totalUsd) : ""}
                       </p>
                       <div className="flex h-32 w-full items-end">
                         <div
@@ -283,7 +287,7 @@ export default async function AgentOverviewPage({
                   </div>
                   <div className="shrink-0 text-right">
                     <p className="font-semibold text-ink">
-                      {r.commission_amount_usd != null ? formatUsd(r.commission_amount_usd) : "—"}
+                      {r.commission_amount_usd != null ? formatCommissionAmount(r.commission_amount_usd) : "—"}
                     </p>
                     <p
                       className={`text-xs ${r.commission_status === "paid" ? "text-teal" : "text-ink-soft"}`}
