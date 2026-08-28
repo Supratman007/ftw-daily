@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/service";
+import { resolveCommissionTier } from "@/lib/agents/commission";
 import {
   sendBookingConfirmedEmail,
   sendNewBookingStaffEmail,
@@ -76,11 +77,10 @@ export async function POST(request: NextRequest) {
           .neq("id", booking.id),
         supabase
           .from("commission_tiers")
-          .select("min_referrals, commission_percent")
-          .order("min_referrals", { ascending: false }),
+          .select("id, name, min_referrals, commission_percent, sort_order"),
       ]);
 
-      const tier = (tiers ?? []).find((t) => (priorConfirmedCount ?? 0) >= t.min_referrals);
+      const tier = resolveCommissionTier(tiers ?? [], priorConfirmedCount ?? 0);
       if (tier) {
         await supabase
           .from("bookings")

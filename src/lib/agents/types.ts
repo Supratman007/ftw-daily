@@ -26,3 +26,13 @@ export const AGENT_TYPE_LABELS: Record<AgentType, string> = {
   personal: "Personal",
   business: "Business",
 };
+
+export type CommissionStatus = "pending" | "paid";
+
+export interface CommissionTier {
+  id: string;
+  name: string;
+  min_referrals: number;
+  commission_percent: number;
+  sort_order: number;
+}
