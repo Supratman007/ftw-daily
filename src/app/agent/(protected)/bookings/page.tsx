@@ -58,6 +58,11 @@ export default async function AgentBookingsPage({
   const rows = (data ?? []) as unknown as ReportRow[];
 
   const totalCommissionUsd = rows.reduce((sum, r) => sum + (r.commission_amount_usd ?? 0), 0);
+  const paidCommissionUsd = rows
+    .filter((r) => r.commission_status === "paid")
+    .reduce((sum, r) => sum + (r.commission_amount_usd ?? 0), 0);
+  const totalSalesIdr = rows.reduce((sum, r) => sum + r.total_idr, 0);
+  const avgCommissionUsd = rows.length > 0 ? totalCommissionUsd / rows.length : 0;
   const exportParams = new URLSearchParams();
   if (from) exportParams.set("from", from);
   if (to) exportParams.set("to", to);
@@ -81,6 +86,37 @@ export default async function AgentBookingsPage({
       <p className="mt-1 font-serif text-lg text-ink print:mt-0">
         Adventure Lombok Booking — Sales report for {agent.name}
       </p>
+
+      <div className="mt-4 grid gap-3 sm:grid-cols-4">
+        <div className="rounded-xl border border-sand-deep bg-white p-4">
+          <p className="font-mono text-xs uppercase tracking-widest text-ink-soft">Sales</p>
+          <p className="mt-1 font-serif text-xl font-semibold text-ink">{rows.length}</p>
+        </div>
+        <div className="rounded-xl border border-sand-deep bg-white p-4">
+          <p className="font-mono text-xs uppercase tracking-widest text-ink-soft">
+            Total sale value
+          </p>
+          <p className="mt-1 font-serif text-xl font-semibold text-ink">
+            {formatIdr(totalSalesIdr)}
+          </p>
+        </div>
+        <div className="rounded-xl border border-sand-deep bg-white p-4">
+          <p className="font-mono text-xs uppercase tracking-widest text-ink-soft">
+            Avg. commission
+          </p>
+          <p className="mt-1 font-serif text-xl font-semibold text-ink">
+            {formatUsd(avgCommissionUsd)}
+          </p>
+        </div>
+        <div className="rounded-xl border border-sand-deep bg-white p-4">
+          <p className="font-mono text-xs uppercase tracking-widest text-ink-soft">
+            Commission paid
+          </p>
+          <p className="mt-1 font-serif text-xl font-semibold text-ink">
+            {formatUsd(paidCommissionUsd)} <span className="text-sm font-normal text-ink-soft">/ {formatUsd(totalCommissionUsd)}</span>
+          </p>
+        </div>
+      </div>
 
       <form method="GET" className="mt-4 flex flex-wrap items-end gap-3 print:hidden">
         <label className="text-xs font-semibold uppercase tracking-wide text-ink-soft">
