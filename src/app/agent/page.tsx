@@ -1,9 +1,10 @@
 import { requireAgent } from "@/lib/agents/auth";
+import { generateReferralQrCodeDataUrl } from "@/lib/agents/qrCode";
 import { agentLogoutAction } from "./actions";
 
 /**
  * Stage 1 of the Sales Agent system: registration + admin approval.
- * Once approved, an agent's referral link/code exist and are shown
+ * Once approved, an agent's referral link/code/QR exist and are shown
  * here, but nothing downstream reads them yet -- Stage 2 wires
  * referral attribution into checkout, and Stage 3 replaces this single
  * status page with a real dashboard (referred bookings, earnings).
@@ -17,6 +18,8 @@ export default async function AgentPage({
   const { password_set } = await searchParams;
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
   const referralLink = `${siteUrl}/?ref=${agent.referral_code}`;
+  const qrCodeDataUrl =
+    agent.status === "active" ? await generateReferralQrCodeDataUrl(referralLink) : null;
 
   return (
     <main className="mx-auto flex min-h-screen max-w-lg flex-col justify-center px-6 py-12">
@@ -53,18 +56,32 @@ export default async function AgentPage({
       )}
 
       {agent.status === "active" && (
-        <div className="mt-6 rounded-2xl border border-sand-deep bg-white p-5">
-          <p className="font-mono text-xs uppercase tracking-widest text-ink-soft">
-            Your referral code
-          </p>
-          <p className="mt-1 font-serif text-xl font-semibold text-ink">{agent.referral_code}</p>
-          <p className="mt-4 font-mono text-xs uppercase tracking-widest text-ink-soft">
-            Your referral link
-          </p>
-          <p className="mt-1 break-all font-mono text-sm text-teal">{referralLink}</p>
-          <p className="mt-4 text-sm text-ink-soft">
-            Referred bookings and earnings tracking are coming soon.
-          </p>
+        <div className="mt-6 flex flex-col gap-5 rounded-2xl border border-sand-deep bg-white p-5 sm:flex-row sm:items-start">
+          {qrCodeDataUrl && (
+            /* eslint-disable-next-line @next/next/no-img-element -- a
+               generated data: URL, not an asset next/image can optimize */
+            <img
+              src={qrCodeDataUrl}
+              alt="QR code for your referral link"
+              width={140}
+              height={140}
+              className="mx-auto rounded-lg border border-sand-deep sm:mx-0"
+            />
+          )}
+          <div className="flex-1">
+            <p className="font-mono text-xs uppercase tracking-widest text-ink-soft">
+              Your referral code
+            </p>
+            <p className="mt-1 font-serif text-xl font-semibold text-ink">{agent.referral_code}</p>
+            <p className="mt-4 font-mono text-xs uppercase tracking-widest text-ink-soft">
+              Your referral link
+            </p>
+            <p className="mt-1 break-all font-mono text-sm text-teal">{referralLink}</p>
+            <p className="mt-4 text-sm text-ink-soft">
+              Scan the QR code or share the link -- print it for flyers or business cards, or send
+              it directly. Referred bookings and earnings tracking are coming soon.
+            </p>
+          </div>
         </div>
       )}
     </main>

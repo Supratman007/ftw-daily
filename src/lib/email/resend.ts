@@ -217,6 +217,40 @@ export async function sendNewAgentStaffEmail(params: NewAgentStaffEmailParams): 
   });
 }
 
+interface AgentApprovedEmailParams {
+  toEmail: string;
+  agentName: string;
+  referralCode: string;
+  referralLink: string;
+  dashboardUrl: string;
+}
+
+/**
+ * Tells an agent they've been approved -- without this, the only way
+ * they'd find out is by happening to log back into /agent themselves.
+ * Fired once, right when an admin's status change actually crosses
+ * into "active" (see updateAgentStatusAction), not on every save.
+ */
+export async function sendAgentApprovedEmail(params: AgentApprovedEmailParams): Promise<void> {
+  const html = `
+    <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
+      <h1 style="color: #0F3A3D;">You're approved!</h1>
+      <p>Hi ${escapeHtml(params.agentName)}, your Sales Agent application has been approved. Your referral link is live -- start sharing it to earn commission.</p>
+      <table style="width: 100%; border-collapse: collapse; margin: 16px 0;">
+        <tr><td style="padding: 6px 0; color: #4B5854;">Referral code</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">${escapeHtml(params.referralCode)}</td></tr>
+        <tr><td style="padding: 6px 0; color: #4B5854;">Referral link</td><td style="padding: 6px 0; text-align: right; word-break: break-all;">${escapeHtml(params.referralLink)}</td></tr>
+      </table>
+      <p><a href="${params.dashboardUrl}" style="color: #E4572E; font-weight: 600;">View your dashboard →</a></p>
+    </div>
+  `;
+
+  await sendEmail({
+    to: params.toEmail,
+    subject: "You're approved as a Sales Agent!",
+    html,
+  });
+}
+
 function escapeHtml(input: string): string {
   return input
     .replace(/&/g, "&amp;")
