@@ -1,5 +1,6 @@
 "use server";
 
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { requireCustomer } from "@/lib/customers/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -7,6 +8,7 @@ import { createSupabaseServiceRoleClient } from "@/lib/supabase/service";
 import { createXenditInvoice } from "@/lib/xendit/client";
 import { generateBookingCode } from "@/lib/bookings/booking-code";
 import { usdToIdr } from "@/lib/currency";
+import { REFERRAL_COOKIE_NAME } from "@/lib/agents/referralCookie";
 import type { Product } from "@/lib/products/types";
 
 export async function startCheckoutAction(productId: string, slug: string, formData: FormData) {
@@ -14,9 +16,14 @@ export async function startCheckoutAction(productId: string, slug: string, formD
   const paxRaw = Number(formData.get("pax") ?? "0");
   const pax = Number.isInteger(paxRaw) ? paxRaw : 0;
   const discountCodeInput = String(formData.get("discount_code") ?? "").trim();
-  const referralCodeInput = String(formData.get("referral_code") ?? "").trim();
   const hotelName = String(formData.get("hotel_name") ?? "").trim();
   const roomNumber = String(formData.get("room_number") ?? "").trim();
+
+  // No visible/editable field for this -- it's entirely automatic, off
+  // the 30-day cookie proxy.ts sets from ?ref=CODE, same as any other
+  // referral-tracking link. Nothing for the customer to see or clear.
+  const cookieStore = await cookies();
+  const referralCodeInput = cookieStore.get(REFERRAL_COOKIE_NAME)?.value?.trim() ?? "";
 
   const returnTo = `/p/${slug}?date=${encodeURIComponent(date)}&pax=${pax}`;
   const customer = await requireCustomer(returnTo);
@@ -24,7 +31,6 @@ export async function startCheckoutAction(productId: string, slug: string, formD
   function fail(message: string): never {
     const params = new URLSearchParams({ date, pax: String(pax), error: message });
     if (discountCodeInput) params.set("discount_code", discountCodeInput);
-    if (referralCodeInput) params.set("referral_code", referralCodeInput);
     if (hotelName) params.set("hotel_name", hotelName);
     if (roomNumber) params.set("room_number", roomNumber);
     redirect(`/p/${slug}?${params.toString()}`);
