@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { requireCustomer } from "@/lib/customers/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { formatIdr, formatUsd, usdToIdr } from "@/lib/currency";
 import { PARK_INSURANCE_FEE_IDR } from "@/lib/bookings/types";
@@ -19,6 +20,14 @@ const labelClass = "text-xs font-semibold uppercase tracking-wide text-ink-soft"
  * one `name` across travelers would all belong to the same group.
  * pax is already known from the query string, so every fieldset
  * renders server-side with no client JS needed.
+ *
+ * Login is required here, before the form even renders -- not just in
+ * the submit action. A visitor who isn't logged in yet and only gets
+ * bounced to /login after filling in every traveler's name, passport
+ * upload, and insurance choice loses all of it on that redirect (a
+ * standard HTML form POST carries no state through a login detour);
+ * checking up front means the worst case is landing on a blank form
+ * they haven't touched yet, not one they just spent five minutes on.
  */
 export default async function BookingRequestPage({
   params,
@@ -30,6 +39,8 @@ export default async function BookingRequestPage({
   const { slug } = await params;
   const { date, pax: paxRaw, error } = await searchParams;
   const pax = Math.min(20, Math.max(1, Number(paxRaw) || 1));
+
+  await requireCustomer(`/p/${slug}/request?date=${encodeURIComponent(date ?? "")}&pax=${pax}`);
 
   const supabase = await createSupabaseServerClient();
   const { data: product } = await supabase

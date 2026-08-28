@@ -333,6 +333,7 @@ interface NewBookingRequestStaffEmailParams {
   paxCount: number;
   bookingCode: string;
   customerName: string;
+  reviewUrl: string;
 }
 
 /**
@@ -340,7 +341,10 @@ interface NewBookingRequestStaffEmailParams {
  * reasoning as sendNewBookingStaffEmail, goes to every active
  * admin_users row since Phase 1 hasn't enforced §6k's narrower roles
  * yet. Without this, a request would just sit in /admin/requests with
- * nothing prompting anyone to go check it.
+ * nothing prompting anyone to go check it. reviewUrl deep-links
+ * straight to this one request's detail page, not just the queue --
+ * an earlier version wrote the path as plain text instead of a real
+ * link, which isn't clickable in most mail clients.
  */
 export async function sendNewBookingRequestStaffEmail(
   params: NewBookingRequestStaffEmailParams
@@ -354,7 +358,7 @@ export async function sendNewBookingRequestStaffEmail(
         <tr><td style="padding: 6px 0; color: #4B5854;">Travelers</td><td style="padding: 6px 0; text-align: right;">${params.paxCount}</td></tr>
         <tr><td style="padding: 6px 0; color: #4B5854;">Customer</td><td style="padding: 6px 0; text-align: right;">${escapeHtml(params.customerName)}</td></tr>
       </table>
-      <p>Review it at /admin/requests.</p>
+      <p><a href="${params.reviewUrl}" style="display: inline-block; background: #E1613C; color: #fff; padding: 10px 18px; border-radius: 8px; text-decoration: none;">Review this request</a></p>
     </div>
   `;
 

@@ -254,11 +254,30 @@ export async function submitBookingRequestAction(
 
   const failedUpload = uploadResults.find((r) => r.error);
   if (!failedUpload) {
-    await Promise.all(
+    // Service-role client, not the customer's session -- there's
+    // deliberately no customer UPDATE policy on travelers (0016), so
+    // this must go through the same trusted server-side path that
+    // just uploaded the file. Using the session client here was the
+    // actual bug behind "Passport not received" even on a fully
+    // successful submission: RLS silently matched zero rows instead
+    // of raising an error, so the upload succeeded but the row never
+    // learned where the file went.
+    const linkResults = await Promise.all(
       uploadResults.map((r) =>
-        supabase.from("travelers").update({ passport_scan_path: r.path }).eq("id", r.travelerId)
+        serviceClient
+          .from("travelers")
+          .update({ passport_scan_path: r.path })
+          .eq("id", r.travelerId)
       )
     );
+    const failedLink = linkResults.find((r) => r.error);
+    if (failedLink?.error) {
+      redirect(
+        `/account/booking/${bookingId}?notice=${encodeURIComponent(
+          `Request received, but we couldn't finish linking your passport uploads (${failedLink.error.message}). Please contact us and we'll help you finish.`
+        )}`
+      );
+    }
   }
 
   const [{ data: staff }] = await Promise.all([
@@ -272,6 +291,7 @@ export async function submitBookingRequestAction(
     }),
   ]);
 
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
   await Promise.all(
     (staff ?? []).map((admin) =>
       sendNewBookingRequestStaffEmail({
@@ -281,6 +301,7 @@ export async function submitBookingRequestAction(
         paxCount: pax,
         bookingCode,
         customerName: customer.name,
+        reviewUrl: `${siteUrl}/admin/requests/${bookingId}`,
       })
     )
   );
