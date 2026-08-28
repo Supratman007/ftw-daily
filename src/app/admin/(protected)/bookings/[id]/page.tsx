@@ -37,6 +37,15 @@ export default async function AdminBookingDetailPage({
   }
   const b = data as BookingRow;
 
+  // insurance_total_idr can be 0 even for a manual-confirmation
+  // booking (every traveler could have their own insurance), so a
+  // traveler row existing at all is the reliable signal that this
+  // came through the request flow rather than instant checkout.
+  const { count: travelerCount } = await supabase
+    .from("travelers")
+    .select("*", { count: "exact", head: true })
+    .eq("booking_id", b.id);
+
   return (
     <div className="max-w-xl">
       <Link href="/admin/bookings" className="text-sm font-semibold text-teal hover:underline">
@@ -50,6 +59,15 @@ export default async function AdminBookingDetailPage({
         Booking code <span className="font-semibold text-ink">{b.booking_code}</span> ·{" "}
         {BOOKING_STATUS_LABELS[b.status]}
       </p>
+
+      {(travelerCount ?? 0) > 0 && (
+        <p className="mt-4 rounded-lg border border-sand-deep bg-white p-3 text-sm">
+          This is a manual-confirmation booking (spec §6b) --{" "}
+          <Link href={`/admin/requests/${b.id}`} className="font-semibold text-teal hover:underline">
+            view travelers, passports &amp; insurance in the request queue →
+          </Link>
+        </p>
+      )}
 
       <div className="mt-6 rounded-2xl border border-sand-deep bg-white p-6 text-sm">
         <p className="font-semibold text-ink">Trip</p>

@@ -291,6 +291,153 @@ export async function sendAgentBankChangeConfirmEmail(
   });
 }
 
+interface BookingRequestReceivedEmailParams {
+  toEmail: string;
+  customerName: string;
+  productTitle: string;
+  slotDate: string;
+  bookingCode: string;
+}
+
+/**
+ * Sent the moment a manual-confirmation request (spec §6b -- Rinjani
+ * and anything else flagged is_bookable = false) is submitted, before
+ * any payment exists. Sets expectations: nothing's charged yet, this
+ * is a request, park quota still needs manual checking.
+ */
+export async function sendBookingRequestReceivedEmail(
+  params: BookingRequestReceivedEmailParams
+): Promise<void> {
+  const html = `
+    <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
+      <h1 style="color: #0F3A3D;">Request received</h1>
+      <p>Hi ${escapeHtml(params.customerName)}, we've received your booking request for <strong>${escapeHtml(params.productTitle)}</strong> on ${escapeHtml(params.slotDate)}.</p>
+      <p>Nothing has been charged yet. This trip needs us to manually check park permit availability before we can confirm -- we'll email you as soon as we know, usually within a day or two.</p>
+      <table style="width: 100%; border-collapse: collapse; margin: 16px 0;">
+        <tr><td style="padding: 6px 0; color: #4B5854;">Booking code</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">${escapeHtml(params.bookingCode)}</td></tr>
+      </table>
+    </div>
+  `;
+
+  await sendEmail({
+    to: params.toEmail,
+    subject: `Request received — ${params.productTitle}`,
+    html,
+  });
+}
+
+interface NewBookingRequestStaffEmailParams {
+  toEmail: string;
+  productTitle: string;
+  slotDate: string;
+  paxCount: number;
+  bookingCode: string;
+  customerName: string;
+}
+
+/**
+ * Internal "a Rinjani-style request needs review" notice -- same
+ * reasoning as sendNewBookingStaffEmail, goes to every active
+ * admin_users row since Phase 1 hasn't enforced §6k's narrower roles
+ * yet. Without this, a request would just sit in /admin/requests with
+ * nothing prompting anyone to go check it.
+ */
+export async function sendNewBookingRequestStaffEmail(
+  params: NewBookingRequestStaffEmailParams
+): Promise<void> {
+  const html = `
+    <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
+      <h1 style="color: #0F3A3D;">New booking request needs review</h1>
+      <p><strong>${escapeHtml(params.productTitle)}</strong> was just requested for ${escapeHtml(params.slotDate)} -- park quota needs to be checked before it can be confirmed.</p>
+      <table style="width: 100%; border-collapse: collapse; margin: 16px 0;">
+        <tr><td style="padding: 6px 0; color: #4B5854;">Booking code</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">${escapeHtml(params.bookingCode)}</td></tr>
+        <tr><td style="padding: 6px 0; color: #4B5854;">Travelers</td><td style="padding: 6px 0; text-align: right;">${params.paxCount}</td></tr>
+        <tr><td style="padding: 6px 0; color: #4B5854;">Customer</td><td style="padding: 6px 0; text-align: right;">${escapeHtml(params.customerName)}</td></tr>
+      </table>
+      <p>Review it at /admin/requests.</p>
+    </div>
+  `;
+
+  await sendEmail({
+    to: params.toEmail,
+    subject: `New booking request — ${params.productTitle} (${params.bookingCode})`,
+    html,
+  });
+}
+
+interface BookingRequestConfirmedEmailParams {
+  toEmail: string;
+  customerName: string;
+  productTitle: string;
+  slotDate: string;
+  bookingCode: string;
+  totalIdr: number;
+  paymentUrl: string;
+}
+
+/**
+ * Sent the moment an admin confirms park quota availability -- the
+ * payment link's Xendit invoice is created with a 24h expiry right
+ * alongside this, so "expires in 24 hours" here is a statement of
+ * fact, not just copy.
+ */
+export async function sendBookingRequestConfirmedEmail(
+  params: BookingRequestConfirmedEmailParams
+): Promise<void> {
+  const html = `
+    <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
+      <h1 style="color: #0F3A3D;">You're confirmed — complete payment to secure your spot</h1>
+      <p>Hi ${escapeHtml(params.customerName)}, good news: park permits are available for <strong>${escapeHtml(params.productTitle)}</strong> on ${escapeHtml(params.slotDate)}.</p>
+      <p>Complete payment within <strong>24 hours</strong> to lock in your spot -- after that, it's released back to general availability.</p>
+      <table style="width: 100%; border-collapse: collapse; margin: 16px 0;">
+        <tr><td style="padding: 6px 0; color: #4B5854;">Booking code</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">${escapeHtml(params.bookingCode)}</td></tr>
+        <tr><td style="padding: 6px 0; color: #4B5854;">Total</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">${escapeHtml(formatIdr(params.totalIdr))}</td></tr>
+      </table>
+      <p><a href="${params.paymentUrl}" style="display: inline-block; background: #E1613C; color: #fff; padding: 10px 18px; border-radius: 8px; text-decoration: none;">Complete payment</a></p>
+    </div>
+  `;
+
+  await sendEmail({
+    to: params.toEmail,
+    subject: `Confirmed — complete payment for ${params.productTitle}`,
+    html,
+  });
+}
+
+interface BookingRequestDeclinedEmailParams {
+  toEmail: string;
+  customerName: string;
+  productTitle: string;
+  slotDate: string;
+  bookingCode: string;
+  declineReason: string;
+  productUrl: string;
+}
+
+/** Sent when park quota isn't available -- nothing was ever charged
+ * (no invoice exists yet at this point in the flow), so this is purely
+ * informational, with the reason shown per spec §6b so a customer
+ * knows whether trying a different date is worth it. */
+export async function sendBookingRequestDeclinedEmail(
+  params: BookingRequestDeclinedEmailParams
+): Promise<void> {
+  const html = `
+    <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
+      <h1 style="color: #B3441E;">We couldn't confirm this request</h1>
+      <p>Hi ${escapeHtml(params.customerName)}, unfortunately we couldn't confirm <strong>${escapeHtml(params.productTitle)}</strong> on ${escapeHtml(params.slotDate)} (${escapeHtml(params.bookingCode)}).</p>
+      <p style="color: #4B5854;">${escapeHtml(params.declineReason)}</p>
+      <p>Nothing was charged. You're welcome to request a different date.</p>
+      <p><a href="${params.productUrl}" style="display: inline-block; background: #E1613C; color: #fff; padding: 10px 18px; border-radius: 8px; text-decoration: none;">Try another date</a></p>
+    </div>
+  `;
+
+  await sendEmail({
+    to: params.toEmail,
+    subject: `Couldn't confirm — ${params.productTitle}`,
+    html,
+  });
+}
+
 function escapeHtml(input: string): string {
   return input
     .replace(/&/g, "&amp;")

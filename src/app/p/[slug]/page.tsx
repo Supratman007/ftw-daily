@@ -92,10 +92,44 @@ export default async function ProductPage({
           )}
 
           {!p.is_bookable ? (
-            <p className="text-sm text-ink-soft">
-              This trip needs manual confirmation before booking — please contact us directly for
-              now.
-            </p>
+            <>
+              <p className="text-sm text-ink-soft">
+                This trip needs manual confirmation before booking -- availability depends on
+                park permit quota we check by hand. Tell us your dates and we&apos;ll get back to
+                you, usually within a day or two. Nothing is charged until we confirm.
+              </p>
+              <form method="GET" action={`/p/${p.slug}/request`} className="mt-4 flex flex-col gap-3">
+                <label className="text-xs font-semibold uppercase tracking-wide text-ink-soft">
+                  Date
+                  <input
+                    type="date"
+                    name="date"
+                    required
+                    min={tomorrow()}
+                    defaultValue={date ?? tomorrow()}
+                    className="mt-1 w-full rounded-lg border border-sand-deep px-3 py-2 text-sm"
+                  />
+                </label>
+                <label className="text-xs font-semibold uppercase tracking-wide text-ink-soft">
+                  Travelers
+                  <input
+                    type="number"
+                    name="pax"
+                    min={1}
+                    max={20}
+                    required
+                    defaultValue={pax ?? "2"}
+                    className="mt-1 w-full rounded-lg border border-sand-deep px-3 py-2 text-sm"
+                  />
+                </label>
+                <button
+                  type="submit"
+                  className="mt-2 rounded-lg bg-coral px-4 py-3 text-sm font-semibold text-white"
+                >
+                  Continue to request
+                </button>
+              </form>
+            </>
           ) : (
             <form action={startCheckoutAction.bind(null, p.id, p.slug)} className="flex flex-col gap-3">
               <label className="text-xs font-semibold uppercase tracking-wide text-ink-soft">

@@ -49,7 +49,11 @@ export async function POST(request: NextRequest) {
   // Webhooks can and do retry -- already-processed bookings are a
   // no-op, not an error, so a duplicate delivery doesn't send a second
   // confirmation email or try to release capacity twice.
-  if (booking.status !== "pending_payment") {
+  // confirmed_awaiting_payment is the Rinjani-style equivalent of
+  // pending_payment (spec §6b) -- an invoice exists and hasn't been
+  // resolved yet, just reached via the manual-confirmation flow
+  // instead of instant checkout; everything below treats them the same.
+  if (booking.status !== "pending_payment" && booking.status !== "confirmed_awaiting_payment") {
     return NextResponse.json({ ok: true, note: "already processed" });
   }
 

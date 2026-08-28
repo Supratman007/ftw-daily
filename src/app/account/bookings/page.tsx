@@ -73,7 +73,7 @@ export default async function MyBookingsPage() {
         <section className="mt-8">
           <h2 className="font-serif text-lg font-semibold text-ink">Incomplete</h2>
           <p className="mt-1 text-xs text-ink-soft">
-            Bookings that were started but never completed payment.
+            Bookings that never completed payment, or a request still awaiting review.
           </p>
           <div className="mt-2 rounded-lg border border-sand-deep bg-white">
             {incomplete.map((b) => (

@@ -10,6 +10,11 @@ interface CreateInvoiceParams {
   description: string;
   successRedirectUrl: string;
   failureRedirectUrl: string;
+  /** Defaults to Xendit's own default (86400s = 24h) when omitted --
+   * passed explicitly by the Rinjani confirm action (spec §6b's
+   * "24-hour countdown") so that intent is visible in the code rather
+   * than relying on an unstated platform default. */
+  invoiceDurationSeconds?: number;
 }
 
 interface XenditInvoice {
@@ -46,6 +51,9 @@ export async function createXenditInvoice(params: CreateInvoiceParams): Promise<
       description: params.description,
       success_redirect_url: params.successRedirectUrl,
       failure_redirect_url: params.failureRedirectUrl,
+      ...(params.invoiceDurationSeconds != null
+        ? { invoice_duration: params.invoiceDurationSeconds }
+        : {}),
     }),
     signal: AbortSignal.timeout(20_000),
   });

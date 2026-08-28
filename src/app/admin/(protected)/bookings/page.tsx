@@ -13,6 +13,9 @@ const STATUS_FILTERS: Array<{ value: BookingStatus | "all"; label: string }> = [
   { value: "all", label: "All statuses" },
   { value: "paid_confirmed", label: BOOKING_STATUS_LABELS.paid_confirmed },
   { value: "pending_payment", label: BOOKING_STATUS_LABELS.pending_payment },
+  { value: "under_review", label: BOOKING_STATUS_LABELS.under_review },
+  { value: "confirmed_awaiting_payment", label: BOOKING_STATUS_LABELS.confirmed_awaiting_payment },
+  { value: "declined", label: BOOKING_STATUS_LABELS.declined },
   { value: "expired", label: BOOKING_STATUS_LABELS.expired },
   { value: "cancelled", label: BOOKING_STATUS_LABELS.cancelled },
 ];
