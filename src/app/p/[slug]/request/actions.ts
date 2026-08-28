@@ -205,6 +205,14 @@ export async function submitBookingRequestAction(
   // Insert traveler rows first (so each gets an id to key its storage
   // path on), then upload passport files via the service-role client
   // -- booking-documents has zero RLS policies, same as agent-documents.
+  //
+  // No .order() on the returned rows -- every row in one bulk INSERT
+  // shares the exact same transaction-time created_at (Postgres' now()
+  // is stable per-transaction), so sorting by it would be a coin flip
+  // between ties rather than a real order. Postgres' own documented
+  // behavior for a single multi-row INSERT ... RETURNING is to return
+  // rows in the same order as the VALUES list, which is what the
+  // index-based zip with `travelers` below actually relies on.
   const { data: insertedTravelers, error: travelersError } = await supabase
     .from("travelers")
     .insert(
@@ -217,17 +225,18 @@ export async function submitBookingRequestAction(
         insurance_fee_idr: t.insuranceType === "park_provided" ? PARK_INSURANCE_FEE_IDR : 0,
       }))
     )
-    .select("id")
-    .order("created_at", { ascending: true });
+    .select("id");
 
   if (travelersError || !insertedTravelers || insertedTravelers.length !== travelers.length) {
     // The booking row itself is already saved -- don't undo it (the
     // customer would lose their place in the queue over a save error);
     // let them know we need a hand instead, same as the agent
-    // registration document-upload failure path.
+    // registration document-upload failure path. The error text is
+    // included temporarily while this is being diagnosed -- remove
+    // once the real cause is confirmed and fixed.
     redirect(
       `/account/booking/${bookingId}?notice=${encodeURIComponent(
-        "Request received, but we couldn't save your traveler details. Please contact us and we'll help you finish."
+        `Request received, but we couldn't save your traveler details (${travelersError?.message ?? "unknown error"}). Please contact us and we'll help you finish.`
       )}`
     );
   }
