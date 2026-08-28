@@ -7,9 +7,9 @@ const inputClass =
 export default async function AgentLoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; notice?: string }>;
+  searchParams: Promise<{ error?: string; notice?: string; next?: string }>;
 }) {
-  const { error, notice } = await searchParams;
+  const { error, notice, next } = await searchParams;
 
   return (
     <main className="mx-auto flex min-h-screen max-w-sm flex-col justify-center px-6">
@@ -30,6 +30,7 @@ export default async function AgentLoginPage({
       )}
 
       <form action={agentLoginAction} className="mt-6 flex flex-col gap-3">
+        {next && <input type="hidden" name="next" value={next} />}
         <input name="email" type="email" required placeholder="Email" className={inputClass} />
         <input
           name="password"

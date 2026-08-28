@@ -10,15 +10,21 @@ import type { SalesAgent } from "./types";
  * agent, because "pending" is an expected, common state right after
  * registering (they need to see a "waiting for approval" message, not
  * get bounced). Callers branch on `status` themselves.
+ *
+ * Pass `returnTo` (the full path + query the visitor was trying to
+ * reach) when the destination itself carries state that would
+ * otherwise be lost across a login redirect -- e.g. a bank-change
+ * confirm link's one-time token. agentLoginAction sends them back
+ * there after signing in instead of always landing on /agent.
  */
-export const requireAgent = cache(async (): Promise<SalesAgent> => {
+export const requireAgent = cache(async (returnTo?: string): Promise<SalesAgent> => {
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect("/agent/login");
+    redirect(returnTo ? `/agent/login?next=${encodeURIComponent(returnTo)}` : "/agent/login");
   }
 
   const { data: agent } = await supabase

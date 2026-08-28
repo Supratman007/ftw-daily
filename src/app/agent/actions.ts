@@ -167,15 +167,23 @@ export async function registerAgentAction(formData: FormData) {
 export async function agentLoginAction(formData: FormData) {
   const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
+  const next = String(formData.get("next") ?? "");
+
+  // Only ever redirect back into our own /agent/... tree -- next comes
+  // from a query param an attacker could otherwise set to point
+  // somewhere else entirely.
+  const safeNext = next.startsWith("/agent") ? next : "/agent";
 
   const supabase = await createSupabaseServerClient();
   const { error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error) {
-    redirect(`/agent/login?error=${encodeURIComponent(error.message)}`);
+    redirect(
+      `/agent/login?error=${encodeURIComponent(error.message)}&next=${encodeURIComponent(safeNext)}`
+    );
   }
 
-  redirect("/agent");
+  redirect(safeNext);
 }
 
 export async function agentLogoutAction() {
