@@ -2,7 +2,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireCustomer } from "@/lib/customers/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabaseServiceRoleClient } from "@/lib/supabase/service";
 import { formatIdr, formatUsd } from "@/lib/currency";
+import { customerLogoutAction } from "@/app/actions";
 
 interface BookingRow {
   id: string;
@@ -44,6 +46,46 @@ export default async function ConfirmationPage({
     .maybeSingle();
 
   if (!booking) {
+    // RLS hides "doesn't exist" and "exists but belongs to a
+    // different account" identically from the customer's own session
+    // client -- a real gap this page hit in testing: a confirmation
+    // link opened on a device/browser still signed into an older test
+    // account (not the one that made this booking) landed on a bare,
+    // unexplained 404. Service-role client here only to tell the two
+    // cases apart for which message to show -- never to expose the
+    // other booking's actual details.
+    const serviceClient = createSupabaseServiceRoleClient();
+    const { data: anyBooking } = await serviceClient
+      .from("bookings")
+      .select("id")
+      .eq("id", bookingId)
+      .maybeSingle();
+
+    if (anyBooking) {
+      return (
+        <main className="mx-auto flex min-h-screen max-w-md flex-col items-center justify-center px-6 py-12 text-center">
+          <p className="font-mono text-xs uppercase tracking-widest text-ink-soft">
+            Wrong account
+          </p>
+          <h1 className="mt-2 font-serif text-2xl font-semibold text-coral-dark">
+            This booking isn&apos;t linked to {customer.email}
+          </h1>
+          <p className="mt-2 text-sm text-ink-soft">
+            You&apos;re currently signed in as {customer.email}, but this booking was made under a
+            different account. Log out and sign back in with the email you used when booking.
+          </p>
+          <form action={customerLogoutAction} className="mt-6">
+            <button
+              type="submit"
+              className="rounded-lg bg-coral px-4 py-2 text-sm font-semibold text-white"
+            >
+              Log out
+            </button>
+          </form>
+        </main>
+      );
+    }
+
     notFound();
   }
   const b = booking as BookingRow;
