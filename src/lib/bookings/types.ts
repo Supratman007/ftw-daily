@@ -15,6 +15,9 @@ export interface Booking {
   xendit_invoice_url: string | null;
   discount_code: string | null;
   discount_amount_usd: number;
+  referred_by_agent_id: string | null;
+  commission_amount_usd: number | null;
+  commission_status: "pending" | "paid" | null;
   hotel_name: string | null;
   room_number: string | null;
   created_at: string;

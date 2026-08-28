@@ -8,6 +8,7 @@ import { BOOKING_STATUS_LABELS, type Booking } from "@/lib/bookings/types";
 type BookingRow = Booking & {
   products: { title: string; slug: string } | null;
   customers: { name: string; email: string; phone: string | null } | null;
+  sales_agents: { name: string; referral_code: string } | null;
 };
 
 /**
@@ -26,7 +27,7 @@ export default async function AdminBookingDetailPage({
   const supabase = await createSupabaseServerClient();
   const { data } = await supabase
     .from("bookings")
-    .select("*, products(title, slug), customers(name, email, phone)")
+    .select("*, products(title, slug), customers(name, email, phone), sales_agents(name, referral_code)")
     .eq("id", id)
     .maybeSingle();
 
@@ -95,6 +96,28 @@ export default async function AdminBookingDetailPage({
           <p className="mt-2 text-ink-soft">Not provided at checkout.</p>
         )}
       </div>
+
+      {b.sales_agents && (
+        <div className="mt-6 rounded-2xl border border-sand-deep bg-white p-6 text-sm">
+          <p className="font-semibold text-ink">Referral</p>
+          <div className="mt-2 flex justify-between border-b border-sand-deep py-2">
+            <span className="text-ink-soft">Agent</span>
+            <span className="text-ink">
+              {b.sales_agents.name} ({b.sales_agents.referral_code})
+            </span>
+          </div>
+          <div className="flex justify-between py-2">
+            <span className="text-ink-soft">Commission</span>
+            <span className="text-ink">
+              {b.commission_amount_usd != null
+                ? `${formatUsd(b.commission_amount_usd)} — ${
+                    b.commission_status === "paid" ? "Paid" : "Pending"
+                  }`
+                : "Not confirmed yet"}
+            </span>
+          </div>
+        </div>
+      )}
 
       {b.xendit_invoice_url && (
         <a
