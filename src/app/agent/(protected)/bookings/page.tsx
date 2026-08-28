@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { requireAgent } from "@/lib/agents/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { formatIdr } from "@/lib/currency";
@@ -39,6 +40,14 @@ const STATUS_FILTERS: Array<{ value: CommissionStatus | "all"; label: string }> 
  * sale against what they remember booking) so an agent can validate
  * this report against their own records if a commission is ever
  * disputed.
+ *
+ * Two tables render from the same `rows`, one active at a time via
+ * print:hidden / print:table: a condensed one on screen (the full
+ * 10-column version read as "messy" once real data filled it in --
+ * screens are for scanning, a "View" link opens the one booking's full
+ * detail on /agent/bookings/[id]) and every column on the printed
+ * page/PDF, since a printout is a record meant to be complete, not
+ * something you scan and click through.
  */
 export default async function AgentBookingsPage({
   searchParams,
@@ -177,9 +186,71 @@ export default async function AgentBookingsPage({
         </p>
       )}
 
-      <div className="mt-6 overflow-x-auto rounded-lg border border-sand-deep bg-white">
+      {/* Screen: condensed columns, one "View" per row for the rest. */}
+      <div className="mt-6 overflow-x-auto rounded-lg border border-sand-deep bg-white print:hidden">
+        <table className="w-full min-w-[720px] text-left text-sm">
+          <thead className="bg-sand text-xs uppercase text-ink-soft">
+            <tr>
+              <th className="px-4 py-2">Purchase date</th>
+              <th className="px-4 py-2">Booking code</th>
+              <th className="px-4 py-2">Trip</th>
+              <th className="px-4 py-2">Trip date</th>
+              <th className="px-4 py-2">Total</th>
+              <th className="px-4 py-2">Commission</th>
+              <th className="px-4 py-2">Status</th>
+              <th className="px-4 py-2" />
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r) => (
+              <tr key={r.id} className="border-t border-sand-deep">
+                <td className="px-4 py-2 text-ink-soft">{r.created_at.slice(0, 10)}</td>
+                <td className="px-4 py-2 font-mono text-xs text-ink">{r.booking_code}</td>
+                <td className="px-4 py-2 text-ink">{r.products?.title ?? "—"}</td>
+                <td className="px-4 py-2 text-ink-soft">{r.slot_date}</td>
+                <td className="px-4 py-2 text-ink-soft">{formatIdr(r.total_idr)}</td>
+                <td className="px-4 py-2 font-semibold text-ink">
+                  {r.commission_amount_usd != null
+                    ? formatCommissionAmount(r.commission_amount_usd)
+                    : "—"}
+                </td>
+                <td className="px-4 py-2 text-ink-soft">
+                  {r.commission_status === "paid" ? "Paid" : "Pending"}
+                </td>
+                <td className="px-4 py-2 text-right">
+                  <Link href={`/agent/bookings/${r.id}`} className="text-sm font-semibold text-teal hover:underline">
+                    View
+                  </Link>
+                </td>
+              </tr>
+            ))}
+            {rows.length === 0 && !error && (
+              <tr>
+                <td colSpan={8} className="px-4 py-8 text-center text-ink-soft">
+                  No sales match this filter yet.
+                </td>
+              </tr>
+            )}
+          </tbody>
+          {rows.length > 0 && (
+            <tfoot>
+              <tr className="border-t border-sand-deep font-semibold">
+                <td colSpan={5} className="px-4 py-2 text-right text-ink-soft">
+                  Total
+                </td>
+                <td className="px-4 py-2 text-ink">{formatCommissionAmount(totalCommissionUsd)}</td>
+                <td className="px-4 py-2" colSpan={2} />
+              </tr>
+            </tfoot>
+          )}
+        </table>
+      </div>
+
+      {/* Print/PDF: every column, since a printout is a record meant
+          to be complete on its own, not something you click through. */}
+      <div className="mt-6 hidden overflow-x-auto rounded-lg border border-sand-deep bg-white print:block">
         <table className="w-full min-w-[920px] text-left text-sm">
-          <thead className="bg-sand text-xs uppercase text-ink-soft print:bg-white">
+          <thead className="text-xs uppercase text-ink-soft">
             <tr>
               <th className="px-4 py-2">Purchase date</th>
               <th className="px-4 py-2">Booking code</th>
@@ -214,13 +285,6 @@ export default async function AgentBookingsPage({
                 </td>
               </tr>
             ))}
-            {rows.length === 0 && !error && (
-              <tr>
-                <td colSpan={10} className="px-4 py-8 text-center text-ink-soft">
-                  No sales match this filter yet.
-                </td>
-              </tr>
-            )}
           </tbody>
           {rows.length > 0 && (
             <tfoot>
