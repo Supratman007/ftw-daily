@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
   const { data: booking } = await supabase
     .from("bookings")
     .select(
-      "id, status, product_id, customer_id, slot_date, pax_count, total_idr, booking_code, discount_code_id, discount_code, discount_amount_usd"
+      "id, status, product_id, customer_id, slot_date, pax_count, total_idr, total_usd, booking_code, discount_code_id, discount_code, discount_amount_usd, referred_by_agent_id"
     )
     .eq("booking_code", externalId)
     .maybeSingle();
@@ -60,6 +60,33 @@ export async function POST(request: NextRequest) {
 
     if (updateError) {
       return NextResponse.json({ error: updateError.message }, { status: 500 });
+    }
+
+    if (booking.referred_by_agent_id) {
+      // The rate an agent earns climbs with volume -- rated against
+      // how many of their referrals were *already* confirmed before
+      // this one, not counting this booking itself, so the tier they
+      // qualify for only ever reflects completed history.
+      const [{ count: priorConfirmedCount }, { data: tiers }] = await Promise.all([
+        supabase
+          .from("bookings")
+          .select("*", { count: "exact", head: true })
+          .eq("referred_by_agent_id", booking.referred_by_agent_id)
+          .eq("status", "paid_confirmed")
+          .neq("id", booking.id),
+        supabase
+          .from("commission_tiers")
+          .select("min_referrals, commission_percent")
+          .order("min_referrals", { ascending: false }),
+      ]);
+
+      const tier = (tiers ?? []).find((t) => (priorConfirmedCount ?? 0) >= t.min_referrals);
+      if (tier) {
+        await supabase
+          .from("bookings")
+          .update({ commission_amount_usd: booking.total_usd * (tier.commission_percent / 100) })
+          .eq("id", booking.id);
+      }
     }
 
     const [{ data: product }, { data: customer }, { data: staff }] = await Promise.all([

@@ -1,8 +1,10 @@
+import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { formatIdr, formatUsd, usdToIdr } from "@/lib/currency";
 import type { Product } from "@/lib/products/types";
 import { SiteHeader } from "@/components/SiteHeader";
+import { REFERRAL_COOKIE_NAME } from "@/lib/agents/referralCookie";
 import { startCheckoutAction } from "./actions";
 
 function tomorrow(): string {
@@ -20,6 +22,7 @@ export default async function ProductPage({
     date?: string;
     pax?: string;
     discount_code?: string;
+    referral_code?: string;
     hotel_name?: string;
     room_number?: string;
     error?: string;
@@ -30,10 +33,17 @@ export default async function ProductPage({
     date,
     pax,
     discount_code: discountCode,
+    referral_code: referralCodeParam,
     hotel_name: hotelName,
     room_number: roomNumber,
     error,
   } = await searchParams;
+
+  // A validation-error round trip (referral_code in the URL) takes
+  // priority over the cookie, so a rejected/edited value doesn't keep
+  // getting silently overwritten by whatever ?ref= originally set.
+  const cookieStore = await cookies();
+  const referralCode = referralCodeParam ?? cookieStore.get(REFERRAL_COOKIE_NAME)?.value ?? "";
 
   const supabase = await createSupabaseServerClient();
   const { data: product } = await supabase
@@ -146,6 +156,17 @@ export default async function ProductPage({
                   name="discount_code"
                   defaultValue={discountCode ?? ""}
                   placeholder="e.g. WELCOME10"
+                  className="mt-1 w-full rounded-lg border border-sand-deep px-3 py-2 text-sm uppercase"
+                  style={{ textTransform: "uppercase" }}
+                />
+              </label>
+              <label className="text-xs font-semibold uppercase tracking-wide text-ink-soft">
+                Referral code (optional)
+                <input
+                  type="text"
+                  name="referral_code"
+                  defaultValue={referralCode}
+                  placeholder="e.g. AGENT-X7K2QM"
                   className="mt-1 w-full rounded-lg border border-sand-deep px-3 py-2 text-sm uppercase"
                   style={{ textTransform: "uppercase" }}
                 />

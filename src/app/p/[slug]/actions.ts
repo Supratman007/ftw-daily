@@ -14,6 +14,7 @@ export async function startCheckoutAction(productId: string, slug: string, formD
   const paxRaw = Number(formData.get("pax") ?? "0");
   const pax = Number.isInteger(paxRaw) ? paxRaw : 0;
   const discountCodeInput = String(formData.get("discount_code") ?? "").trim();
+  const referralCodeInput = String(formData.get("referral_code") ?? "").trim();
   const hotelName = String(formData.get("hotel_name") ?? "").trim();
   const roomNumber = String(formData.get("room_number") ?? "").trim();
 
@@ -23,6 +24,7 @@ export async function startCheckoutAction(productId: string, slug: string, formD
   function fail(message: string): never {
     const params = new URLSearchParams({ date, pax: String(pax), error: message });
     if (discountCodeInput) params.set("discount_code", discountCodeInput);
+    if (referralCodeInput) params.set("referral_code", referralCodeInput);
     if (hotelName) params.set("hotel_name", hotelName);
     if (roomNumber) params.set("room_number", roomNumber);
     redirect(`/p/${slug}?${params.toString()}`);
@@ -113,6 +115,22 @@ export async function startCheckoutAction(productId: string, slug: string, formD
         : Math.min(discountRow.discount_value, subtotalUsd);
   }
 
+  // Unlike the discount code above, an unrecognized/typo'd referral
+  // code never blocks checkout or changes the price -- it only decides
+  // who (if anyone) earns commission, so it fails silently rather than
+  // through fail(). Only an active agent's code counts; a pending or
+  // suspended agent's link shouldn't earn them credit.
+  let referredByAgentId: string | null = null;
+  if (referralCodeInput) {
+    const { data: agentRow } = await serviceClient
+      .from("sales_agents")
+      .select("id")
+      .eq("referral_code", referralCodeInput.toUpperCase())
+      .eq("status", "active")
+      .maybeSingle();
+    referredByAgentId = agentRow?.id ?? null;
+  }
+
   const finalSubtotalUsd = Math.max(0, subtotalUsd - discountAmountUsd);
   const totalIdr = usdToIdr(finalSubtotalUsd);
   const bookingCode = generateBookingCode();
@@ -165,6 +183,7 @@ export async function startCheckoutAction(productId: string, slug: string, formD
     discount_code_id: discountCodeId,
     discount_code: discountCodeInput || null,
     discount_amount_usd: discountAmountUsd,
+    referred_by_agent_id: referredByAgentId,
     hotel_name: hotelName || null,
     room_number: roomNumber || null,
   });
