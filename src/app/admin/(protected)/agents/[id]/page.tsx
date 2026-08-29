@@ -5,6 +5,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/service";
 import { AGENT_STATUS_LABELS, AGENT_TYPE_LABELS, type SalesAgent } from "@/lib/agents/types";
 import { updateAgentStatusAction } from "../actions";
+import { startAgentConversationAction } from "../../inbox/actions";
 
 const selectClass =
   "rounded-lg border border-sand-deep px-2 py-1 text-sm outline-none focus:border-teal";
@@ -58,21 +59,31 @@ export default async function AdminAgentDetailPage({
 
       <div className="mt-2 flex items-center justify-between">
         <h1 className="font-serif text-2xl font-semibold text-ink">{agent.name}</h1>
-        <form action={updateAgentStatusAction.bind(null, agent.id)} className="flex items-center gap-2">
-          <select name="status" defaultValue={agent.status} className={selectClass}>
-            {Object.entries(AGENT_STATUS_LABELS).map(([value, label]) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
-          </select>
-          <button
-            type="submit"
-            className="rounded-lg border border-teal px-3 py-1 text-xs font-semibold text-teal hover:bg-[#E3F2F1]"
-          >
-            Save
-          </button>
-        </form>
+        <div className="flex items-center gap-3">
+          <form action={startAgentConversationAction.bind(null, agent.id)}>
+            <button
+              type="submit"
+              className="rounded-lg border border-sand-deep px-3 py-1 text-xs font-semibold text-ink hover:bg-sand"
+            >
+              Message agent
+            </button>
+          </form>
+          <form action={updateAgentStatusAction.bind(null, agent.id)} className="flex items-center gap-2">
+            <select name="status" defaultValue={agent.status} className={selectClass}>
+              {Object.entries(AGENT_STATUS_LABELS).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+            <button
+              type="submit"
+              className="rounded-lg border border-teal px-3 py-1 text-xs font-semibold text-teal hover:bg-[#E3F2F1]"
+            >
+              Save
+            </button>
+          </form>
+        </div>
       </div>
 
       <div className="mt-6 grid gap-4 sm:grid-cols-2">

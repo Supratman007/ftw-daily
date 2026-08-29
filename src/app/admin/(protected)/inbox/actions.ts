@@ -4,6 +4,31 @@ import { redirect } from "next/navigation";
 import { requireAdmin } from "@/lib/admin/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { sendNewStaffReplyEmail } from "@/lib/email/resend";
+import {
+  getOrCreateBookingConversation,
+  getOrCreateAgentSupportConversation,
+} from "@/lib/chat/getOrCreateConversation";
+
+/** The other half of "reply" -- staff reaching out first (spec doesn't
+ * call for this explicitly, but 0017 only let admins reply to a
+ * thread a customer/agent had already started, with no way to ask
+ * something first, e.g. "what's your hotel/room/mobile number/pickup
+ * point?"). Reuses the same get-or-create every customer/agent thread
+ * already goes through -- 0018 is what actually makes this work,
+ * adding the admin INSERT policy on conversations that was missing. */
+export async function startCustomerConversationAction(bookingId: string) {
+  await requireAdmin();
+  const supabase = await createSupabaseServerClient();
+  const { conversation } = await getOrCreateBookingConversation(supabase, bookingId);
+  redirect(`/admin/inbox/${conversation.id}`);
+}
+
+export async function startAgentConversationAction(agentId: string) {
+  await requireAdmin();
+  const supabase = await createSupabaseServerClient();
+  const { conversation } = await getOrCreateAgentSupportConversation(supabase, agentId);
+  redirect(`/admin/inbox/${conversation.id}`);
+}
 
 export async function sendStaffMessageAction(conversationId: string, formData: FormData) {
   const admin = await requireAdmin();

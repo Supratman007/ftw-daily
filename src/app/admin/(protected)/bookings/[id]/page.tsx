@@ -5,6 +5,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { formatIdr, formatUsd } from "@/lib/currency";
 import { formatCommissionAmount } from "@/lib/agents/commission";
 import { BOOKING_STATUS_LABELS, type Booking } from "@/lib/bookings/types";
+import { startCustomerConversationAction } from "../../inbox/actions";
 
 type BookingRow = Booking & {
   products: { title: string; slug: string } | null;
@@ -98,7 +99,14 @@ export default async function AdminBookingDetailPage({
       </div>
 
       <div className="mt-6 rounded-2xl border border-sand-deep bg-white p-6 text-sm">
-        <p className="font-semibold text-ink">Customer</p>
+        <div className="flex items-center justify-between">
+          <p className="font-semibold text-ink">Customer</p>
+          <form action={startCustomerConversationAction.bind(null, b.id)}>
+            <button type="submit" className="text-sm font-semibold text-teal hover:underline">
+              Message customer →
+            </button>
+          </form>
+        </div>
         <p className="mt-2 text-ink">{b.customers?.name ?? "—"}</p>
         <p className="text-ink-soft">{b.customers?.email}</p>
         {b.customers?.phone && <p className="text-ink-soft">{b.customers.phone}</p>}
