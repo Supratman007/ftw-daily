@@ -6,18 +6,24 @@ import { createSupabaseServiceRoleClient } from "@/lib/supabase/service";
 import { formatIdr, formatUsd } from "@/lib/currency";
 import { BOOKING_STATUS_LABELS, type Booking, type Traveler } from "@/lib/bookings/types";
 import { resendConfirmationEmailAction } from "./actions";
+import { sendCustomerMessageAction } from "./chat-actions";
 import { customerLogoutAction } from "@/app/actions";
+import { ChatThread } from "@/components/chat/ChatThread";
+import { ChatComposer } from "@/components/chat/ChatComposer";
+import { ChatRealtimeRefresher } from "@/components/chat/ChatRealtimeRefresher";
+import type { Message } from "@/lib/chat/types";
 
 type BookingWithProduct = Booking & { products: { title: string; slug: string } | null };
 
 /**
  * Spec §6h booking detail page. Built here: trip info, contact info,
- * and the "view confirmation email" action for upcoming bookings, plus
- * the manual-confirmation flow's status-specific states (§6b) --
- * under review, confirmed-with-payment-link-and-deadline, declined
- * (with reason), and the traveler/passport-received list. Deliberately
- * not built yet: in-app chat, reschedule/gift/review actions -- all
- * gated behind Phase 2/3 infrastructure that doesn't exist yet.
+ * the "view confirmation email" action for upcoming bookings, the
+ * manual-confirmation flow's status-specific states (§6b) -- under
+ * review, confirmed-with-payment-link-and-deadline, declined (with
+ * reason), and the traveler/passport-received list -- plus the
+ * per-booking chat thread (§6b/§6c) at the bottom. Deliberately not
+ * built yet: reschedule/gift/review actions -- gated behind Phase 3
+ * infrastructure that doesn't exist yet.
  */
 export default async function BookingDetailPage({
   params,
@@ -94,6 +100,25 @@ export default async function BookingDetailPage({
       .eq("booking_id", b.id)
       .order("created_at", { ascending: true });
     travelers = (travelerRows ?? []) as Traveler[];
+  }
+
+  // Only fetch messages if a thread already exists -- viewing this
+  // page shouldn't create one; sendCustomerMessageAction creates it
+  // lazily on the first message actually sent.
+  const { data: conversation } = await supabase
+    .from("conversations")
+    .select("id")
+    .eq("booking_id", b.id)
+    .maybeSingle();
+
+  let messages: Message[] = [];
+  if (conversation) {
+    const { data: messageRows } = await supabase
+      .from("messages")
+      .select("*")
+      .eq("conversation_id", conversation.id)
+      .order("created_at", { ascending: true });
+    messages = (messageRows ?? []) as Message[];
   }
 
   return (
@@ -227,6 +252,18 @@ export default async function BookingDetailPage({
             Complete payment
           </a>
         )}
+
+      <div className="mt-6 rounded-2xl border border-sand-deep bg-white">
+        <div className="border-b border-sand-deep p-4">
+          <p className="font-semibold text-ink">Message us about this trip</p>
+          <p className="text-xs text-ink-soft">
+            Questions about your booking land here -- we&apos;ll reply as soon as we can.
+          </p>
+        </div>
+        <ChatThread messages={messages} viewerRole="customer" />
+        <ChatComposer action={sendCustomerMessageAction.bind(null, b.id)} />
+      </div>
+      {conversation && <ChatRealtimeRefresher conversationId={conversation.id} />}
     </div>
   );
 }

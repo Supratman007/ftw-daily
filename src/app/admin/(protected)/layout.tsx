@@ -20,6 +20,7 @@ export default async function ProtectedAdminLayout({
             <Link href="/admin">Overview</Link>
             <Link href="/admin/bookings">Bookings</Link>
             <Link href="/admin/requests">Requests</Link>
+            <Link href="/admin/inbox">Inbox</Link>
             <Link href="/admin/products">Products</Link>
             <Link href="/admin/discount-codes">Discount codes</Link>
             <Link href="/admin/agents">Sales Agents</Link>

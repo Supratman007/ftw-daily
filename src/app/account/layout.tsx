@@ -2,9 +2,9 @@ import { requireCustomer } from "@/lib/customers/auth";
 import { customerLogoutAction } from "../actions";
 
 /**
- * Spec §6h: Overview, My Bookings, and Profile are all Phase 1. Messages
- * (depends on §6c's Phase 2 chat infra) and the saved-documents part of
- * Profile (depends on §6b's Phase 2 Rinjani upload) are deliberately
+ * Spec §6h: Overview, My Bookings, and Profile are all Phase 1;
+ * Messages (§6c's chat infra) is now built too. The saved-documents
+ * part of Profile (depends on §6b's Rinjani upload) is deliberately
  * not here yet.
  */
 export default async function AccountLayout({ children }: { children: React.ReactNode }) {
@@ -20,6 +20,7 @@ export default async function AccountLayout({ children }: { children: React.Reac
           <nav className="mt-1 flex gap-4 font-serif text-sm font-semibold text-ocean">
             <a href="/account">Overview</a>
             <a href="/account/bookings">My Bookings</a>
+            <a href="/account/messages">Messages</a>
             <a href="/account/profile">Profile</a>
           </nav>
         </div>

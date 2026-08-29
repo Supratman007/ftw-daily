@@ -442,6 +442,78 @@ export async function sendBookingRequestDeclinedEmail(
   });
 }
 
+interface NewStaffReplyEmailParams {
+  toEmail: string;
+  recipientName: string;
+  contextLabel: string;
+  messageBody: string;
+  threadUrl: string;
+}
+
+/**
+ * Sent to whoever's on the other side of a chat thread (spec §6b/§6c)
+ * when staff replies -- without this, someone who messaged and then
+ * closed the tab has no way of knowing an answer arrived, since chat
+ * notifications otherwise only show up live via Realtime while the
+ * page is actually open. Deliberately one-directional: staff already
+ * work from the inbox itself and the Overview's open-count card, so a
+ * customer/agent message doesn't also fire an email per message --
+ * that would just be noise for a solo operator answering their own
+ * inbox.
+ */
+export async function sendNewStaffReplyEmail(params: NewStaffReplyEmailParams): Promise<void> {
+  const html = `
+    <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
+      <h1 style="color: #0F3A3D;">New reply</h1>
+      <p>Hi ${escapeHtml(params.recipientName)}, you have a new message about ${escapeHtml(params.contextLabel)}:</p>
+      <p style="border-left: 3px solid #E1613C; padding-left: 12px; color: #182421;">${escapeHtml(params.messageBody)}</p>
+      <p><a href="${params.threadUrl}" style="display: inline-block; background: #E1613C; color: #fff; padding: 10px 18px; border-radius: 8px; text-decoration: none;">Reply</a></p>
+    </div>
+  `;
+
+  await sendEmail({
+    to: params.toEmail,
+    subject: `New reply — ${params.contextLabel}`,
+    html,
+  });
+}
+
+interface NewConversationStaffEmailParams {
+  toEmail: string;
+  fromName: string;
+  contextLabel: string;
+  messageBody: string;
+  inboxUrl: string;
+}
+
+/**
+ * Internal "someone started a new chat thread" notice -- fired once,
+ * on the message that actually creates the conversation (see
+ * getOrCreateConversation's `created` flag), not on every message
+ * after that. Every message after the first shows up live via
+ * Realtime and the Overview's open-count card while someone's
+ * actively in the inbox; this is what catches the case where nobody
+ * currently has it open.
+ */
+export async function sendNewConversationStaffEmail(
+  params: NewConversationStaffEmailParams
+): Promise<void> {
+  const html = `
+    <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
+      <h1 style="color: #0F3A3D;">New message</h1>
+      <p><strong>${escapeHtml(params.fromName)}</strong> started a new conversation about ${escapeHtml(params.contextLabel)}:</p>
+      <p style="border-left: 3px solid #E1613C; padding-left: 12px; color: #182421;">${escapeHtml(params.messageBody)}</p>
+      <p><a href="${params.inboxUrl}" style="display: inline-block; background: #E1613C; color: #fff; padding: 10px 18px; border-radius: 8px; text-decoration: none;">Reply</a></p>
+    </div>
+  `;
+
+  await sendEmail({
+    to: params.toEmail,
+    subject: `New message — ${params.fromName}`,
+    html,
+  });
+}
+
 function escapeHtml(input: string): string {
   return input
     .replace(/&/g, "&amp;")

@@ -28,24 +28,33 @@ export default async function AdminOverviewPage({
   const { error, password_set } = await searchParams;
   const supabase = await createSupabaseServerClient();
 
-  const [confirmedCount, pendingCount, revenue, recent, pendingAgentCount, pendingRequestCount] =
-    await Promise.all([
-      supabase.from("bookings").select("*", { count: "exact", head: true }).eq("status", "paid_confirmed"),
-      supabase.from("bookings").select("*", { count: "exact", head: true }).eq("status", "pending_payment"),
-      supabase.from("bookings").select("total_idr").eq("status", "paid_confirmed"),
-      supabase
-        .from("bookings")
-        .select("*, products(title)")
-        .order("created_at", { ascending: false })
-        .limit(5),
-      supabase.from("sales_agents").select("*", { count: "exact", head: true }).eq("status", "pending"),
-      supabase.from("bookings").select("*", { count: "exact", head: true }).eq("status", "under_review"),
-    ]);
+  const [
+    confirmedCount,
+    pendingCount,
+    revenue,
+    recent,
+    pendingAgentCount,
+    pendingRequestCount,
+    openConversationCount,
+  ] = await Promise.all([
+    supabase.from("bookings").select("*", { count: "exact", head: true }).eq("status", "paid_confirmed"),
+    supabase.from("bookings").select("*", { count: "exact", head: true }).eq("status", "pending_payment"),
+    supabase.from("bookings").select("total_idr").eq("status", "paid_confirmed"),
+    supabase
+      .from("bookings")
+      .select("*, products(title)")
+      .order("created_at", { ascending: false })
+      .limit(5),
+    supabase.from("sales_agents").select("*", { count: "exact", head: true }).eq("status", "pending"),
+    supabase.from("bookings").select("*", { count: "exact", head: true }).eq("status", "under_review"),
+    supabase.from("conversations").select("*", { count: "exact", head: true }).eq("status", "open"),
+  ]);
 
   const totalRevenueIdr = (revenue.data ?? []).reduce((sum, r) => sum + r.total_idr, 0);
   const recentBookings = (recent.data ?? []) as RecentBooking[];
   const pendingAgents = pendingAgentCount.count ?? 0;
   const pendingRequests = pendingRequestCount.count ?? 0;
+  const openConversations = openConversationCount.count ?? 0;
 
   return (
     <div>
@@ -111,6 +120,17 @@ export default async function AdminOverviewPage({
             className={`mt-1 font-serif text-2xl font-semibold ${pendingRequests > 0 ? "text-coral-dark" : "text-ink"}`}
           >
             {pendingRequests} awaiting review
+          </p>
+        </Link>
+        <Link
+          href="/admin/inbox"
+          className={openConversations > 0 ? pendingAgentCardClass : cardClass}
+        >
+          <p className="font-mono text-xs uppercase tracking-widest text-ink-soft">Inbox</p>
+          <p
+            className={`mt-1 font-serif text-2xl font-semibold ${openConversations > 0 ? "text-coral-dark" : "text-ink"}`}
+          >
+            {openConversations} open
           </p>
         </Link>
       </div>
