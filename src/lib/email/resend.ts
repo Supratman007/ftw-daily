@@ -521,13 +521,17 @@ interface CancellationRequestReceivedEmailParams {
   bookingCode: string;
   path: "standard" | "force_majeure";
   calculatedRefundIdr: number | null;
+  bookingUrl: string;
 }
 
 /** Sent the moment a cancellation/reschedule request (spec §6f) is
  * submitted -- for the standard path this can show the calculated
  * refund immediately, since that's computed the instant the request
  * comes in; force majeure always needs manual review first, so
- * there's no number to show yet. */
+ * there's no number to show yet. Every cancellation-flow email links
+ * back to the booking page -- that's also where the per-booking chat
+ * (§6b/§6c) lives, so it's how a customer keeps talking to staff about
+ * this request without starting a whole new thread. */
 export async function sendCancellationRequestReceivedEmail(
   params: CancellationRequestReceivedEmailParams
 ): Promise<void> {
@@ -542,6 +546,7 @@ export async function sendCancellationRequestReceivedEmail(
           ? `<p>Based on our cancellation policy, your calculated refund is <strong>${escapeHtml(formatIdr(params.calculatedRefundIdr))}</strong>. A staff member will review and confirm before anything is refunded.</p>`
           : `<p>A staff member will review your supporting documentation and get back to you.</p>`
       }
+      <p><a href="${params.bookingUrl}" style="display: inline-block; background: #E1613C; color: #fff; padding: 10px 18px; border-radius: 8px; text-decoration: none;">View your booking</a></p>
     </div>
   `;
 
@@ -587,6 +592,7 @@ interface CancellationApprovedRefundEmailParams {
   productTitle: string;
   bookingCode: string;
   refundAmountIdr: number;
+  bookingUrl: string;
 }
 
 export async function sendCancellationApprovedRefundEmail(
@@ -597,6 +603,7 @@ export async function sendCancellationApprovedRefundEmail(
       <h1 style="color: #0F3A3D;">Your cancellation is approved</h1>
       <p>Hi ${escapeHtml(params.customerName)}, your cancellation for <strong>${escapeHtml(params.productTitle)}</strong> (${escapeHtml(params.bookingCode)}) has been approved.</p>
       <p>Refund amount: <strong>${escapeHtml(formatIdr(params.refundAmountIdr))}</strong>. This will be processed to your original payment method -- please allow a few business days.</p>
+      <p><a href="${params.bookingUrl}" style="display: inline-block; background: #E1613C; color: #fff; padding: 10px 18px; border-radius: 8px; text-decoration: none;">View your booking</a></p>
     </div>
   `;
 
@@ -613,6 +620,7 @@ interface CancellationApprovedRescheduleEmailParams {
   productTitle: string;
   bookingCode: string;
   newSlotDate: string;
+  bookingUrl: string;
 }
 
 export async function sendCancellationApprovedRescheduleEmail(
@@ -621,8 +629,9 @@ export async function sendCancellationApprovedRescheduleEmail(
   const html = `
     <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
       <h1 style="color: #0F3A3D;">You're rescheduled</h1>
-      <p>Hi ${escapeHtml(params.customerName)}, your force majeure request for <strong>${escapeHtml(params.productTitle)}</strong> (${escapeHtml(params.bookingCode)}) has been approved -- no fee.</p>
+      <p>Hi ${escapeHtml(params.customerName)}, your request to reschedule <strong>${escapeHtml(params.productTitle)}</strong> (${escapeHtml(params.bookingCode)}) has been approved -- no fee.</p>
       <p>New date: <strong>${escapeHtml(params.newSlotDate)}</strong>.</p>
+      <p><a href="${params.bookingUrl}" style="display: inline-block; background: #E1613C; color: #fff; padding: 10px 18px; border-radius: 8px; text-decoration: none;">View your booking</a></p>
     </div>
   `;
 
@@ -642,6 +651,7 @@ interface CancellationApprovedGiftVoucherEmailParams {
   valueIdr: number;
   recipientName: string;
   expiresAt: string;
+  bookingUrl: string;
 }
 
 export async function sendCancellationApprovedGiftVoucherEmail(
@@ -650,13 +660,14 @@ export async function sendCancellationApprovedGiftVoucherEmail(
   const html = `
     <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
       <h1 style="color: #0F3A3D;">Your gift voucher is ready</h1>
-      <p>Hi ${escapeHtml(params.customerName)}, your force majeure request for <strong>${escapeHtml(params.productTitle)}</strong> (${escapeHtml(params.bookingCode)}) has been converted into a gift voucher for ${escapeHtml(params.recipientName)}.</p>
+      <p>Hi ${escapeHtml(params.customerName)}, your request for <strong>${escapeHtml(params.productTitle)}</strong> (${escapeHtml(params.bookingCode)}) has been converted into a gift voucher for ${escapeHtml(params.recipientName)}.</p>
       <table style="width: 100%; border-collapse: collapse; margin: 16px 0;">
         <tr><td style="padding: 6px 0; color: #4B5854;">Voucher code</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">${escapeHtml(params.voucherCode)}</td></tr>
         <tr><td style="padding: 6px 0; color: #4B5854;">Value</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">${escapeHtml(formatIdr(params.valueIdr))}</td></tr>
         <tr><td style="padding: 6px 0; color: #4B5854;">Expires</td><td style="padding: 6px 0; text-align: right;">${escapeHtml(new Date(params.expiresAt).toLocaleDateString())}</td></tr>
       </table>
       <p>Share this code with ${escapeHtml(params.recipientName)} -- contact us whenever they're ready to book, quoting this code.</p>
+      <p><a href="${params.bookingUrl}" style="display: inline-block; background: #E1613C; color: #fff; padding: 10px 18px; border-radius: 8px; text-decoration: none;">View your booking</a></p>
     </div>
   `;
 
@@ -673,6 +684,7 @@ interface CancellationRejectedEmailParams {
   productTitle: string;
   bookingCode: string;
   adminNotes: string | null;
+  bookingUrl: string;
 }
 
 export async function sendCancellationRejectedEmail(
@@ -683,7 +695,8 @@ export async function sendCancellationRejectedEmail(
       <h1 style="color: #B3441E;">Your request wasn't approved</h1>
       <p>Hi ${escapeHtml(params.customerName)}, we weren't able to approve your cancellation/reschedule request for <strong>${escapeHtml(params.productTitle)}</strong> (${escapeHtml(params.bookingCode)}).</p>
       ${params.adminNotes ? `<p style="color: #4B5854;">${escapeHtml(params.adminNotes)}</p>` : ""}
-      <p>Contact us if you have questions.</p>
+      <p>Contact us if you have questions -- message us any time from your booking page.</p>
+      <p><a href="${params.bookingUrl}" style="display: inline-block; background: #E1613C; color: #fff; padding: 10px 18px; border-radius: 8px; text-decoration: none;">View your booking</a></p>
     </div>
   `;
 

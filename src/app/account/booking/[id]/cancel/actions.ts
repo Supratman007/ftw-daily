@@ -123,6 +123,9 @@ export async function submitCancellationRequestAction(bookingId: string, formDat
   const productTitle =
     (booking as unknown as { products: { title: string } | null }).products?.title ?? "your trip";
 
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+  const bookingUrl = `${siteUrl}/account/booking/${bookingId}`;
+
   const serviceClient = createSupabaseServiceRoleClient();
   const [{ data: staff }] = await Promise.all([
     serviceClient.from("admin_users").select("email").eq("status", "active"),
@@ -133,10 +136,10 @@ export async function submitCancellationRequestAction(bookingId: string, formDat
       bookingCode: booking.booking_code,
       path,
       calculatedRefundIdr: calculatedRefundAmountIdr,
+      bookingUrl,
     }),
   ]);
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
   await Promise.all(
     (staff ?? []).map((admin) =>
       sendNewCancellationStaffEmail({

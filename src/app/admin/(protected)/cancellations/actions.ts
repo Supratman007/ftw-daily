@@ -42,6 +42,11 @@ async function loadPendingRequest(supabase: Awaited<ReturnType<typeof createSupa
   return data as unknown as PendingRequest | null;
 }
 
+function bookingUrlFor(bookingId: string): string {
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+  return `${siteUrl}/account/booking/${bookingId}`;
+}
+
 /** Standard path only -- refunds the already-calculated amount
  * (spec §6f: computed at request time, confirmed here by a human
  * before anything is actually refunded). No Xendit refund API call --
@@ -94,17 +99,23 @@ export async function approveRefundAction(requestId: string, formData: FormData)
       productTitle: booking.products?.title ?? "your trip",
       bookingCode: booking.booking_code,
       refundAmountIdr: request.calculated_refund_amount_idr ?? 0,
+      bookingUrl: bookingUrlFor(booking.id),
     });
   }
 
   redirect(`/admin/cancellations/${requestId}?approved=1`);
 }
 
-/** Force majeure only -- reschedules at no fee. Reserves the new date
- * *before* releasing the old one, so a fully-booked target date fails
- * cleanly with nothing changed yet, rather than leaving the booking
- * briefly holding no reservation at all if the reserve step failed
- * after the release. */
+/** Reschedules at no fee. Originally force-majeure-only, but real
+ * customer behavior showed standard-path requests often just want a
+ * new date too (spec §6f's intent -- "make it easy, simple and
+ * everyone happy" -- doesn't require punishing an ordinary reschedule
+ * ask by forcing a refund/cancel instead), so any pending request can
+ * be resolved this way now. Reserves the new date *before* releasing
+ * the old one, so a fully-booked target date fails cleanly with
+ * nothing changed yet, rather than leaving the booking briefly
+ * holding no reservation at all if the reserve step failed after the
+ * release. */
 export async function approveRescheduleAction(requestId: string, formData: FormData) {
   const admin = await requireAdmin();
   const newSlotDate = String(formData.get("new_slot_date") ?? "").trim();
@@ -122,7 +133,6 @@ export async function approveRescheduleAction(requestId: string, formData: FormD
   const request = await loadPendingRequest(supabase, requestId);
   if (!request || !request.bookings) fail("Request not found.");
   if (request.status !== "pending_review") fail("This request has already been actioned.");
-  if (request.path !== "force_majeure") fail("Only force majeure requests can be rescheduled at no fee.");
 
   const booking = request.bookings;
   const serviceClient = createSupabaseServiceRoleClient();
@@ -182,23 +192,31 @@ export async function approveRescheduleAction(requestId: string, formData: FormD
       productTitle: booking.products?.title ?? "your trip",
       bookingCode: booking.booking_code,
       newSlotDate,
+      bookingUrl: bookingUrlFor(booking.id),
     });
   }
 
   redirect(`/admin/cancellations/${requestId}?approved=1`);
 }
 
-/** Force majeure only -- converts the booking's value into a
- * transferable voucher, per spec §6f, "redeemable for the same
- * product at the same value, under the same terms as the original
- * booking." Redemption itself is handled manually (the customer or
- * recipient contacts you with the code) -- no self-serve checkout
- * redemption flow in this pass. */
+/** Converts the booking's value into a transferable voucher, per spec
+ * §6f, "redeemable for the same product at the same value, under the
+ * same terms as the original booking." Originally force-majeure-only;
+ * now available for any pending request, since a standard-path
+ * customer can just as reasonably want to gift their trip to someone
+ * else rather than take a partial refund. The voucher value defaults
+ * sensibly per path (full booking value for force majeure, the
+ * calculated refund amount for standard) but stays admin-adjustable --
+ * some situations call for a different number than either default.
+ * Redemption itself is handled manually (the customer or recipient
+ * contacts you with the code) -- no self-serve checkout redemption
+ * flow in this pass. */
 export async function approveGiftVoucherAction(requestId: string, formData: FormData) {
   const admin = await requireAdmin();
   const recipientName = String(formData.get("recipient_name") ?? "").trim();
   const recipientContact = String(formData.get("recipient_contact") ?? "").trim();
   const adminNotes = String(formData.get("admin_notes") ?? "").trim();
+  const valueAmountRaw = String(formData.get("value_amount_idr") ?? "").trim();
 
   function fail(message: string): never {
     redirect(`/admin/cancellations/${requestId}?error=${encodeURIComponent(message)}`);
@@ -212,14 +230,18 @@ export async function approveGiftVoucherAction(requestId: string, formData: Form
   const request = await loadPendingRequest(supabase, requestId);
   if (!request || !request.bookings) fail("Request not found.");
   if (request.status !== "pending_review") fail("This request has already been actioned.");
-  if (request.path !== "force_majeure") fail("Only force majeure requests can be converted to a voucher.");
 
   const booking = request.bookings;
+
+  const valueAmountIdr = valueAmountRaw ? Number(valueAmountRaw) : NaN;
+  if (!Number.isFinite(valueAmountIdr) || valueAmountIdr <= 0) {
+    fail("Please enter a valid voucher value.");
+  }
 
   const { error: voucherError } = await supabase.from("gift_vouchers").insert({
     original_booking_id: booking.id,
     product_id: booking.product_id,
-    value_amount_idr: booking.total_idr,
+    value_amount_idr: valueAmountIdr,
     recipient_name: recipientName,
     recipient_contact: recipientContact,
     redemption_code: generateVoucherCode(),
@@ -267,9 +289,10 @@ export async function approveGiftVoucherAction(requestId: string, formData: Form
       productTitle: booking.products?.title ?? "your trip",
       bookingCode: booking.booking_code,
       voucherCode: voucher.redemption_code,
-      valueIdr: booking.total_idr,
+      valueIdr: valueAmountIdr,
       recipientName,
       expiresAt: voucher.expires_at,
+      bookingUrl: bookingUrlFor(booking.id),
     });
   }
 
@@ -311,6 +334,7 @@ export async function rejectCancellationRequestAction(requestId: string, formDat
       productTitle: request.bookings.products?.title ?? "your trip",
       bookingCode: request.bookings.booking_code,
       adminNotes,
+      bookingUrl: bookingUrlFor(request.bookings.id),
     });
   }
 

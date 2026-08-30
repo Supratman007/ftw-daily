@@ -165,51 +165,34 @@ export default async function AdminCancellationDetailPage({
         )}
       </div>
 
-      {isPending && request.path === "standard" && (
-        <div className="mt-6 flex flex-col gap-3 rounded-2xl border border-sand-deep bg-white p-5">
-          <p className="font-semibold text-ink">Decide</p>
-          <form action={approveRefundAction.bind(null, request.id)} className="flex flex-col gap-2">
-            <textarea
-              name="admin_notes"
-              rows={2}
-              placeholder="Internal notes (optional)"
-              className="rounded-lg border border-sand-deep px-3 py-2 text-sm"
-            />
-            <button
-              type="submit"
-              className="self-start rounded-lg bg-coral px-4 py-2 text-sm font-semibold text-white"
-            >
-              Approve refund ({formatIdr(request.calculated_refund_amount_idr ?? 0)})
-            </button>
-          </form>
-          <form
-            action={rejectCancellationRequestAction.bind(null, request.id)}
-            className="flex flex-col gap-2"
-          >
-            <textarea
-              name="admin_notes"
-              rows={2}
-              required
-              placeholder="Reason for rejecting (shown to the customer)"
-              className="rounded-lg border border-sand-deep px-3 py-2 text-sm"
-            />
-            <button
-              type="submit"
-              className="self-start rounded-lg border border-coral px-4 py-2 text-sm font-semibold text-coral-dark hover:bg-[#FCE6DD]"
-            >
-              Reject
-            </button>
-          </form>
-        </div>
-      )}
-
-      {isPending && request.path === "force_majeure" && (
+      {isPending && (
         <div className="mt-6 flex flex-col gap-6 rounded-2xl border border-sand-deep bg-white p-5">
-          <p className="font-semibold text-ink">Decide -- no fee either way</p>
+          <p className="font-semibold text-ink">Decide</p>
 
-          <form action={approveRescheduleAction.bind(null, request.id)} className="flex flex-col gap-2">
+          {request.path === "standard" && (
+            <form action={approveRefundAction.bind(null, request.id)} className="flex flex-col gap-2">
+              <p className="text-xs font-semibold uppercase tracking-wide text-ink-soft">Refund</p>
+              <textarea
+                name="admin_notes"
+                rows={2}
+                placeholder="Internal notes (optional)"
+                className="rounded-lg border border-sand-deep px-3 py-2 text-sm"
+              />
+              <button
+                type="submit"
+                className="self-start rounded-lg bg-coral px-4 py-2 text-sm font-semibold text-white"
+              >
+                Approve refund ({formatIdr(request.calculated_refund_amount_idr ?? 0)})
+              </button>
+            </form>
+          )}
+
+          <form
+            action={approveRescheduleAction.bind(null, request.id)}
+            className={`flex flex-col gap-2 ${request.path === "standard" ? "border-t border-sand-deep pt-4" : ""}`}
+          >
             <p className="text-xs font-semibold uppercase tracking-wide text-ink-soft">
-              Reschedule
+              Reschedule{request.path === "force_majeure" ? " (no fee)" : ""}
             </p>
             <input
               type="date"
@@ -236,7 +219,7 @@ export default async function AdminCancellationDetailPage({
             className="flex flex-col gap-2 border-t border-sand-deep pt-4"
           >
             <p className="text-xs font-semibold uppercase tracking-wide text-ink-soft">
-              Gift voucher ({formatIdr(request.bookings?.total_idr ?? 0)})
+              Gift voucher -- transfer this trip to someone else
             </p>
             <input
               type="text"
@@ -254,6 +237,22 @@ export default async function AdminCancellationDetailPage({
               placeholder="Recipient phone or email"
               className="rounded-lg border border-sand-deep px-3 py-2 text-sm"
             />
+            <label className="text-xs text-ink-soft">
+              Voucher value (IDR)
+              <input
+                type="number"
+                name="value_amount_idr"
+                required
+                min={1}
+                step={1}
+                defaultValue={
+                  request.path === "standard"
+                    ? request.calculated_refund_amount_idr ?? request.bookings?.total_idr ?? 0
+                    : request.bookings?.total_idr ?? 0
+                }
+                className="mt-1 w-full rounded-lg border border-sand-deep px-3 py-2 text-sm text-ink"
+              />
+            </label>
             <textarea
               name="admin_notes"
               rows={2}
