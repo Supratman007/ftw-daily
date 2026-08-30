@@ -46,6 +46,9 @@ export async function SiteHeader() {
       <div className="text-sm">
         {user ? (
           <div className="flex items-center gap-3 text-ink-soft">
+            <Link href="/redeem" className="font-semibold text-teal hover:underline">
+              Redeem a gift voucher
+            </Link>
             <Link href={dashboardHref} className="font-semibold text-teal hover:underline">
               {dashboardLabel}
             </Link>
@@ -57,6 +60,9 @@ export async function SiteHeader() {
           </div>
         ) : (
           <div className="flex items-center gap-3 text-ink-soft">
+            <Link href="/redeem" className="font-semibold text-teal hover:underline">
+              Redeem a gift voucher
+            </Link>
             <Link href="/login" className="font-semibold text-teal hover:underline">
               Log in
             </Link>

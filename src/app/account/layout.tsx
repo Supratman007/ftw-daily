@@ -22,6 +22,7 @@ export default async function AccountLayout({ children }: { children: React.Reac
             <a href="/account/bookings">My Bookings</a>
             <a href="/account/messages">Messages</a>
             <a href="/account/profile">Profile</a>
+            <a href="/redeem">Redeem a gift voucher</a>
           </nav>
         </div>
         <div className="flex items-center gap-3 text-sm text-ink-soft">
