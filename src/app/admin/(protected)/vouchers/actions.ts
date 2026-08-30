@@ -38,7 +38,7 @@ export async function confirmVoucherRedemptionAction(voucherId: string, formData
   const { data: voucher } = await serviceClient
     .from("gift_vouchers")
     .select(
-      "id, status, product_id, value_amount_idr, original_booking_id, redeemed_by_name, redeemed_by_email, requested_slot_date, products(title, adult_price_usd, capacity_per_date)"
+      "id, status, product_id, value_amount_idr, original_booking_id, redeemed_by_name, redeemed_by_email, requested_slot_date, redemption_code, products(title, adult_price_usd, capacity_per_date)"
     )
     .eq("id", voucherId)
     .maybeSingle();
@@ -75,6 +75,7 @@ export async function confirmVoucherRedemptionAction(voucherId: string, formData
       toEmail: voucher.redeemed_by_email,
       recipientName: voucher.redeemed_by_name ?? "there",
       productTitle,
+      voucherCode: voucher.redemption_code,
     });
     redirect(
       withParam(
