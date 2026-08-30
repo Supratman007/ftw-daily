@@ -708,6 +708,35 @@ export async function sendCancellationApprovedGiftVoucherEmail(
   });
 }
 
+/** Shared "how to reach us" block for anyone with no booking page to
+ * fall back on yet (a gift recipient before their account exists, or
+ * even after). Three channels, all pointing at the same place: create
+ * an account (so future contact happens as a real conversation on
+ * their own booking page, same as any other customer), or reach us
+ * directly by WhatsApp (only rendered once a number is actually
+ * configured) or email. */
+function contactChannelsHtml(opts: { voucherCode: string; signupEmail?: string }): string {
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+  const waLink = whatsappLink(`Hi, I'm asking about gift voucher ${opts.voucherCode}`);
+  const signupHref = opts.signupEmail
+    ? `${siteUrl}/login?mode=signup&email=${encodeURIComponent(opts.signupEmail)}`
+    : `${siteUrl}/login?mode=signup`;
+  return `
+    <div style="margin-top: 20px; padding-top: 16px; border-top: 1px solid #E4DFD4;">
+      <p style="font-weight: 600; color: #0F3A3D;">Ways to reach us</p>
+      <ul style="padding-left: 18px; color: #4B5854;">
+        <li><a href="${signupHref}" style="color: #1E7A73;">Create a free account</a> -- once you have one, you can message us any time from your trip's page in the app.</li>
+        <li>Email <a href="mailto:${escapeHtml(SUPPORT_EMAIL)}" style="color: #1E7A73;">${escapeHtml(SUPPORT_EMAIL)}</a> quoting voucher ${escapeHtml(opts.voucherCode)}.</li>
+        ${
+          waLink
+            ? `<li>WhatsApp us at <a href="${waLink}" style="color: #1E7A73;">${escapeHtml(WHATSAPP_NUMBER ?? "")}</a>.</li>`
+            : ""
+        }
+      </ul>
+    </div>
+  `;
+}
+
 interface VoucherRedemptionReceivedEmailParams {
   toEmail: string;
   recipientName: string;
@@ -717,7 +746,8 @@ interface VoucherRedemptionReceivedEmailParams {
 
 /** Confirms to whoever just submitted the /redeem form that it went
  * through -- they have no account and no booking page to check, so
- * this email is the only receipt they get. */
+ * this email is the only receipt they get. Points them at every way to
+ * reach us right away, rather than leaving them to wait and wonder. */
 export async function sendVoucherRedemptionReceivedEmail(
   params: VoucherRedemptionReceivedEmailParams
 ): Promise<void> {
@@ -725,14 +755,87 @@ export async function sendVoucherRedemptionReceivedEmail(
     <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
       <h1 style="color: #0F3A3D;">Got your redemption request</h1>
       <p>Hi ${escapeHtml(params.recipientName)}, we've received your request to redeem voucher <strong>${escapeHtml(params.voucherCode)}</strong> for <strong>${escapeHtml(params.productTitle)}</strong>.</p>
-      <p>We'll be in touch shortly to confirm your date and the trip details. Questions in the meantime? Email
-        <a href="mailto:${escapeHtml(SUPPORT_EMAIL)}" style="color: #1E7A73;">${escapeHtml(SUPPORT_EMAIL)}</a> quoting the voucher code.</p>
+      <p>We'll be in touch shortly to confirm your date and the trip details.</p>
+      ${contactChannelsHtml({ voucherCode: params.voucherCode, signupEmail: params.toEmail })}
     </div>
   `;
 
   await sendEmail({
     to: params.toEmail,
     subject: `Redemption request received — ${params.voucherCode}`,
+    html,
+  });
+}
+
+interface VoucherRedeemedNeedsAccountEmailParams {
+  toEmail: string;
+  recipientName: string;
+  productTitle: string;
+}
+
+/** Sent when staff try to confirm a redemption but no account exists
+ * yet under the email the recipient gave us -- a booking can only ever
+ * belong to a real account, so this is the one thing standing between
+ * them and a trip they can see and message us about. */
+export async function sendVoucherRedeemedNeedsAccountEmail(
+  params: VoucherRedeemedNeedsAccountEmailParams
+): Promise<void> {
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+  const signupHref = `${siteUrl}/login?mode=signup&email=${encodeURIComponent(params.toEmail)}`;
+  const html = `
+    <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
+      <h1 style="color: #0F3A3D;">One more step for ${escapeHtml(params.productTitle)}</h1>
+      <p>Hi ${escapeHtml(params.recipientName)}, we're ready to confirm your trip -- we just need you to create a free account first, using this same email address (${escapeHtml(params.toEmail)}). That's what lets us attach your trip to your account so you can see it and message us any time.</p>
+      <p><a href="${signupHref}" style="display: inline-block; background: #E1613C; color: #fff; padding: 10px 18px; border-radius: 8px; text-decoration: none;">Create your account</a></p>
+      <p style="color: #4B5854;">Once you have, just reply and let us know -- we'll confirm your trip right away.</p>
+      <p style="color: #4B5854;">In a hurry? Email <a href="mailto:${escapeHtml(SUPPORT_EMAIL)}" style="color: #1E7A73;">${escapeHtml(SUPPORT_EMAIL)}</a>
+        ${(() => {
+          const waLink = whatsappLink(`Hi, I'm setting up my account to redeem a gift voucher`);
+          return waLink ? ` or WhatsApp us at <a href="${waLink}" style="color: #1E7A73;">${escapeHtml(WHATSAPP_NUMBER ?? "")}</a>` : "";
+        })()}.
+      </p>
+    </div>
+  `;
+
+  await sendEmail({
+    to: params.toEmail,
+    subject: `Almost there — create your account to confirm your trip`,
+    html,
+  });
+}
+
+interface VoucherRedeemedBookingConfirmedEmailParams {
+  toEmail: string;
+  recipientName: string;
+  productTitle: string;
+  slotDate: string;
+  bookingUrl: string;
+}
+
+/** The actual "you're all set" moment -- a real booking now exists
+ * under their account, so this links straight to it (chat panel and
+ * all) instead of repeating the generic contact channels. */
+export async function sendVoucherRedeemedBookingConfirmedEmail(
+  params: VoucherRedeemedBookingConfirmedEmailParams
+): Promise<void> {
+  const html = `
+    <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
+      <h1 style="color: #0F3A3D;">You're all set!</h1>
+      <p>Hi ${escapeHtml(params.recipientName)}, your gift trip is confirmed: <strong>${escapeHtml(params.productTitle)}</strong> on <strong>${escapeHtml(params.slotDate)}</strong>. No further payment needed -- it's already covered by the voucher.</p>
+      <p><a href="${params.bookingUrl}" style="display: inline-block; background: #E1613C; color: #fff; padding: 10px 18px; border-radius: 8px; text-decoration: none;">View your trip</a></p>
+      <p style="color: #4B5854;">You can message us any time from that page -- pickup point, hotel details, anything at all. Questions right now?
+        Email <a href="mailto:${escapeHtml(SUPPORT_EMAIL)}" style="color: #1E7A73;">${escapeHtml(SUPPORT_EMAIL)}</a>
+        ${(() => {
+          const waLink = whatsappLink(`Hi, I have a question about my trip: ${params.productTitle}`);
+          return waLink ? ` or WhatsApp us at <a href="${waLink}" style="color: #1E7A73;">${escapeHtml(WHATSAPP_NUMBER ?? "")}</a>` : "";
+        })()}.
+      </p>
+    </div>
+  `;
+
+  await sendEmail({
+    to: params.toEmail,
+    subject: `You're all set — ${params.productTitle}`,
     html,
   });
 }

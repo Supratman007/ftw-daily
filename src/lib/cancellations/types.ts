@@ -60,6 +60,10 @@ export interface GiftVoucher {
   requested_slot_date: string | null;
   redemption_message: string | null;
   redemption_requested_at: string | null;
+  // Set once staff confirm the redemption -- the real booking created
+  // for the recipient, which is what makes /account/booking/[id] (and
+  // its chat panel) their trip's home in the app.
+  redeemed_booking_id: string | null;
 }
 
 export const CANCELLATION_PATH_LABELS: Record<CancellationPath, string> = {

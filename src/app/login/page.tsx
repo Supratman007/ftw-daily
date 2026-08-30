@@ -6,9 +6,15 @@ const inputClass =
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ mode?: string; return_to?: string; error?: string; notice?: string }>;
+  searchParams: Promise<{
+    mode?: string;
+    return_to?: string;
+    error?: string;
+    notice?: string;
+    email?: string;
+  }>;
 }) {
-  const { mode, return_to, error, notice } = await searchParams;
+  const { mode, return_to, error, notice, email } = await searchParams;
   const isSignup = mode === "signup";
   const returnTo = return_to ?? "/";
 
@@ -23,6 +29,11 @@ export default async function LoginPage({
       <p className="mt-1 text-sm text-ink-soft">
         {isSignup ? "Takes less than a minute." : "Log in to continue."}
       </p>
+      {isSignup && email && (
+        <p className="mt-1 text-xs text-ink-soft">
+          Use this same email address so we can match it to what you already told us.
+        </p>
+      )}
 
       {notice && (
         <p className="mt-4 rounded-lg border border-teal bg-[#E3F2F1] p-3 text-sm text-teal">
@@ -46,7 +57,14 @@ export default async function LoginPage({
             <input name="phone" placeholder="Phone" className={inputClass} />
           </>
         )}
-        <input name="email" type="email" required placeholder="Email" className={inputClass} />
+        <input
+          name="email"
+          type="email"
+          required
+          defaultValue={email}
+          placeholder="Email"
+          className={inputClass}
+        />
         <input
           name="password"
           type="password"

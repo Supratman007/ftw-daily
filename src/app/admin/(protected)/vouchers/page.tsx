@@ -2,7 +2,7 @@ import Link from "next/link";
 import { requireAdmin } from "@/lib/admin/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { formatIdr } from "@/lib/currency";
-import { markVoucherRedeemedAction, markVoucherExpiredAction } from "./actions";
+import { confirmVoucherRedemptionAction, markVoucherExpiredAction } from "./actions";
 import type { GiftVoucher } from "@/lib/cancellations/types";
 
 type VoucherRow = GiftVoucher & { products: { title: string } | null };
@@ -27,10 +27,10 @@ const STATUS_FILTERS: Array<{ value: string; label: string }> = [
 export default async function AdminVouchersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string }>;
+  searchParams: Promise<{ status?: string; notice?: string; error?: string }>;
 }) {
   await requireAdmin();
-  const { status } = await searchParams;
+  const { status, notice, error: actionError } = await searchParams;
   const activeFilter = status ?? "pending";
 
   const supabase = await createSupabaseServerClient();
@@ -78,6 +78,16 @@ export default async function AdminVouchersPage({
       {error && (
         <p className="mt-4 rounded-lg border border-coral bg-[#FCE6DD] p-3 text-sm text-coral-dark">
           Couldn&apos;t load vouchers: {error.message}
+        </p>
+      )}
+      {notice && (
+        <p className="mt-4 rounded-lg border border-teal bg-[#E3F2F1] p-3 text-sm text-teal">
+          {notice}
+        </p>
+      )}
+      {actionError && (
+        <p className="mt-4 rounded-lg border border-coral bg-[#FCE6DD] p-3 text-sm text-coral-dark">
+          {actionError}
         </p>
       )}
 
@@ -133,17 +143,47 @@ export default async function AdminVouchersPage({
               </div>
             )}
 
+            {v.status === "redeemed" && v.redeemed_booking_id && (
+              <p className="mt-3 border-t border-sand-deep pt-3 text-ink-soft">
+                Booked --{" "}
+                <Link
+                  href={`/admin/bookings/${v.redeemed_booking_id}`}
+                  className="font-semibold text-teal hover:underline"
+                >
+                  view booking →
+                </Link>
+              </p>
+            )}
+
+            {v.status === "issued" && v.redemption_requested_at && (
+              <form
+                action={confirmVoucherRedemptionAction.bind(null, v.id)}
+                className="mt-3 flex flex-wrap items-end gap-3 border-t border-sand-deep pt-3"
+              >
+                <input type="hidden" name="return_to" value={returnTo} />
+                <div>
+                  <label className="block text-xs text-ink-soft" htmlFor={`slot_date_${v.id}`}>
+                    Trip date
+                  </label>
+                  <input
+                    id={`slot_date_${v.id}`}
+                    type="date"
+                    name="slot_date"
+                    defaultValue={v.requested_slot_date ?? undefined}
+                    className="mt-1 rounded-lg border border-sand-deep px-3 py-2 text-sm"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  className="rounded-lg bg-coral px-4 py-2 text-xs font-semibold text-white"
+                >
+                  Confirm &amp; create booking
+                </button>
+              </form>
+            )}
+
             {v.status === "issued" && (
               <div className="mt-3 flex gap-3 border-t border-sand-deep pt-3">
-                <form action={markVoucherRedeemedAction.bind(null, v.id)}>
-                  <input type="hidden" name="return_to" value={returnTo} />
-                  <button
-                    type="submit"
-                    className="rounded-lg bg-coral px-4 py-2 text-xs font-semibold text-white"
-                  >
-                    Mark redeemed (booking created)
-                  </button>
-                </form>
                 <form action={markVoucherExpiredAction.bind(null, v.id)}>
                   <input type="hidden" name="return_to" value={returnTo} />
                   <button
@@ -164,7 +204,9 @@ export default async function AdminVouchersPage({
         <Link href="/redeem" className="font-semibold text-teal hover:underline">
           /redeem
         </Link>
-        . Creating their new booking is still a manual step -- this page just tracks it.
+        . &quot;Confirm &amp; create booking&quot; creates their trip automatically -- it just
+        needs an account to attach it to, so it asks the recipient to sign up first if they
+        haven&apos;t.
       </p>
     </div>
   );
