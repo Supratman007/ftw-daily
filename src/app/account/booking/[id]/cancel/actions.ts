@@ -32,15 +32,20 @@ export async function submitCancellationRequestAction(bookingId: string, formDat
   }
   const path = pathRaw as CancellationPath;
 
+  // Optional -- a customer who hasn't decided yet, or just wants to
+  // talk to us first, can leave this blank entirely.
   const preferredResolutionRaw = String(formData.get("preferred_resolution") ?? "");
-  if (!["refund", "reschedule", "gift_voucher"].includes(preferredResolutionRaw)) {
-    fail("Please choose what you'd like us to do.");
-  }
-  const preferredResolution = preferredResolutionRaw as CancellationPreferredResolution;
-  if (path === "force_majeure" && preferredResolution === "refund") {
-    fail(
-      "Force majeure requests don't offer a plain refund -- please choose reschedule or a gift voucher instead."
-    );
+  let preferredResolution: CancellationPreferredResolution | null = null;
+  if (preferredResolutionRaw) {
+    if (!["refund", "reschedule", "gift_voucher"].includes(preferredResolutionRaw)) {
+      fail("Please choose what you'd like us to do.");
+    }
+    preferredResolution = preferredResolutionRaw as CancellationPreferredResolution;
+    if (path === "force_majeure" && preferredResolution === "refund") {
+      fail(
+        "Force majeure requests don't offer a plain refund -- please choose reschedule or a gift voucher instead."
+      );
+    }
   }
 
   let preferredNewDate: string | null = null;
@@ -54,6 +59,21 @@ export async function submitCancellationRequestAction(bookingId: string, formDat
       fail("Please choose a future date to reschedule to.");
     }
     preferredNewDate = raw;
+  }
+
+  let preferredGiftRecipientName: string | null = null;
+  let preferredGiftRecipientEmail: string | null = null;
+  if (preferredResolution === "gift_voucher") {
+    preferredGiftRecipientName = String(formData.get("preferred_gift_recipient_name") ?? "").trim();
+    preferredGiftRecipientEmail = String(formData.get("preferred_gift_recipient_email") ?? "")
+      .trim()
+      .toLowerCase();
+    if (!preferredGiftRecipientName) {
+      fail("Please enter who the voucher is for.");
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(preferredGiftRecipientEmail)) {
+      fail("Please enter a valid recipient email.");
+    }
   }
 
   const reason = String(formData.get("reason") ?? "").trim();
@@ -118,6 +138,8 @@ export async function submitCancellationRequestAction(bookingId: string, formDat
       reason,
       preferred_resolution: preferredResolution,
       preferred_new_date: preferredNewDate,
+      preferred_gift_recipient_name: preferredGiftRecipientName,
+      preferred_gift_recipient_email: preferredGiftRecipientEmail,
       calculated_refund_percent: calculatedRefundPercent,
       calculated_refund_amount_idr: calculatedRefundAmountIdr,
     })
@@ -179,8 +201,14 @@ export async function submitCancellationRequestAction(bookingId: string, formDat
         productTitle,
         bookingCode: booking.booking_code,
         path,
-        preferredResolutionLabel: CANCELLATION_PREFERRED_RESOLUTION_LABELS[preferredResolution],
+        preferredResolutionLabel: preferredResolution
+          ? CANCELLATION_PREFERRED_RESOLUTION_LABELS[preferredResolution]
+          : "No preference stated",
         preferredNewDate,
+        preferredGiftRecipient:
+          preferredGiftRecipientName && preferredGiftRecipientEmail
+            ? `${preferredGiftRecipientName} (${preferredGiftRecipientEmail})`
+            : null,
         reviewUrl: `${siteUrl}/admin/cancellations/${inserted.id}`,
       })
     )

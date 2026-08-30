@@ -25,6 +25,11 @@ export interface CancellationRequest {
   // customer asked for. Pre-fills the admin's reschedule form; the
   // admin can still pick a different date if it's unavailable.
   preferred_new_date: string | null;
+  // Only set when preferred_resolution is "gift_voucher" -- who the
+  // customer wants the trip transferred to. Pre-fills the admin's
+  // approve-voucher form so staff aren't re-entering it by hand.
+  preferred_gift_recipient_name: string | null;
+  preferred_gift_recipient_email: string | null;
   calculated_refund_percent: number | null;
   calculated_refund_amount_idr: number | null;
   resolution: CancellationResolution | null;

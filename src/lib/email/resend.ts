@@ -565,6 +565,7 @@ interface NewCancellationStaffEmailParams {
   path: "standard" | "force_majeure";
   preferredResolutionLabel: string;
   preferredNewDate: string | null;
+  preferredGiftRecipient: string | null;
   reviewUrl: string;
 }
 
@@ -582,6 +583,10 @@ export async function sendNewCancellationStaffEmail(
       <p>They'd prefer: <strong>${escapeHtml(params.preferredResolutionLabel)}</strong>${
         params.preferredNewDate
           ? ` -- new date requested: <strong>${escapeHtml(params.preferredNewDate)}</strong>`
+          : ""
+      }${
+        params.preferredGiftRecipient
+          ? ` -- for: <strong>${escapeHtml(params.preferredGiftRecipient)}</strong>`
           : ""
       }.</p>
       <p><a href="${params.reviewUrl}" style="display: inline-block; background: #E1613C; color: #fff; padding: 10px 18px; border-radius: 8px; text-decoration: none;">Review this request</a></p>

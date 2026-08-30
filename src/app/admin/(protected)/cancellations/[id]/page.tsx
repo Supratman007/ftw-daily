@@ -87,6 +87,8 @@ export default async function AdminCancellationDetailPage({
         <p className="mt-2 inline-block rounded-full bg-[#E3F2F1] px-3 py-1 text-xs font-semibold text-teal">
           Customer would like: {CANCELLATION_PREFERRED_RESOLUTION_LABELS[request.preferred_resolution]}
           {request.preferred_new_date && ` — new date: ${request.preferred_new_date}`}
+          {request.preferred_gift_recipient_name &&
+            ` — for: ${request.preferred_gift_recipient_name} (${request.preferred_gift_recipient_email})`}
         </p>
       )}
 
@@ -233,7 +235,7 @@ export default async function AdminCancellationDetailPage({
               type="text"
               name="recipient_name"
               required
-              defaultValue={request.bookings?.customers?.name ?? ""}
+              defaultValue={request.preferred_gift_recipient_name ?? request.bookings?.customers?.name ?? ""}
               placeholder="Recipient name"
               className="rounded-lg border border-sand-deep px-3 py-2 text-sm"
             />
@@ -241,7 +243,12 @@ export default async function AdminCancellationDetailPage({
               type="text"
               name="recipient_contact"
               required
-              defaultValue={request.bookings?.customers?.phone ?? request.bookings?.customers?.email ?? ""}
+              defaultValue={
+                request.preferred_gift_recipient_email ??
+                request.bookings?.customers?.phone ??
+                request.bookings?.customers?.email ??
+                ""
+              }
               placeholder="Recipient phone or email"
               className="rounded-lg border border-sand-deep px-3 py-2 text-sm"
             />
