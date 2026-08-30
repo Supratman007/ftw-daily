@@ -50,6 +50,16 @@ export interface GiftVoucher {
   status: GiftVoucherStatus;
   issued_at: string;
   expires_at: string;
+  // Set once the recipient submits the /redeem form -- who actually
+  // showed up to redeem it, which can differ from recipient_name/
+  // recipient_contact (those are who the *original customer* said the
+  // gift was for).
+  redeemed_by_name: string | null;
+  redeemed_by_email: string | null;
+  redeemed_by_phone: string | null;
+  requested_slot_date: string | null;
+  redemption_message: string | null;
+  redemption_requested_at: string | null;
 }
 
 export const CANCELLATION_PATH_LABELS: Record<CancellationPath, string> = {

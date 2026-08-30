@@ -1,5 +1,6 @@
 import "server-only";
 import { formatIdr, formatUsd } from "@/lib/currency";
+import { SUPPORT_EMAIL, WHATSAPP_NUMBER, whatsappLink } from "@/lib/contact";
 
 /**
  * Shared send -- both templates below go through this. Sends from
@@ -666,11 +667,19 @@ interface CancellationApprovedGiftVoucherEmailParams {
   recipientName: string;
   expiresAt: string;
   bookingUrl: string;
+  redeemUrl: string;
 }
 
+/** Goes to the *original* customer, who's expected to forward the code
+ * to the recipient themselves -- this app has no account or contact
+ * info for the recipient yet at this point. Explicitly spells out how
+ * the recipient redeems it (the /redeem page, plus a support email as
+ * a fallback) -- previously this just said "contact us" with no
+ * channel, which left both the customer and the recipient guessing. */
 export async function sendCancellationApprovedGiftVoucherEmail(
   params: CancellationApprovedGiftVoucherEmailParams
 ): Promise<void> {
+  const waLink = whatsappLink(`Hi, I'd like to redeem gift voucher ${params.voucherCode}`);
   const html = `
     <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
       <h1 style="color: #0F3A3D;">Your gift voucher is ready</h1>
@@ -680,7 +689,14 @@ export async function sendCancellationApprovedGiftVoucherEmail(
         <tr><td style="padding: 6px 0; color: #4B5854;">Value</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">${escapeHtml(formatIdr(params.valueIdr))}</td></tr>
         <tr><td style="padding: 6px 0; color: #4B5854;">Expires</td><td style="padding: 6px 0; text-align: right;">${escapeHtml(new Date(params.expiresAt).toLocaleDateString())}</td></tr>
       </table>
-      <p>Share this code with ${escapeHtml(params.recipientName)} -- contact us whenever they're ready to book, quoting this code.</p>
+      <p>Please forward this email or share the code above with ${escapeHtml(params.recipientName)}. When they're ready to book, here's exactly what they should do:</p>
+      <p><a href="${params.redeemUrl}" style="display: inline-block; background: #E1613C; color: #fff; padding: 10px 18px; border-radius: 8px; text-decoration: none;">Redeem this voucher</a></p>
+      <p style="color: #4B5854; font-size: 14px;">
+        That page walks them through submitting their details and preferred date. If they'd rather reach us directly: email
+        <a href="mailto:${escapeHtml(SUPPORT_EMAIL)}" style="color: #1E7A73;">${escapeHtml(SUPPORT_EMAIL)}</a> quoting the voucher code${
+          waLink ? ` or WhatsApp us at <a href="${waLink}" style="color: #1E7A73;">${escapeHtml(WHATSAPP_NUMBER ?? "")}</a>` : ""
+        }.
+      </p>
       <p><a href="${params.bookingUrl}" style="display: inline-block; background: #E1613C; color: #fff; padding: 10px 18px; border-radius: 8px; text-decoration: none;">View your booking</a></p>
     </div>
   `;
@@ -688,6 +704,70 @@ export async function sendCancellationApprovedGiftVoucherEmail(
   await sendEmail({
     to: params.toEmail,
     subject: `Your gift voucher — ${params.voucherCode}`,
+    html,
+  });
+}
+
+interface VoucherRedemptionReceivedEmailParams {
+  toEmail: string;
+  recipientName: string;
+  productTitle: string;
+  voucherCode: string;
+}
+
+/** Confirms to whoever just submitted the /redeem form that it went
+ * through -- they have no account and no booking page to check, so
+ * this email is the only receipt they get. */
+export async function sendVoucherRedemptionReceivedEmail(
+  params: VoucherRedemptionReceivedEmailParams
+): Promise<void> {
+  const html = `
+    <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
+      <h1 style="color: #0F3A3D;">Got your redemption request</h1>
+      <p>Hi ${escapeHtml(params.recipientName)}, we've received your request to redeem voucher <strong>${escapeHtml(params.voucherCode)}</strong> for <strong>${escapeHtml(params.productTitle)}</strong>.</p>
+      <p>We'll be in touch shortly to confirm your date and the trip details. Questions in the meantime? Email
+        <a href="mailto:${escapeHtml(SUPPORT_EMAIL)}" style="color: #1E7A73;">${escapeHtml(SUPPORT_EMAIL)}</a> quoting the voucher code.</p>
+    </div>
+  `;
+
+  await sendEmail({
+    to: params.toEmail,
+    subject: `Redemption request received — ${params.voucherCode}`,
+    html,
+  });
+}
+
+interface VoucherRedemptionRequestStaffEmailParams {
+  toEmail: string;
+  recipientName: string;
+  recipientEmail: string;
+  recipientPhone: string | null;
+  productTitle: string;
+  voucherCode: string;
+  requestedSlotDate: string | null;
+  message: string | null;
+  reviewUrl: string;
+}
+
+/** Internal "someone wants to redeem a gift voucher" notice -- same
+ * reasoning as sendNewCancellationStaffEmail. This is the only place
+ * staff learn a redemption request came in at all. */
+export async function sendVoucherRedemptionRequestStaffEmail(
+  params: VoucherRedemptionRequestStaffEmailParams
+): Promise<void> {
+  const html = `
+    <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
+      <h1 style="color: #0F3A3D;">Gift voucher redemption request</h1>
+      <p><strong>${escapeHtml(params.recipientName)}</strong> (${escapeHtml(params.recipientEmail)}${params.recipientPhone ? `, ${escapeHtml(params.recipientPhone)}` : ""}) wants to redeem voucher <strong>${escapeHtml(params.voucherCode)}</strong> for <strong>${escapeHtml(params.productTitle)}</strong>.</p>
+      ${params.requestedSlotDate ? `<p>Preferred date: <strong>${escapeHtml(params.requestedSlotDate)}</strong></p>` : ""}
+      ${params.message ? `<p style="color: #4B5854;">"${escapeHtml(params.message)}"</p>` : ""}
+      <p><a href="${params.reviewUrl}" style="display: inline-block; background: #E1613C; color: #fff; padding: 10px 18px; border-radius: 8px; text-decoration: none;">Review this voucher</a></p>
+    </div>
+  `;
+
+  await sendEmail({
+    to: params.toEmail,
+    subject: `Voucher redemption request — ${params.voucherCode}`,
     html,
   });
 }

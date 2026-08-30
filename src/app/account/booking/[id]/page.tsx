@@ -336,6 +336,17 @@ export default async function BookingDetailPage({
                     {new Date(vouchers[0].expires_at).toLocaleDateString()}
                   </span>
                 </div>
+                <p className="mt-2 border-t border-sand-deep pt-2 text-xs">
+                  Share this code with {vouchers[0].recipient_name} -- when they&apos;re ready,
+                  they can redeem it at{" "}
+                  <a
+                    href={`/redeem?code=${encodeURIComponent(vouchers[0].redemption_code)}`}
+                    className="font-semibold text-teal hover:underline"
+                  >
+                    adventure-lombok.com/redeem
+                  </a>
+                  .
+                </p>
               </div>
             )}
 

@@ -37,6 +37,7 @@ export default async function AdminOverviewPage({
     pendingRequestCount,
     openConversationCount,
     pendingCancellationCount,
+    pendingVoucherCount,
   ] = await Promise.all([
     supabase.from("bookings").select("*", { count: "exact", head: true }).eq("status", "paid_confirmed"),
     supabase.from("bookings").select("*", { count: "exact", head: true }).eq("status", "pending_payment"),
@@ -53,6 +54,11 @@ export default async function AdminOverviewPage({
       .from("cancellation_requests")
       .select("*", { count: "exact", head: true })
       .eq("status", "pending_review"),
+    supabase
+      .from("gift_vouchers")
+      .select("*", { count: "exact", head: true })
+      .eq("status", "issued")
+      .not("redemption_requested_at", "is", null),
   ]);
 
   const totalRevenueIdr = (revenue.data ?? []).reduce((sum, r) => sum + r.total_idr, 0);
@@ -61,6 +67,7 @@ export default async function AdminOverviewPage({
   const pendingRequests = pendingRequestCount.count ?? 0;
   const openConversations = openConversationCount.count ?? 0;
   const pendingCancellations = pendingCancellationCount.count ?? 0;
+  const pendingVouchers = pendingVoucherCount.count ?? 0;
 
   return (
     <div>
@@ -150,6 +157,19 @@ export default async function AdminOverviewPage({
             className={`mt-1 font-serif text-2xl font-semibold ${pendingCancellations > 0 ? "text-coral-dark" : "text-ink"}`}
           >
             {pendingCancellations} awaiting review
+          </p>
+        </Link>
+        <Link
+          href="/admin/vouchers"
+          className={pendingVouchers > 0 ? pendingAgentCardClass : cardClass}
+        >
+          <p className="font-mono text-xs uppercase tracking-widest text-ink-soft">
+            Gift vouchers
+          </p>
+          <p
+            className={`mt-1 font-serif text-2xl font-semibold ${pendingVouchers > 0 ? "text-coral-dark" : "text-ink"}`}
+          >
+            {pendingVouchers} to redeem
           </p>
         </Link>
       </div>

@@ -47,6 +47,11 @@ function bookingUrlFor(bookingId: string): string {
   return `${siteUrl}/account/booking/${bookingId}`;
 }
 
+function redeemUrlFor(voucherCode: string): string {
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+  return `${siteUrl}/redeem?code=${encodeURIComponent(voucherCode)}`;
+}
+
 /** Standard path only -- refunds the already-calculated amount
  * (spec §6f: computed at request time, confirmed here by a human
  * before anything is actually refunded). No Xendit refund API call --
@@ -293,6 +298,7 @@ export async function approveGiftVoucherAction(requestId: string, formData: Form
       recipientName,
       expiresAt: voucher.expires_at,
       bookingUrl: bookingUrlFor(booking.id),
+      redeemUrl: redeemUrlFor(voucher.redemption_code),
     });
   }
 
