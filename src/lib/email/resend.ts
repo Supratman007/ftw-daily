@@ -514,6 +514,186 @@ export async function sendNewConversationStaffEmail(
   });
 }
 
+interface CancellationRequestReceivedEmailParams {
+  toEmail: string;
+  customerName: string;
+  productTitle: string;
+  bookingCode: string;
+  path: "standard" | "force_majeure";
+  calculatedRefundIdr: number | null;
+}
+
+/** Sent the moment a cancellation/reschedule request (spec §6f) is
+ * submitted -- for the standard path this can show the calculated
+ * refund immediately, since that's computed the instant the request
+ * comes in; force majeure always needs manual review first, so
+ * there's no number to show yet. */
+export async function sendCancellationRequestReceivedEmail(
+  params: CancellationRequestReceivedEmailParams
+): Promise<void> {
+  const html = `
+    <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
+      <h1 style="color: #0F3A3D;">Request received</h1>
+      <p>Hi ${escapeHtml(params.customerName)}, we've received your ${
+        params.path === "force_majeure" ? "force majeure" : "cancellation"
+      } request for <strong>${escapeHtml(params.productTitle)}</strong> (${escapeHtml(params.bookingCode)}).</p>
+      ${
+        params.calculatedRefundIdr != null
+          ? `<p>Based on our cancellation policy, your calculated refund is <strong>${escapeHtml(formatIdr(params.calculatedRefundIdr))}</strong>. A staff member will review and confirm before anything is refunded.</p>`
+          : `<p>A staff member will review your supporting documentation and get back to you.</p>`
+      }
+    </div>
+  `;
+
+  await sendEmail({
+    to: params.toEmail,
+    subject: `Request received — ${params.productTitle}`,
+    html,
+  });
+}
+
+interface NewCancellationStaffEmailParams {
+  toEmail: string;
+  customerName: string;
+  productTitle: string;
+  bookingCode: string;
+  path: "standard" | "force_majeure";
+  reviewUrl: string;
+}
+
+/** Internal "a cancellation/reschedule request needs review" notice --
+ * same reasoning as sendNewBookingRequestStaffEmail. */
+export async function sendNewCancellationStaffEmail(
+  params: NewCancellationStaffEmailParams
+): Promise<void> {
+  const html = `
+    <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
+      <h1 style="color: #0F3A3D;">New ${params.path === "force_majeure" ? "force majeure" : "cancellation"} request</h1>
+      <p><strong>${escapeHtml(params.customerName)}</strong> requested to cancel/reschedule <strong>${escapeHtml(params.productTitle)}</strong> (${escapeHtml(params.bookingCode)}).</p>
+      <p><a href="${params.reviewUrl}" style="display: inline-block; background: #E1613C; color: #fff; padding: 10px 18px; border-radius: 8px; text-decoration: none;">Review this request</a></p>
+    </div>
+  `;
+
+  await sendEmail({
+    to: params.toEmail,
+    subject: `New cancellation request — ${params.productTitle} (${params.bookingCode})`,
+    html,
+  });
+}
+
+interface CancellationApprovedRefundEmailParams {
+  toEmail: string;
+  customerName: string;
+  productTitle: string;
+  bookingCode: string;
+  refundAmountIdr: number;
+}
+
+export async function sendCancellationApprovedRefundEmail(
+  params: CancellationApprovedRefundEmailParams
+): Promise<void> {
+  const html = `
+    <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
+      <h1 style="color: #0F3A3D;">Your cancellation is approved</h1>
+      <p>Hi ${escapeHtml(params.customerName)}, your cancellation for <strong>${escapeHtml(params.productTitle)}</strong> (${escapeHtml(params.bookingCode)}) has been approved.</p>
+      <p>Refund amount: <strong>${escapeHtml(formatIdr(params.refundAmountIdr))}</strong>. This will be processed to your original payment method -- please allow a few business days.</p>
+    </div>
+  `;
+
+  await sendEmail({
+    to: params.toEmail,
+    subject: `Cancellation approved — ${params.productTitle}`,
+    html,
+  });
+}
+
+interface CancellationApprovedRescheduleEmailParams {
+  toEmail: string;
+  customerName: string;
+  productTitle: string;
+  bookingCode: string;
+  newSlotDate: string;
+}
+
+export async function sendCancellationApprovedRescheduleEmail(
+  params: CancellationApprovedRescheduleEmailParams
+): Promise<void> {
+  const html = `
+    <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
+      <h1 style="color: #0F3A3D;">You're rescheduled</h1>
+      <p>Hi ${escapeHtml(params.customerName)}, your force majeure request for <strong>${escapeHtml(params.productTitle)}</strong> (${escapeHtml(params.bookingCode)}) has been approved -- no fee.</p>
+      <p>New date: <strong>${escapeHtml(params.newSlotDate)}</strong>.</p>
+    </div>
+  `;
+
+  await sendEmail({
+    to: params.toEmail,
+    subject: `Rescheduled — ${params.productTitle}`,
+    html,
+  });
+}
+
+interface CancellationApprovedGiftVoucherEmailParams {
+  toEmail: string;
+  customerName: string;
+  productTitle: string;
+  bookingCode: string;
+  voucherCode: string;
+  valueIdr: number;
+  recipientName: string;
+  expiresAt: string;
+}
+
+export async function sendCancellationApprovedGiftVoucherEmail(
+  params: CancellationApprovedGiftVoucherEmailParams
+): Promise<void> {
+  const html = `
+    <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
+      <h1 style="color: #0F3A3D;">Your gift voucher is ready</h1>
+      <p>Hi ${escapeHtml(params.customerName)}, your force majeure request for <strong>${escapeHtml(params.productTitle)}</strong> (${escapeHtml(params.bookingCode)}) has been converted into a gift voucher for ${escapeHtml(params.recipientName)}.</p>
+      <table style="width: 100%; border-collapse: collapse; margin: 16px 0;">
+        <tr><td style="padding: 6px 0; color: #4B5854;">Voucher code</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">${escapeHtml(params.voucherCode)}</td></tr>
+        <tr><td style="padding: 6px 0; color: #4B5854;">Value</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">${escapeHtml(formatIdr(params.valueIdr))}</td></tr>
+        <tr><td style="padding: 6px 0; color: #4B5854;">Expires</td><td style="padding: 6px 0; text-align: right;">${escapeHtml(new Date(params.expiresAt).toLocaleDateString())}</td></tr>
+      </table>
+      <p>Share this code with ${escapeHtml(params.recipientName)} -- contact us whenever they're ready to book, quoting this code.</p>
+    </div>
+  `;
+
+  await sendEmail({
+    to: params.toEmail,
+    subject: `Your gift voucher — ${params.voucherCode}`,
+    html,
+  });
+}
+
+interface CancellationRejectedEmailParams {
+  toEmail: string;
+  customerName: string;
+  productTitle: string;
+  bookingCode: string;
+  adminNotes: string | null;
+}
+
+export async function sendCancellationRejectedEmail(
+  params: CancellationRejectedEmailParams
+): Promise<void> {
+  const html = `
+    <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
+      <h1 style="color: #B3441E;">Your request wasn't approved</h1>
+      <p>Hi ${escapeHtml(params.customerName)}, we weren't able to approve your cancellation/reschedule request for <strong>${escapeHtml(params.productTitle)}</strong> (${escapeHtml(params.bookingCode)}).</p>
+      ${params.adminNotes ? `<p style="color: #4B5854;">${escapeHtml(params.adminNotes)}</p>` : ""}
+      <p>Contact us if you have questions.</p>
+    </div>
+  `;
+
+  await sendEmail({
+    to: params.toEmail,
+    subject: `Update on your request — ${params.productTitle}`,
+    html,
+  });
+}
+
 function escapeHtml(input: string): string {
   return input
     .replace(/&/g, "&amp;")

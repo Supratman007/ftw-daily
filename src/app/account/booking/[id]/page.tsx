@@ -12,6 +12,11 @@ import { ChatThread } from "@/components/chat/ChatThread";
 import { ChatComposer } from "@/components/chat/ChatComposer";
 import { ChatRealtimeRefresher } from "@/components/chat/ChatRealtimeRefresher";
 import type { Message } from "@/lib/chat/types";
+import {
+  CANCELLATION_STATUS_LABELS,
+  type CancellationRequest,
+  type GiftVoucher,
+} from "@/lib/cancellations/types";
 
 type BookingWithProduct = Booking & { products: { title: string; slug: string } | null };
 
@@ -20,10 +25,10 @@ type BookingWithProduct = Booking & { products: { title: string; slug: string } 
  * the "view confirmation email" action for upcoming bookings, the
  * manual-confirmation flow's status-specific states (§6b) -- under
  * review, confirmed-with-payment-link-and-deadline, declined (with
- * reason), and the traveler/passport-received list -- plus the
- * per-booking chat thread (§6b/§6c) at the bottom. Deliberately not
- * built yet: reschedule/gift/review actions -- gated behind Phase 3
- * infrastructure that doesn't exist yet.
+ * reason), and the traveler/passport-received list -- the per-booking
+ * chat thread (§6b/§6c), and the cancellation/reschedule request flow
+ * (§6f) at the bottom. Deliberately not built yet: review submission
+ * -- gated behind Phase 3 infrastructure that doesn't exist yet.
  */
 export default async function BookingDetailPage({
   params,
@@ -120,6 +125,23 @@ export default async function BookingDetailPage({
       .order("created_at", { ascending: true });
     messages = (messageRows ?? []) as Message[];
   }
+
+  const { data: cancellationRows } = await supabase
+    .from("cancellation_requests")
+    .select("*")
+    .eq("booking_id", b.id)
+    .order("requested_at", { ascending: false })
+    .limit(1);
+  const latestCancellationRequest = (cancellationRows?.[0] ?? null) as CancellationRequest | null;
+
+  const { data: voucherRows } = await supabase
+    .from("gift_vouchers")
+    .select("*")
+    .eq("original_booking_id", b.id);
+  const vouchers = (voucherRows ?? []) as GiftVoucher[];
+
+  const canRequestCancellation =
+    b.status === "paid_confirmed" && latestCancellationRequest?.status !== "pending_review";
 
   return (
     <div className="max-w-xl">
@@ -252,6 +274,82 @@ export default async function BookingDetailPage({
             Complete payment
           </a>
         )}
+
+      {latestCancellationRequest && (
+        <div className="mt-6 rounded-2xl border border-sand-deep bg-white p-6 text-sm">
+          <div className="flex items-center justify-between">
+            <p className="font-semibold text-ink">Cancellation / reschedule request</p>
+            <span className="text-xs font-semibold uppercase text-ink-soft">
+              {CANCELLATION_STATUS_LABELS[latestCancellationRequest.status]}
+            </span>
+          </div>
+
+          {latestCancellationRequest.status === "pending_review" && (
+            <p className="mt-2 text-ink-soft">
+              We&apos;re reviewing your request -- we&apos;ll email you once it&apos;s decided.
+            </p>
+          )}
+
+          {latestCancellationRequest.status === "approved" &&
+            latestCancellationRequest.resolution === "refund" && (
+              <p className="mt-2 text-ink-soft">
+                Approved -- a refund of{" "}
+                <span className="font-semibold text-ink">
+                  {formatIdr(latestCancellationRequest.calculated_refund_amount_idr ?? 0)}
+                </span>{" "}
+                is being processed.
+              </p>
+            )}
+
+          {latestCancellationRequest.status === "approved" &&
+            latestCancellationRequest.resolution === "reschedule" && (
+              <p className="mt-2 text-ink-soft">
+                Approved -- your trip has been rescheduled to{" "}
+                <span className="font-semibold text-ink">{b.slot_date}</span>, no fee.
+              </p>
+            )}
+
+          {latestCancellationRequest.status === "approved" &&
+            latestCancellationRequest.resolution === "gift_voucher" &&
+            vouchers[0] && (
+              <div className="mt-2 text-ink-soft">
+                <p>Approved -- converted into a gift voucher for {vouchers[0].recipient_name}:</p>
+                <div className="mt-2 flex justify-between border-t border-sand-deep pt-2">
+                  <span>Code</span>
+                  <span className="font-mono font-semibold text-ink">
+                    {vouchers[0].redemption_code}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Value</span>
+                  <span className="text-ink">{formatIdr(vouchers[0].value_amount_idr)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Expires</span>
+                  <span className="text-ink">
+                    {new Date(vouchers[0].expires_at).toLocaleDateString()}
+                  </span>
+                </div>
+              </div>
+            )}
+
+          {latestCancellationRequest.status === "rejected" && (
+            <p className="mt-2 text-ink-soft">
+              This request wasn&apos;t approved.
+              {latestCancellationRequest.admin_notes && ` ${latestCancellationRequest.admin_notes}`}
+            </p>
+          )}
+        </div>
+      )}
+
+      {canRequestCancellation && (
+        <Link
+          href={`/account/booking/${b.id}/cancel`}
+          className="mt-6 inline-block rounded-lg border border-sand-deep px-4 py-2 text-sm font-semibold text-ink hover:bg-sand"
+        >
+          Request cancellation or reschedule
+        </Link>
+      )}
 
       <div className="mt-6 rounded-2xl border border-sand-deep bg-white">
         <div className="border-b border-sand-deep p-4">
