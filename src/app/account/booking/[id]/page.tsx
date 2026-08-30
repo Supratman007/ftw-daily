@@ -13,6 +13,7 @@ import { ChatComposer } from "@/components/chat/ChatComposer";
 import { ChatRealtimeRefresher } from "@/components/chat/ChatRealtimeRefresher";
 import type { Message } from "@/lib/chat/types";
 import {
+  CANCELLATION_PREFERRED_RESOLUTION_LABELS,
   CANCELLATION_STATUS_LABELS,
   type CancellationRequest,
   type GiftVoucher,
@@ -286,7 +287,10 @@ export default async function BookingDetailPage({
 
           {latestCancellationRequest.status === "pending_review" && (
             <p className="mt-2 text-ink-soft">
-              We&apos;re reviewing your request -- we&apos;ll email you once it&apos;s decided.
+              We&apos;re reviewing your request
+              {latestCancellationRequest.preferred_resolution &&
+                ` for "${CANCELLATION_PREFERRED_RESOLUTION_LABELS[latestCancellationRequest.preferred_resolution]}"`}{" "}
+              -- we&apos;ll email you once it&apos;s decided.
             </p>
           )}
 

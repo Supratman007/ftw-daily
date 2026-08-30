@@ -6,7 +6,11 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/service";
 import { daysBeforeDeparture, resolveCancellationRefundPercent } from "@/lib/cancellations/policy";
 import { sendCancellationRequestReceivedEmail, sendNewCancellationStaffEmail } from "@/lib/email/resend";
-import type { CancellationPath } from "@/lib/cancellations/types";
+import {
+  CANCELLATION_PREFERRED_RESOLUTION_LABELS,
+  type CancellationPath,
+  type CancellationPreferredResolution,
+} from "@/lib/cancellations/types";
 
 const MAX_EVIDENCE_BYTES = 5 * 1024 * 1024; // 5MB
 const EVIDENCE_EXT_BY_MIME: Record<string, string> = {
@@ -27,6 +31,18 @@ export async function submitCancellationRequestAction(bookingId: string, formDat
     fail("Please choose a request type.");
   }
   const path = pathRaw as CancellationPath;
+
+  const preferredResolutionRaw = String(formData.get("preferred_resolution") ?? "");
+  if (!["refund", "reschedule", "gift_voucher"].includes(preferredResolutionRaw)) {
+    fail("Please choose what you'd like us to do.");
+  }
+  const preferredResolution = preferredResolutionRaw as CancellationPreferredResolution;
+  if (path === "force_majeure" && preferredResolution === "refund") {
+    fail(
+      "Force majeure requests don't offer a plain refund -- please choose reschedule or a gift voucher instead."
+    );
+  }
+
   const reason = String(formData.get("reason") ?? "").trim();
   if (!reason) {
     fail("Please tell us what happened.");
@@ -87,6 +103,7 @@ export async function submitCancellationRequestAction(bookingId: string, formDat
       booking_id: bookingId,
       path,
       reason,
+      preferred_resolution: preferredResolution,
       calculated_refund_percent: calculatedRefundPercent,
       calculated_refund_amount_idr: calculatedRefundAmountIdr,
     })
@@ -148,6 +165,7 @@ export async function submitCancellationRequestAction(bookingId: string, formDat
         productTitle,
         bookingCode: booking.booking_code,
         path,
+        preferredResolutionLabel: CANCELLATION_PREFERRED_RESOLUTION_LABELS[preferredResolution],
         reviewUrl: `${siteUrl}/admin/cancellations/${inserted.id}`,
       })
     )

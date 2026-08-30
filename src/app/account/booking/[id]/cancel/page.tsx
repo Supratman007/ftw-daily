@@ -137,6 +137,47 @@ export default async function RequestCancellationPage({
           </div>
         </fieldset>
 
+        <fieldset className="rounded-2xl border border-sand-deep bg-white p-5">
+          <legend className="px-1 text-sm font-semibold text-ink">What would you like?</legend>
+          <p className="mt-1 text-xs text-ink-soft">
+            This is just a preference -- our team will confirm what&apos;s possible for your
+            booking.
+          </p>
+          <div className="mt-3 flex flex-col gap-2">
+            <label className="flex items-start gap-2 text-sm text-ink">
+              <input
+                type="radio"
+                name="preferred_resolution"
+                value="refund"
+                defaultChecked
+                required
+                className="mt-1"
+              />
+              <span>A refund</span>
+            </label>
+            <label className="flex items-start gap-2 text-sm text-ink">
+              <input
+                type="radio"
+                name="preferred_resolution"
+                value="reschedule"
+                required
+                className="mt-1"
+              />
+              <span>Reschedule to a new date</span>
+            </label>
+            <label className="flex items-start gap-2 text-sm text-ink">
+              <input
+                type="radio"
+                name="preferred_resolution"
+                value="gift_voucher"
+                required
+                className="mt-1"
+              />
+              <span>Give it as a gift to someone else instead</span>
+            </label>
+          </div>
+        </fieldset>
+
         <div>
           <label className={labelClass} htmlFor="reason">
             Tell us what happened

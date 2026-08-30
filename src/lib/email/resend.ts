@@ -563,11 +563,14 @@ interface NewCancellationStaffEmailParams {
   productTitle: string;
   bookingCode: string;
   path: "standard" | "force_majeure";
+  preferredResolutionLabel: string;
   reviewUrl: string;
 }
 
 /** Internal "a cancellation/reschedule request needs review" notice --
- * same reasoning as sendNewBookingRequestStaffEmail. */
+ * same reasoning as sendNewBookingRequestStaffEmail. Surfaces the
+ * customer's stated preference up front so staff aren't hunting for it
+ * in the free-text reason. */
 export async function sendNewCancellationStaffEmail(
   params: NewCancellationStaffEmailParams
 ): Promise<void> {
@@ -575,6 +578,7 @@ export async function sendNewCancellationStaffEmail(
     <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
       <h1 style="color: #0F3A3D;">New ${params.path === "force_majeure" ? "force majeure" : "cancellation"} request</h1>
       <p><strong>${escapeHtml(params.customerName)}</strong> requested to cancel/reschedule <strong>${escapeHtml(params.productTitle)}</strong> (${escapeHtml(params.bookingCode)}).</p>
+      <p>They'd prefer: <strong>${escapeHtml(params.preferredResolutionLabel)}</strong>.</p>
       <p><a href="${params.reviewUrl}" style="display: inline-block; background: #E1613C; color: #fff; padding: 10px 18px; border-radius: 8px; text-decoration: none;">Review this request</a></p>
     </div>
   `;

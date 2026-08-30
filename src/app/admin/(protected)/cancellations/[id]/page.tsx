@@ -6,6 +6,7 @@ import { createSupabaseServiceRoleClient } from "@/lib/supabase/service";
 import { formatIdr } from "@/lib/currency";
 import {
   CANCELLATION_PATH_LABELS,
+  CANCELLATION_PREFERRED_RESOLUTION_LABELS,
   CANCELLATION_STATUS_LABELS,
   type CancellationRequest,
 } from "@/lib/cancellations/types";
@@ -82,6 +83,11 @@ export default async function AdminCancellationDetailPage({
       <p className="mt-1 text-sm text-ink-soft">
         {request.bookings?.booking_code} · {CANCELLATION_PATH_LABELS[request.path]}
       </p>
+      {request.preferred_resolution && (
+        <p className="mt-2 inline-block rounded-full bg-[#E3F2F1] px-3 py-1 text-xs font-semibold text-teal">
+          Customer would like: {CANCELLATION_PREFERRED_RESOLUTION_LABELS[request.preferred_resolution]}
+        </p>
+      )}
 
       {approved && (
         <p className="mt-4 rounded-lg border border-teal bg-[#E3F2F1] p-3 text-sm text-teal">

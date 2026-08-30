@@ -1,6 +1,7 @@
 export type CancellationPath = "standard" | "force_majeure";
 export type CancellationStatus = "pending_review" | "approved" | "rejected";
 export type CancellationResolution = "refund" | "reschedule" | "gift_voucher" | "rejected";
+export type CancellationPreferredResolution = "refund" | "reschedule" | "gift_voucher";
 export type GiftVoucherStatus = "issued" | "redeemed" | "expired";
 
 export interface CancellationPolicyTier {
@@ -16,6 +17,10 @@ export interface CancellationRequest {
   path: CancellationPath;
   evidence_path: string | null;
   reason: string | null;
+  // What the customer said they'd prefer, picked on the request form --
+  // a preference for staff to weigh, not a binding choice. Null on
+  // requests submitted before this field existed.
+  preferred_resolution: CancellationPreferredResolution | null;
   calculated_refund_percent: number | null;
   calculated_refund_amount_idr: number | null;
   resolution: CancellationResolution | null;
@@ -54,4 +59,10 @@ export const CANCELLATION_RESOLUTION_LABELS: Record<CancellationResolution, stri
   reschedule: "Rescheduled",
   gift_voucher: "Gift voucher",
   rejected: "Rejected",
+};
+
+export const CANCELLATION_PREFERRED_RESOLUTION_LABELS: Record<CancellationPreferredResolution, string> = {
+  refund: "A refund",
+  reschedule: "Reschedule to a new date",
+  gift_voucher: "Give it as a gift to someone else",
 };

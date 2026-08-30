@@ -3,6 +3,7 @@ import { requireAdmin } from "@/lib/admin/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import {
   CANCELLATION_PATH_LABELS,
+  CANCELLATION_PREFERRED_RESOLUTION_LABELS,
   CANCELLATION_STATUS_LABELS,
   type CancellationRequest,
 } from "@/lib/cancellations/types";
@@ -93,6 +94,7 @@ export default async function AdminCancellationsPage({
               <th className="px-4 py-2">Trip</th>
               <th className="px-4 py-2">Customer</th>
               <th className="px-4 py-2">Type</th>
+              <th className="px-4 py-2">Wants</th>
               <th className="px-4 py-2">Status</th>
               <th className="px-4 py-2" />
             </tr>
@@ -109,6 +111,11 @@ export default async function AdminCancellationsPage({
                 <td className="px-4 py-2 text-ink">{r.bookings?.products?.title ?? "—"}</td>
                 <td className="px-4 py-2 text-ink">{r.bookings?.customers?.name ?? "—"}</td>
                 <td className="px-4 py-2 text-ink-soft">{CANCELLATION_PATH_LABELS[r.path]}</td>
+                <td className="px-4 py-2 text-ink-soft">
+                  {r.preferred_resolution
+                    ? CANCELLATION_PREFERRED_RESOLUTION_LABELS[r.preferred_resolution]
+                    : "—"}
+                </td>
                 <td className="px-4 py-2 text-ink-soft">{CANCELLATION_STATUS_LABELS[r.status]}</td>
                 <td className="px-4 py-2 text-right">
                   <Link href={`/admin/cancellations/${r.id}`} className="text-teal underline">
@@ -119,7 +126,7 @@ export default async function AdminCancellationsPage({
             ))}
             {requests.length === 0 && !error && (
               <tr>
-                <td colSpan={7} className="px-4 py-8 text-center text-ink-soft">
+                <td colSpan={8} className="px-4 py-8 text-center text-ink-soft">
                   Nothing here right now.
                 </td>
               </tr>
