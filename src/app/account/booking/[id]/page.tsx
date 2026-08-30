@@ -289,7 +289,9 @@ export default async function BookingDetailPage({
             <p className="mt-2 text-ink-soft">
               We&apos;re reviewing your request
               {latestCancellationRequest.preferred_resolution &&
-                ` for "${CANCELLATION_PREFERRED_RESOLUTION_LABELS[latestCancellationRequest.preferred_resolution]}"`}{" "}
+                ` for "${CANCELLATION_PREFERRED_RESOLUTION_LABELS[latestCancellationRequest.preferred_resolution]}"`}
+              {latestCancellationRequest.preferred_new_date &&
+                ` (new date requested: ${latestCancellationRequest.preferred_new_date})`}{" "}
               -- we&apos;ll email you once it&apos;s decided.
             </p>
           )}

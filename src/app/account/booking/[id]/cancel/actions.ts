@@ -43,6 +43,19 @@ export async function submitCancellationRequestAction(bookingId: string, formDat
     );
   }
 
+  let preferredNewDate: string | null = null;
+  if (preferredResolution === "reschedule") {
+    const raw = String(formData.get("preferred_new_date") ?? "").trim();
+    if (!raw || Number.isNaN(Date.parse(raw))) {
+      fail("Please choose the date you'd like to reschedule to.");
+    }
+    const todayStr = new Date().toISOString().slice(0, 10);
+    if (raw <= todayStr) {
+      fail("Please choose a future date to reschedule to.");
+    }
+    preferredNewDate = raw;
+  }
+
   const reason = String(formData.get("reason") ?? "").trim();
   if (!reason) {
     fail("Please tell us what happened.");
@@ -104,6 +117,7 @@ export async function submitCancellationRequestAction(bookingId: string, formDat
       path,
       reason,
       preferred_resolution: preferredResolution,
+      preferred_new_date: preferredNewDate,
       calculated_refund_percent: calculatedRefundPercent,
       calculated_refund_amount_idr: calculatedRefundAmountIdr,
     })
@@ -166,6 +180,7 @@ export async function submitCancellationRequestAction(bookingId: string, formDat
         bookingCode: booking.booking_code,
         path,
         preferredResolutionLabel: CANCELLATION_PREFERRED_RESOLUTION_LABELS[preferredResolution],
+        preferredNewDate,
         reviewUrl: `${siteUrl}/admin/cancellations/${inserted.id}`,
       })
     )

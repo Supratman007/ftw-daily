@@ -4,6 +4,7 @@ import { requireCustomer } from "@/lib/customers/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { formatIdr } from "@/lib/currency";
 import { daysBeforeDeparture, resolveCancellationRefundPercent } from "@/lib/cancellations/policy";
+import { CancellationPreferenceFields } from "@/components/account/CancellationPreferenceFields";
 import { submitCancellationRequestAction } from "./actions";
 
 const labelClass = "text-xs font-semibold uppercase tracking-wide text-ink-soft";
@@ -60,6 +61,9 @@ export default async function RequestCancellationPage({
   const daysOut = daysBeforeDeparture(booking.slot_date, today);
   const refundPercent = resolveCancellationRefundPercent(tiers ?? [], daysOut);
   const estimatedRefundIdr = Math.round(booking.total_idr * (refundPercent / 100));
+  const tomorrowDate = new Date(`${today}T00:00:00Z`);
+  tomorrowDate.setUTCDate(tomorrowDate.getUTCDate() + 1);
+  const tomorrow = tomorrowDate.toISOString().slice(0, 10);
 
   const productTitle =
     (booking as unknown as { products: { title: string } | null }).products?.title ?? "your trip";
@@ -137,46 +141,7 @@ export default async function RequestCancellationPage({
           </div>
         </fieldset>
 
-        <fieldset className="rounded-2xl border border-sand-deep bg-white p-5">
-          <legend className="px-1 text-sm font-semibold text-ink">What would you like?</legend>
-          <p className="mt-1 text-xs text-ink-soft">
-            This is just a preference -- our team will confirm what&apos;s possible for your
-            booking.
-          </p>
-          <div className="mt-3 flex flex-col gap-2">
-            <label className="flex items-start gap-2 text-sm text-ink">
-              <input
-                type="radio"
-                name="preferred_resolution"
-                value="refund"
-                defaultChecked
-                required
-                className="mt-1"
-              />
-              <span>A refund</span>
-            </label>
-            <label className="flex items-start gap-2 text-sm text-ink">
-              <input
-                type="radio"
-                name="preferred_resolution"
-                value="reschedule"
-                required
-                className="mt-1"
-              />
-              <span>Reschedule to a new date</span>
-            </label>
-            <label className="flex items-start gap-2 text-sm text-ink">
-              <input
-                type="radio"
-                name="preferred_resolution"
-                value="gift_voucher"
-                required
-                className="mt-1"
-              />
-              <span>Give it as a gift to someone else instead</span>
-            </label>
-          </div>
-        </fieldset>
+        <CancellationPreferenceFields minDate={tomorrow} />
 
         <div>
           <label className={labelClass} htmlFor="reason">

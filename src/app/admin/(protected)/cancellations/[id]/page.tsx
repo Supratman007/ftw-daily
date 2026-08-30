@@ -86,6 +86,7 @@ export default async function AdminCancellationDetailPage({
       {request.preferred_resolution && (
         <p className="mt-2 inline-block rounded-full bg-[#E3F2F1] px-3 py-1 text-xs font-semibold text-teal">
           Customer would like: {CANCELLATION_PREFERRED_RESOLUTION_LABELS[request.preferred_resolution]}
+          {request.preferred_new_date && ` — new date: ${request.preferred_new_date}`}
         </p>
       )}
 
@@ -203,6 +204,7 @@ export default async function AdminCancellationDetailPage({
             <input
               type="date"
               name="new_slot_date"
+              defaultValue={request.preferred_new_date ?? undefined}
               required
               className="rounded-lg border border-sand-deep px-3 py-2 text-sm"
             />

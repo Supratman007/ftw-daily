@@ -21,6 +21,10 @@ export interface CancellationRequest {
   // a preference for staff to weigh, not a binding choice. Null on
   // requests submitted before this field existed.
   preferred_resolution: CancellationPreferredResolution | null;
+  // Only set when preferred_resolution is "reschedule" -- the date the
+  // customer asked for. Pre-fills the admin's reschedule form; the
+  // admin can still pick a different date if it's unavailable.
+  preferred_new_date: string | null;
   calculated_refund_percent: number | null;
   calculated_refund_amount_idr: number | null;
   resolution: CancellationResolution | null;

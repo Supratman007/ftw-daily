@@ -564,6 +564,7 @@ interface NewCancellationStaffEmailParams {
   bookingCode: string;
   path: "standard" | "force_majeure";
   preferredResolutionLabel: string;
+  preferredNewDate: string | null;
   reviewUrl: string;
 }
 
@@ -578,7 +579,11 @@ export async function sendNewCancellationStaffEmail(
     <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
       <h1 style="color: #0F3A3D;">New ${params.path === "force_majeure" ? "force majeure" : "cancellation"} request</h1>
       <p><strong>${escapeHtml(params.customerName)}</strong> requested to cancel/reschedule <strong>${escapeHtml(params.productTitle)}</strong> (${escapeHtml(params.bookingCode)}).</p>
-      <p>They'd prefer: <strong>${escapeHtml(params.preferredResolutionLabel)}</strong>.</p>
+      <p>They'd prefer: <strong>${escapeHtml(params.preferredResolutionLabel)}</strong>${
+        params.preferredNewDate
+          ? ` -- new date requested: <strong>${escapeHtml(params.preferredNewDate)}</strong>`
+          : ""
+      }.</p>
       <p><a href="${params.reviewUrl}" style="display: inline-block; background: #E1613C; color: #fff; padding: 10px 18px; border-radius: 8px; text-decoration: none;">Review this request</a></p>
     </div>
   `;
