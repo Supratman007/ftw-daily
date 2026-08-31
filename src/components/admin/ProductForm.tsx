@@ -1,8 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
-import { PRODUCT_TYPE_LABELS, type Product } from "@/lib/products/types";
+import { PRODUCT_TYPE_LABELS, type Product, type ProductType } from "@/lib/products/types";
 
 const inputClass =
   "w-full rounded-lg border border-sand-deep px-3 py-2 text-sm outline-none focus:border-teal";
@@ -20,6 +21,8 @@ export function ProductForm({ action, product, error }: ProductFormProps) {
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [slugTouched, setSlugTouched] = useState(Boolean(product));
   const [slug, setSlug] = useState(product?.slug ?? "");
+  const [productType, setProductType] = useState<ProductType>(product?.product_type ?? "tour");
+  const isCarOrTransport = productType === "car_hire" || productType === "transport";
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const files = e.target.files;
@@ -64,7 +67,8 @@ export function ProductForm({ action, product, error }: ProductFormProps) {
         <select
           id="product_type"
           name="product_type"
-          defaultValue={product?.product_type ?? "tour"}
+          value={productType}
+          onChange={(e) => setProductType(e.target.value as ProductType)}
           className={inputClass}
         >
           {Object.entries(PRODUCT_TYPE_LABELS).map(([value, label]) => (
@@ -73,6 +77,26 @@ export function ProductForm({ action, product, error }: ProductFormProps) {
             </option>
           ))}
         </select>
+        {isCarOrTransport && product && (
+          <p className="mt-2 text-xs text-ink-soft">
+            Pricing for Car Hire / Transport is set on its own grid, not the single price below.{" "}
+            <Link
+              href={
+                productType === "car_hire"
+                  ? `/admin/products/${product.id}/car-pricing`
+                  : `/admin/products/${product.id}/transport-pricing`
+              }
+              className="font-semibold text-teal underline"
+            >
+              Manage {productType === "car_hire" ? "car types & pricing" : "transport pricing"} →
+            </Link>
+          </p>
+        )}
+        {isCarOrTransport && !product && (
+          <p className="mt-2 text-xs text-ink-soft">
+            Save this product first, then a link to set up its pricing grid will appear here.
+          </p>
+        )}
       </div>
 
       <div>
@@ -192,10 +216,14 @@ export function ProductForm({ action, product, error }: ProductFormProps) {
             name="adult_price_usd"
             type="number"
             step="0.01"
-            required
+            required={!isCarOrTransport}
             defaultValue={product?.adult_price_usd ?? ""}
+            placeholder={isCarOrTransport ? "Not used -- see pricing grid" : undefined}
             className={inputClass}
           />
+          {isCarOrTransport && (
+            <p className="mt-1 text-xs text-ink-soft">Leave blank -- priced by the grid instead.</p>
+          )}
         </div>
         <div>
           <label className={labelClass} htmlFor="child_price_usd">

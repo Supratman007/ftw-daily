@@ -63,7 +63,8 @@ function buildProductRow(formData: FormData): BuildProductRowResult {
   if (!title) {
     return { ok: false, error: "Title is required." };
   }
-  if (adultPrice === null) {
+  const needsSinglePrice = productType !== "car_hire" && productType !== "transport";
+  if (needsSinglePrice && adultPrice === null) {
     return { ok: false, error: "Adult price is required and must be a number." };
   }
 

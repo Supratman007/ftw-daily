@@ -35,9 +35,36 @@ export interface Booking {
   admin_notes: string | null;
   decline_reason: string | null;
   insurance_total_idr: number;
+  // Car Hire / Transport only (spec §6a, §6e) -- car_type_id/
+  // car_package_id are null for every other product type.
+  car_type_id: string | null;
+  car_package_id: string | null;
+  pickup_datetime: string | null;
+  // Mutually exclusive by convention: meeting_point_id is set if
+  // chosen from the admin-managed list, meeting_point_custom if
+  // "Other" was picked instead. Both null for a product type that
+  // doesn't use pickup at all.
+  meeting_point_id: string | null;
+  meeting_point_custom: string | null;
   created_at: string;
   updated_at: string;
 }
+
+/** Self-service pickup-time change audit trail (spec §6e) -- a driver
+ * dispatch depends on this being accurate. */
+export interface BookingPickupChange {
+  id: string;
+  booking_id: string;
+  old_datetime: string;
+  new_datetime: string;
+  changed_at: string;
+}
+
+/** How close to pickup a customer can still change it themselves --
+ * spec §6e proposes this as a sensible default, admin-configurable
+ * later if it ever needs to be; hardcoded here for now since there's
+ * no admin settings screen for it yet. */
+export const PICKUP_CHANGE_CUTOFF_HOURS = 3;
 
 export const BOOKING_STATUS_LABELS: Record<BookingStatus, string> = {
   pending_payment: "Pending payment",

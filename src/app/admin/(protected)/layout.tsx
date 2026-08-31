@@ -24,6 +24,7 @@ export default async function ProtectedAdminLayout({
             <Link href="/admin/cancellations">Cancellations</Link>
             <Link href="/admin/vouchers">Vouchers</Link>
             <Link href="/admin/products">Products</Link>
+            <Link href="/admin/meeting-points">Meeting points</Link>
             <Link href="/admin/discount-codes">Discount codes</Link>
             <Link href="/admin/agents">Sales Agents</Link>
             <Link href="/admin/commissions">Commissions</Link>
