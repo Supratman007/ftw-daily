@@ -13,12 +13,13 @@ import type { CommissionTier, CommissionStatus } from "@/lib/agents/types";
 
 type ActivityRow = {
   id: string;
-  booking_code: string;
+  source: "booking" | "gift_voucher";
+  code: string;
   created_at: string;
   commission_amount_usd: number | null;
   commission_status: CommissionStatus | null;
-  products: { title: string } | null;
-  customers: { name: string } | null;
+  tripTitle: string;
+  personName: string | null;
 };
 
 const statCardBase = "rounded-2xl border p-5";
@@ -54,7 +55,7 @@ export default async function AgentOverviewPage({
 
   if (agent.status === "active") {
     const supabase = await createSupabaseServerClient();
-    const [{ data: referred }, { data: tiers }, qr] = await Promise.all([
+    const [{ data: referred }, { data: referredVouchers }, { data: tiers }, qr] = await Promise.all([
       supabase
         .from("bookings")
         .select(
@@ -63,14 +64,71 @@ export default async function AgentOverviewPage({
         .eq("referred_by_agent_id", agent.id)
         .eq("status", "paid_confirmed")
         .order("created_at", { ascending: false }),
+      // Gift purchases can carry a referral too (spec §6f follow-up) --
+      // earns commission the same way, but doesn't itself count toward
+      // confirmedReferralCount/tier progress below, only real bookings
+      // do that.
+      supabase
+        .from("gift_vouchers")
+        .select(
+          "id, redemption_code, issued_at, commission_amount_usd, commission_status, recipient_name, products(title)"
+        )
+        .eq("referred_by_agent_id", agent.id)
+        .eq("status", "issued")
+        .order("issued_at", { ascending: false }),
       supabase
         .from("commission_tiers")
         .select("id, name, min_referrals, commission_percent, sort_order"),
       generateReferralQrCodeDataUrl(referralLink),
     ]);
 
-    const rows = (referred ?? []) as unknown as ActivityRow[];
-    confirmedReferralCount = rows.length;
+    const bookingRows: ActivityRow[] = (
+      (referred ?? []) as unknown as Array<{
+        id: string;
+        booking_code: string;
+        created_at: string;
+        commission_amount_usd: number | null;
+        commission_status: CommissionStatus | null;
+        products: { title: string } | null;
+        customers: { name: string } | null;
+      }>
+    ).map((r) => ({
+      id: r.id,
+      source: "booking",
+      code: r.booking_code,
+      created_at: r.created_at,
+      commission_amount_usd: r.commission_amount_usd,
+      commission_status: r.commission_status,
+      tripTitle: r.products?.title ?? "Trip",
+      personName: r.customers?.name ?? null,
+    }));
+
+    const voucherRows: ActivityRow[] = (
+      (referredVouchers ?? []) as unknown as Array<{
+        id: string;
+        redemption_code: string;
+        issued_at: string;
+        commission_amount_usd: number | null;
+        commission_status: CommissionStatus | null;
+        recipient_name: string;
+        products: { title: string } | null;
+      }>
+    ).map((v) => ({
+      id: v.id,
+      source: "gift_voucher",
+      code: v.redemption_code,
+      created_at: v.issued_at,
+      commission_amount_usd: v.commission_amount_usd,
+      commission_status: v.commission_status,
+      tripTitle: v.products?.title ?? "Trip",
+      personName: v.recipient_name,
+    }));
+
+    const rows = [...bookingRows, ...voucherRows].sort((a, b) =>
+      b.created_at.localeCompare(a.created_at)
+    );
+
+    confirmedReferralCount = bookingRows.length;
     for (const row of rows) {
       const amount = row.commission_amount_usd ?? 0;
       if (row.commission_status === "paid") paidUsd += amount;
@@ -273,16 +331,20 @@ export default async function AgentOverviewPage({
             ) : (
               recentActivity.map((r) => (
                 <div
-                  key={r.id}
+                  key={`${r.source}-${r.id}`}
                   className="flex items-center justify-between gap-4 border-t border-sand-deep px-4 py-3 text-sm first:border-t-0"
                 >
                   <div className="min-w-0">
                     <p className="truncate font-semibold text-ink">
-                      {r.products?.title ?? "Trip"}
+                      {r.tripTitle}
+                      {r.source === "gift_voucher" && (
+                        <span className="ml-2 rounded-full bg-sand px-2 py-0.5 text-xs font-normal uppercase text-ink-soft">
+                          Gift
+                        </span>
+                      )}
                     </p>
                     <p className="truncate text-ink-soft">
-                      {r.booking_code} · {r.customers?.name ?? "—"} ·{" "}
-                      {r.created_at.slice(0, 10)}
+                      {r.code} · {r.personName ?? "—"} · {r.created_at.slice(0, 10)}
                     </p>
                   </div>
                   <div className="shrink-0 text-right">

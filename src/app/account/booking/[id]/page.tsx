@@ -6,6 +6,7 @@ import { createSupabaseServiceRoleClient } from "@/lib/supabase/service";
 import { formatIdr, formatUsd } from "@/lib/currency";
 import { BOOKING_STATUS_LABELS, type Booking, type Traveler } from "@/lib/bookings/types";
 import { resendConfirmationEmailAction } from "./actions";
+import { requestGiftVoucherRefundAction } from "@/app/account/bookings/actions";
 import { sendCustomerMessageAction } from "./chat-actions";
 import { customerLogoutAction } from "@/app/actions";
 import { ChatThread } from "@/components/chat/ChatThread";
@@ -36,10 +37,10 @@ export default async function BookingDetailPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ resent?: string; notice?: string }>;
+  searchParams: Promise<{ resent?: string; notice?: string; error?: string }>;
 }) {
   const { id } = await params;
-  const { resent, notice } = await searchParams;
+  const { resent, notice, error: actionError } = await searchParams;
   const customer = await requireCustomer(`/account/booking/${id}`);
 
   const supabase = await createSupabaseServerClient();
@@ -166,6 +167,11 @@ export default async function BookingDetailPage({
       {resent && (
         <p className="mt-4 rounded-lg border border-teal bg-[#E3F2F1] p-3 text-sm text-teal">
           Confirmation email resent.
+        </p>
+      )}
+      {actionError && (
+        <p className="mt-4 rounded-lg border border-coral bg-[#FCE6DD] p-3 text-sm text-coral-dark">
+          {actionError}
         </p>
       )}
 
@@ -347,6 +353,39 @@ export default async function BookingDetailPage({
                   </a>
                   .
                 </p>
+
+                {vouchers[0].status === "issued" && !vouchers[0].cancellation_requested_at && (
+                  <details className="mt-2 border-t border-sand-deep pt-2">
+                    <summary className="cursor-pointer list-none text-xs font-semibold text-coral-dark hover:underline">
+                      Request a refund on this voucher instead
+                    </summary>
+                    <form
+                      action={requestGiftVoucherRefundAction.bind(null, vouchers[0].id)}
+                      className="mt-2 flex flex-col gap-2"
+                    >
+                      <input type="hidden" name="return_to" value={`/account/booking/${b.id}`} />
+                      <textarea
+                        name="reason"
+                        rows={3}
+                        required
+                        placeholder="Why are you requesting a refund?"
+                        className="rounded-lg border border-sand-deep px-2 py-1 text-xs outline-none focus:border-teal"
+                      />
+                      <button
+                        type="submit"
+                        className="self-start rounded-lg bg-coral px-3 py-1.5 text-xs font-semibold text-white"
+                      >
+                        Submit request
+                      </button>
+                    </form>
+                  </details>
+                )}
+                {vouchers[0].cancellation_requested_at && (
+                  <p className="mt-2 border-t border-sand-deep pt-2 text-xs text-teal">
+                    Refund requested {new Date(vouchers[0].cancellation_requested_at).toLocaleDateString()}{" "}
+                    -- awaiting review.
+                  </p>
+                )}
               </div>
             )}
 

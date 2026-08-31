@@ -38,6 +38,7 @@ export default async function AdminOverviewPage({
     openConversationCount,
     pendingCancellationCount,
     pendingVoucherCount,
+    outstandingVoucherValue,
   ] = await Promise.all([
     supabase.from("bookings").select("*", { count: "exact", head: true }).eq("status", "paid_confirmed"),
     supabase.from("bookings").select("*", { count: "exact", head: true }).eq("status", "pending_payment"),
@@ -59,6 +60,14 @@ export default async function AdminOverviewPage({
       .select("*", { count: "exact", head: true })
       .eq("status", "issued")
       .not("redemption_requested_at", "is", null),
+    // Every still-valid, unredeemed voucher's value is money you owe
+    // if it's ever redeemed -- worth seeing at a glance, not just
+    // buried on the Vouchers page itself.
+    supabase
+      .from("gift_vouchers")
+      .select("value_amount_idr")
+      .eq("status", "issued")
+      .gte("expires_at", new Date().toISOString()),
   ]);
 
   const totalRevenueIdr = (revenue.data ?? []).reduce((sum, r) => sum + r.total_idr, 0);
@@ -68,6 +77,10 @@ export default async function AdminOverviewPage({
   const openConversations = openConversationCount.count ?? 0;
   const pendingCancellations = pendingCancellationCount.count ?? 0;
   const pendingVouchers = pendingVoucherCount.count ?? 0;
+  const outstandingVoucherLiabilityIdr = (outstandingVoucherValue.data ?? []).reduce(
+    (sum, v) => sum + v.value_amount_idr,
+    0
+  );
 
   return (
     <div>
@@ -170,6 +183,9 @@ export default async function AdminOverviewPage({
             className={`mt-1 font-serif text-2xl font-semibold ${pendingVouchers > 0 ? "text-coral-dark" : "text-ink"}`}
           >
             {pendingVouchers} to redeem
+          </p>
+          <p className="mt-1 text-xs text-ink-soft">
+            {formatIdr(outstandingVoucherLiabilityIdr)} outstanding, unredeemed
           </p>
         </Link>
       </div>

@@ -73,9 +73,29 @@ export default async function AdminVouchersPage({
   const vouchers = (data ?? []) as unknown as VoucherRow[];
   const returnTo = `/admin/vouchers?status=${activeFilter}`;
 
+  // Outstanding liability: every still-valid, unredeemed voucher's
+  // value adds up to real money you owe if it's ever redeemed --
+  // independent of whatever the filter above is set to, since this is
+  // meant to answer "how much am I on the hook for right now" at a
+  // glance, not "what matches the current filter."
+  const { data: outstandingData } = await supabase
+    .from("gift_vouchers")
+    .select("value_amount_idr")
+    .eq("status", "issued")
+    .gte("expires_at", nowIso);
+  const outstandingVouchers = outstandingData ?? [];
+  const outstandingTotalIdr = outstandingVouchers.reduce((sum, v) => sum + v.value_amount_idr, 0);
+
   return (
     <div>
       <h1 className="font-serif text-2xl font-semibold text-ink">Gift vouchers</h1>
+
+      <p className="mt-1 text-sm text-ink-soft">
+        Outstanding liability:{" "}
+        <span className="font-semibold text-ink">{formatIdr(outstandingTotalIdr)}</span> across{" "}
+        {outstandingVouchers.length} still-valid, unredeemed voucher
+        {outstandingVouchers.length === 1 ? "" : "s"}.
+      </p>
 
       <form method="GET" className="mt-4 flex gap-3">
         <select

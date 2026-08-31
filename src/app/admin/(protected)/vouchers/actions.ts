@@ -13,6 +13,37 @@ import {
   sendGiftVoucherRefundDeclinedEmail,
 } from "@/lib/email/resend";
 
+/** A voucher's giver is reached one of two ways depending on where it
+ * came from: through the original booking it was cancelled from, or
+ * (for one bought directly at /p/[slug]/gift) purchaser_customer_id
+ * recorded on the voucher itself. Shared here since the refund
+ * approve/decline actions both need it, same as
+ * confirmVoucherRedemptionAction already does inline. */
+async function resolveVoucherGiver(
+  serviceClient: ReturnType<typeof createSupabaseServiceRoleClient>,
+  voucher: { original_booking_id: string | null; purchaser_customer_id: string | null }
+): Promise<{ name: string; email: string } | null> {
+  if (voucher.original_booking_id) {
+    const { data: booking } = await serviceClient
+      .from("bookings")
+      .select("customers(name, email)")
+      .eq("id", voucher.original_booking_id)
+      .maybeSingle();
+    const giver = (booking as unknown as { customers: { name: string; email: string } | null } | null)
+      ?.customers;
+    if (giver) return giver;
+  }
+  if (voucher.purchaser_customer_id) {
+    const { data: purchaser } = await serviceClient
+      .from("customers")
+      .select("name, email")
+      .eq("id", voucher.purchaser_customer_id)
+      .maybeSingle();
+    if (purchaser) return purchaser;
+  }
+  return null;
+}
+
 /**
  * The real "close the loop" step: creates an actual booking for the
  * recipient (paid_confirmed -- the voucher already covers it, no
@@ -207,7 +238,9 @@ export async function approveGiftVoucherRefundAction(voucherId: string, formData
   const supabase = await createSupabaseServerClient();
   const { data: voucher } = await supabase
     .from("gift_vouchers")
-    .select("id, value_amount_idr, redemption_code, purchaser_customer_id, products(title)")
+    .select(
+      "id, value_amount_idr, redemption_code, purchaser_customer_id, original_booking_id, products(title)"
+    )
     .eq("id", voucherId)
     .maybeSingle();
 
@@ -216,17 +249,13 @@ export async function approveGiftVoucherRefundAction(voucherId: string, formData
   await supabase.from("gift_vouchers").update({ status: "expired" }).eq("id", voucherId);
 
   const serviceClient = createSupabaseServiceRoleClient();
-  const { data: purchaser } = await serviceClient
-    .from("customers")
-    .select("name, email")
-    .eq("id", voucher.purchaser_customer_id)
-    .maybeSingle();
+  const giver = await resolveVoucherGiver(serviceClient, voucher);
 
-  if (purchaser) {
+  if (giver) {
     const productTitle = (voucher as unknown as { products: { title: string } | null }).products?.title ?? "your gift voucher";
     await sendGiftVoucherRefundApprovedEmail({
-      toEmail: purchaser.email,
-      purchaserName: purchaser.name,
+      toEmail: giver.email,
+      purchaserName: giver.name,
       productTitle,
       voucherCode: voucher.redemption_code,
       refundAmountIdr: voucher.value_amount_idr,
@@ -247,7 +276,7 @@ export async function declineGiftVoucherRefundAction(voucherId: string, formData
   const supabase = await createSupabaseServerClient();
   const { data: voucher } = await supabase
     .from("gift_vouchers")
-    .select("id, redemption_code, purchaser_customer_id, products(title)")
+    .select("id, redemption_code, purchaser_customer_id, original_booking_id, products(title)")
     .eq("id", voucherId)
     .maybeSingle();
 
@@ -259,17 +288,13 @@ export async function declineGiftVoucherRefundAction(voucherId: string, formData
     .eq("id", voucherId);
 
   const serviceClient = createSupabaseServiceRoleClient();
-  const { data: purchaser } = await serviceClient
-    .from("customers")
-    .select("name, email")
-    .eq("id", voucher.purchaser_customer_id)
-    .maybeSingle();
+  const giver = await resolveVoucherGiver(serviceClient, voucher);
 
-  if (purchaser) {
+  if (giver) {
     const productTitle = (voucher as unknown as { products: { title: string } | null }).products?.title ?? "your gift voucher";
     await sendGiftVoucherRefundDeclinedEmail({
-      toEmail: purchaser.email,
-      purchaserName: purchaser.name,
+      toEmail: giver.email,
+      purchaserName: giver.name,
       productTitle,
       voucherCode: voucher.redemption_code,
       adminNotes: adminNotes || null,

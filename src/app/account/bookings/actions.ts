@@ -9,19 +9,24 @@ import {
   sendGiftVoucherRefundRequestStaffEmail,
 } from "@/lib/email/resend";
 
-/** The "I want a refund on the gift I bought" path -- previously there
- * was no way to undo a gift purchase at all, for the customer or for
- * staff. Only available on a not-yet-redeemed voucher the customer
- * themselves purchased (one that came from cancelling a booking has
- * its own, separate lifecycle already). Same "flag it, staff reviews,
- * the actual Xendit refund happens manually" pattern as every other
- * refund in this app -- this action only records the request. */
+/** The "I want a refund on the gift I bought" path -- covers a
+ * not-yet-redeemed voucher regardless of where it came from: bought
+ * directly at /p/[slug]/gift (shown on My Bookings), or issued by
+ * approving a cancellation as a gift voucher (shown on that booking's
+ * own page) -- both were previously impossible to undo at all. No
+ * ownership filter needed in the query itself: gift_vouchers' own RLS
+ * SELECT policies already cover exactly these two paths (purchased-by
+ * or original-booking's-customer-is), so a voucher belonging to
+ * someone else just comes back null here, same as "not found." Called
+ * from two different pages, so where to redirect back to travels with
+ * the form itself rather than being hardcoded. */
 export async function requestGiftVoucherRefundAction(voucherId: string, formData: FormData) {
   const customer = await requireCustomer("/account/bookings");
   const reason = String(formData.get("reason") ?? "").trim();
+  const returnTo = String(formData.get("return_to") ?? "/account/bookings");
 
   function fail(message: string): never {
-    redirect(`/account/bookings?error=${encodeURIComponent(message)}`);
+    redirect(`${returnTo}${returnTo.includes("?") ? "&" : "?"}error=${encodeURIComponent(message)}`);
   }
 
   if (!reason) fail("Please tell us why, so we can process this quickly.");
@@ -31,7 +36,6 @@ export async function requestGiftVoucherRefundAction(voucherId: string, formData
     .from("gift_vouchers")
     .select("id, status, cancellation_requested_at, product_id, redemption_code, recipient_name")
     .eq("id", voucherId)
-    .eq("purchaser_customer_id", customer.id)
     .maybeSingle();
 
   if (!voucher) fail("Voucher not found.");
@@ -80,5 +84,9 @@ export async function requestGiftVoucherRefundAction(voucherId: string, formData
     ),
   ]);
 
-  redirect("/account/bookings?notice=" + encodeURIComponent("Refund request submitted -- we'll be in touch."));
+  redirect(
+    `${returnTo}${returnTo.includes("?") ? "&" : "?"}notice=${encodeURIComponent(
+      "Refund request submitted -- we'll be in touch."
+    )}`
+  );
 }

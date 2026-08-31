@@ -153,6 +153,7 @@ export default async function MyBookingsPage({
                         action={requestGiftVoucherRefundAction.bind(null, v.id)}
                         className="absolute right-0 z-10 mt-2 flex w-64 flex-col gap-2 rounded-lg border border-sand-deep bg-white p-3 shadow-lg"
                       >
+                        <input type="hidden" name="return_to" value="/account/bookings" />
                         <textarea
                           name="reason"
                           rows={3}
