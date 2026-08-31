@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { requireCustomer } from "@/lib/customers/auth";
 import { customerLogoutAction } from "../actions";
 
@@ -14,15 +15,21 @@ export default async function AccountLayout({ children }: { children: React.Reac
     <div className="min-h-screen bg-sand">
       <header className="flex items-center justify-between border-b border-sand-deep bg-white px-6 py-4">
         <div>
-          <p className="font-mono text-xs uppercase tracking-widest text-ink-soft">
+          <Link
+            href="/"
+            className="font-mono text-xs uppercase tracking-widest text-ink-soft hover:text-ink"
+          >
             Adventure Lombok Booking
-          </p>
+          </Link>
           <nav className="mt-1 flex gap-4 font-serif text-sm font-semibold text-ocean">
             <a href="/account">Overview</a>
             <a href="/account/bookings">My Bookings</a>
             <a href="/account/messages">Messages</a>
             <a href="/account/profile">Profile</a>
             <a href="/redeem">Redeem a gift voucher</a>
+            <Link href="/" className="text-coral-dark">
+              Book a trip
+            </Link>
           </nav>
         </div>
         <div className="flex items-center gap-3 text-sm text-ink-soft">

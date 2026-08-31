@@ -845,6 +845,36 @@ export async function sendVoucherRedeemedBookingConfirmedEmail(
   });
 }
 
+interface GiftVoucherRedeemedNotifyGiverEmailParams {
+  toEmail: string;
+  giverName: string;
+  recipientName: string;
+  productTitle: string;
+  slotDate: string;
+}
+
+/** The person who originally converted their trip into a gift voucher
+ * otherwise never hears anything again -- every other email in this
+ * flow goes to the recipient. Sent once redemption is confirmed, so
+ * they know their gift actually reached someone and got used. */
+export async function sendGiftVoucherRedeemedNotifyGiverEmail(
+  params: GiftVoucherRedeemedNotifyGiverEmailParams
+): Promise<void> {
+  const html = `
+    <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
+      <h1 style="color: #0F3A3D;">Your gift was redeemed!</h1>
+      <p>Hi ${escapeHtml(params.giverName)}, good news -- ${escapeHtml(params.recipientName)} just redeemed the gift voucher you set up for <strong>${escapeHtml(params.productTitle)}</strong>. Their trip is confirmed for <strong>${escapeHtml(params.slotDate)}</strong>.</p>
+      <p style="color: #4B5854;">That's it -- nothing further needed from you. Thanks for thinking of them!</p>
+    </div>
+  `;
+
+  await sendEmail({
+    to: params.toEmail,
+    subject: `Your gift was redeemed — ${params.productTitle}`,
+    html,
+  });
+}
+
 interface VoucherRedemptionRequestStaffEmailParams {
   toEmail: string;
   recipientName: string;
@@ -853,6 +883,7 @@ interface VoucherRedemptionRequestStaffEmailParams {
   productTitle: string;
   voucherCode: string;
   requestedSlotDate: string | null;
+  requestedPaxCount: number | null;
   message: string | null;
   reviewUrl: string;
 }
@@ -868,6 +899,7 @@ export async function sendVoucherRedemptionRequestStaffEmail(
       <h1 style="color: #0F3A3D;">Gift voucher redemption request</h1>
       <p><strong>${escapeHtml(params.recipientName)}</strong> (${escapeHtml(params.recipientEmail)}${params.recipientPhone ? `, ${escapeHtml(params.recipientPhone)}` : ""}) wants to redeem voucher <strong>${escapeHtml(params.voucherCode)}</strong> for <strong>${escapeHtml(params.productTitle)}</strong>.</p>
       ${params.requestedSlotDate ? `<p>Preferred date: <strong>${escapeHtml(params.requestedSlotDate)}</strong></p>` : ""}
+      ${params.requestedPaxCount ? `<p>Travelers: <strong>${params.requestedPaxCount}</strong></p>` : ""}
       ${params.message ? `<p style="color: #4B5854;">"${escapeHtml(params.message)}"</p>` : ""}
       <p><a href="${params.reviewUrl}" style="display: inline-block; background: #E1613C; color: #fff; padding: 10px 18px; border-radius: 8px; text-decoration: none;">Review this voucher</a></p>
     </div>

@@ -8,6 +8,7 @@ import { generateBookingCode } from "@/lib/bookings/booking-code";
 import {
   sendVoucherRedeemedBookingConfirmedEmail,
   sendVoucherRedeemedNeedsAccountEmail,
+  sendGiftVoucherRedeemedNotifyGiverEmail,
 } from "@/lib/email/resend";
 
 /**
@@ -26,6 +27,7 @@ export async function confirmVoucherRedemptionAction(voucherId: string, formData
   await requireAdmin();
   const returnTo = String(formData.get("return_to") ?? "/admin/vouchers");
   const slotDateOverride = String(formData.get("slot_date") ?? "").trim();
+  const paxCountOverrideRaw = String(formData.get("pax_count") ?? "").trim();
 
   function withParam(key: string, value: string): string {
     return `${returnTo}${returnTo.includes("?") ? "&" : "?"}${key}=${encodeURIComponent(value)}`;
@@ -38,13 +40,16 @@ export async function confirmVoucherRedemptionAction(voucherId: string, formData
   const { data: voucher } = await serviceClient
     .from("gift_vouchers")
     .select(
-      "id, status, product_id, value_amount_idr, original_booking_id, redeemed_by_name, redeemed_by_email, requested_slot_date, redemption_code, products(title, adult_price_usd, capacity_per_date)"
+      "id, status, expires_at, product_id, value_amount_idr, original_booking_id, redeemed_by_name, redeemed_by_email, requested_slot_date, requested_pax_count, redemption_code, products(title, adult_price_usd, capacity_per_date)"
     )
     .eq("id", voucherId)
     .maybeSingle();
 
   if (!voucher) fail("Voucher not found.");
   if (voucher.status !== "issued") fail("This voucher isn't in a redeemable state.");
+  if (new Date(voucher.expires_at) < new Date()) {
+    fail("This voucher has expired -- it can no longer be redeemed.");
+  }
   if (!voucher.redeemed_by_email) {
     fail("No redemption request on file yet -- ask the recipient to submit one at /redeem first.");
   }
@@ -60,12 +65,17 @@ export async function confirmVoucherRedemptionAction(voucherId: string, formData
   const [{ data: originalBooking }, { data: customer }] = await Promise.all([
     serviceClient
       .from("bookings")
-      .select("pax_count")
+      .select("pax_count, customer_id, customers(name, email)")
       .eq("id", voucher.original_booking_id)
       .maybeSingle(),
     serviceClient.from("customers").select("id").eq("email", voucher.redeemed_by_email).maybeSingle(),
   ]);
-  const paxCount = originalBooking?.pax_count ?? 1;
+
+  const paxCountOverride = Number(paxCountOverrideRaw);
+  const paxCount =
+    Number.isInteger(paxCountOverride) && paxCountOverride > 0
+      ? paxCountOverride
+      : voucher.requested_pax_count ?? originalBooking?.pax_count ?? 1;
 
   if (!customer) {
     // Nothing to create a booking under yet -- nudge them to register
@@ -127,13 +137,34 @@ export async function confirmVoucherRedemptionAction(voucherId: string, formData
     .eq("id", voucher.id);
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
-  await sendVoucherRedeemedBookingConfirmedEmail({
-    toEmail: voucher.redeemed_by_email,
-    recipientName: voucher.redeemed_by_name ?? "there",
-    productTitle,
-    slotDate,
-    bookingUrl: `${siteUrl}/account/booking/${booking.id}`,
-  });
+  const originalGiver = (
+    originalBooking as unknown as { customers: { name: string; email: string } | null } | null
+  )?.customers;
+
+  await Promise.all([
+    sendVoucherRedeemedBookingConfirmedEmail({
+      toEmail: voucher.redeemed_by_email,
+      recipientName: voucher.redeemed_by_name ?? "there",
+      productTitle,
+      slotDate,
+      bookingUrl: `${siteUrl}/account/booking/${booking.id}`,
+    }),
+    // Whoever originally gave the gift never otherwise finds out it was
+    // used -- only the recipient gets confirmation emails throughout
+    // this whole flow. Best-effort: if the original booking or its
+    // customer record is gone, redemption still succeeds without this.
+    ...(originalGiver
+      ? [
+          sendGiftVoucherRedeemedNotifyGiverEmail({
+            toEmail: originalGiver.email,
+            giverName: originalGiver.name,
+            recipientName: voucher.redeemed_by_name ?? "Your recipient",
+            productTitle,
+            slotDate,
+          }),
+        ]
+      : []),
+  ]);
 
   redirect(returnTo);
 }

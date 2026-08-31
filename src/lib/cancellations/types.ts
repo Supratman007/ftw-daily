@@ -57,6 +57,7 @@ export interface GiftVoucher {
   redeemed_by_name: string | null;
   redeemed_by_email: string | null;
   redeemed_by_phone: string | null;
+  requested_pax_count: number | null;
   requested_slot_date: string | null;
   redemption_message: string | null;
   redemption_requested_at: string | null;

@@ -19,7 +19,9 @@ type VoucherRow = {
   expires_at: string;
   redemption_requested_at: string | null;
   requested_slot_date: string | null;
+  requested_pax_count: number | null;
   products: { title: string } | null;
+  bookings: { pax_count: number } | null;
 };
 
 /**
@@ -83,7 +85,7 @@ export default async function RedeemPage({
   const { data } = await serviceClient
     .from("gift_vouchers")
     .select(
-      "id, value_amount_idr, recipient_name, redemption_code, status, expires_at, redemption_requested_at, requested_slot_date, products(title)"
+      "id, value_amount_idr, recipient_name, redemption_code, status, expires_at, redemption_requested_at, requested_slot_date, requested_pax_count, products(title), bookings!original_booking_id(pax_count)"
     )
     .eq("redemption_code", code.trim().toUpperCase())
     .maybeSingle();
@@ -184,8 +186,10 @@ export default async function RedeemPage({
             <p className="font-semibold text-ink">Request already submitted</p>
             <p className="mt-2 text-ink-soft">
               We already have a redemption request on file for this voucher
-              {voucher.requested_slot_date && ` for ${voucher.requested_slot_date}`} -- we&apos;ll
-              be in touch soon. Need to change something? Email{" "}
+              {voucher.requested_slot_date && ` for ${voucher.requested_slot_date}`}
+              {voucher.requested_pax_count &&
+                ` (${voucher.requested_pax_count} traveler${voucher.requested_pax_count === 1 ? "" : "s"})`}{" "}
+              -- we&apos;ll be in touch soon. Need to change something? Email{" "}
               <a href={`mailto:${SUPPORT_EMAIL}`} className="font-semibold text-teal hover:underline">
                 {SUPPORT_EMAIL}
               </a>
@@ -244,6 +248,21 @@ export default async function RedeemPage({
                   type="date"
                   min={new Date().toISOString().slice(0, 10)}
                   required
+                  className={inputClass}
+                />
+              </div>
+              <div>
+                <label className={labelClass} htmlFor="pax_count">
+                  Number of travelers
+                </label>
+                <input
+                  id="pax_count"
+                  name="pax_count"
+                  type="number"
+                  min={1}
+                  max={20}
+                  required
+                  defaultValue={voucher.requested_pax_count ?? voucher.bookings?.pax_count ?? 1}
                   className={inputClass}
                 />
               </div>

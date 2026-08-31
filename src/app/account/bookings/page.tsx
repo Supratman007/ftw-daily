@@ -45,7 +45,15 @@ export default async function MyBookingsPage() {
 
   return (
     <div>
-      <h1 className="font-serif text-2xl font-semibold text-ink">My Bookings</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="font-serif text-2xl font-semibold text-ink">My Bookings</h1>
+        <Link
+          href="/"
+          className="rounded-lg bg-coral px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
+        >
+          Book a trip
+        </Link>
+      </div>
 
       <section className="mt-6">
         <h2 className="font-serif text-lg font-semibold text-ink">Upcoming</h2>

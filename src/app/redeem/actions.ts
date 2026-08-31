@@ -24,6 +24,8 @@ export async function submitRedemptionRequestAction(voucherCode: string, formDat
   const phone = String(formData.get("phone") ?? "").trim();
   const preferredSlotDate = String(formData.get("preferred_slot_date") ?? "").trim();
   const message = String(formData.get("message") ?? "").trim();
+  const paxCountRaw = Number(formData.get("pax_count") ?? "0");
+  const paxCount = Number.isInteger(paxCountRaw) ? paxCountRaw : 0;
 
   if (!name) fail("Please enter your name.");
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) fail("Please enter a valid email.");
@@ -33,6 +35,9 @@ export async function submitRedemptionRequestAction(voucherCode: string, formDat
   const todayStr = new Date().toISOString().slice(0, 10);
   if (preferredSlotDate <= todayStr) {
     fail("Please choose a future date.");
+  }
+  if (!paxCount || paxCount < 1 || paxCount > 20) {
+    fail("Please choose between 1 and 20 travelers.");
   }
 
   const serviceClient = createSupabaseServiceRoleClient();
@@ -55,6 +60,7 @@ export async function submitRedemptionRequestAction(voucherCode: string, formDat
       redeemed_by_email: email,
       redeemed_by_phone: phone || null,
       requested_slot_date: preferredSlotDate,
+      requested_pax_count: paxCount,
       redemption_message: message || null,
       redemption_requested_at: new Date().toISOString(),
     })
@@ -88,6 +94,7 @@ export async function submitRedemptionRequestAction(voucherCode: string, formDat
         productTitle,
         voucherCode,
         requestedSlotDate: preferredSlotDate,
+        requestedPaxCount: paxCount,
         message: message || null,
         reviewUrl: `${siteUrl}/admin/vouchers`,
       })
