@@ -1,9 +1,19 @@
 import Link from "next/link";
 import { requireCustomer } from "@/lib/customers/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { formatIdr } from "@/lib/currency";
 import { BOOKING_STATUS_LABELS, type Booking } from "@/lib/bookings/types";
+import type { GiftVoucher, GiftVoucherStatus } from "@/lib/cancellations/types";
 
 type BookingWithProduct = Booking & { products: { title: string; slug: string } | null };
+type PurchasedVoucher = GiftVoucher & { products: { title: string } | null };
+
+const GIFT_VOUCHER_STATUS_LABELS: Record<GiftVoucherStatus, string> = {
+  pending_payment: "Processing payment",
+  issued: "Ready to share",
+  redeemed: "Redeemed",
+  expired: "Expired",
+};
 
 function BookingRow({ b }: { b: BookingWithProduct }) {
   return (
@@ -30,13 +40,24 @@ export default async function MyBookingsPage() {
   const customer = await requireCustomer("/account/bookings");
   const supabase = await createSupabaseServerClient();
 
-  const { data } = await supabase
-    .from("bookings")
-    .select("*, products(title, slug)")
-    .eq("customer_id", customer.id)
-    .order("slot_date", { ascending: false });
+  const [{ data }, { data: giftVoucherData }] = await Promise.all([
+    supabase
+      .from("bookings")
+      .select("*, products(title, slug)")
+      .eq("customer_id", customer.id)
+      .order("slot_date", { ascending: false }),
+    // Only vouchers bought directly (spec §6f follow-up) -- one that
+    // came from cancelling a booking already shows on that booking's
+    // own page instead, so it isn't duplicated here.
+    supabase
+      .from("gift_vouchers")
+      .select("*, products(title)")
+      .eq("purchaser_customer_id", customer.id)
+      .order("issued_at", { ascending: false }),
+  ]);
 
   const bookings = (data ?? []) as BookingWithProduct[];
+  const purchasedVouchers = (giftVoucherData ?? []) as unknown as PurchasedVoucher[];
   const today = new Date().toISOString().slice(0, 10);
 
   const upcoming = bookings.filter((b) => b.status === "paid_confirmed" && b.slot_date >= today);
@@ -86,6 +107,29 @@ export default async function MyBookingsPage() {
           <div className="mt-2 rounded-lg border border-sand-deep bg-white">
             {incomplete.map((b) => (
               <BookingRow key={b.id} b={b} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {purchasedVouchers.length > 0 && (
+        <section className="mt-8">
+          <h2 className="font-serif text-lg font-semibold text-ink">Gift vouchers you&apos;ve given</h2>
+          <div className="mt-2 rounded-lg border border-sand-deep bg-white">
+            {purchasedVouchers.map((v) => (
+              <div
+                key={v.id}
+                className="flex items-center justify-between border-t border-sand-deep px-4 py-3 text-sm first:border-t-0"
+              >
+                <div>
+                  <p className="font-semibold text-ink">{v.products?.title ?? "Trip"}</p>
+                  <p className="text-ink-soft">
+                    For {v.recipient_name} ·{" "}
+                    <span className="font-mono">{v.redemption_code}</span> ·{" "}
+                    {formatIdr(v.value_amount_idr)} · {GIFT_VOUCHER_STATUS_LABELS[v.status]}
+                  </p>
+                </div>
+              </div>
             ))}
           </div>
         </section>
