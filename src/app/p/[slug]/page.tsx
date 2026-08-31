@@ -2,8 +2,11 @@ import { notFound } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { formatIdr, formatUsd, usdToIdr } from "@/lib/currency";
 import type { Product } from "@/lib/products/types";
+import type { CarType, CarPackage, CarPackagePrice, MeetingPoint, TransportPrice } from "@/lib/cars/types";
 import { SiteHeader } from "@/components/SiteHeader";
-import { startCheckoutAction } from "./actions";
+import { CarHireBookingForm } from "@/components/CarHireBookingForm";
+import { TransportBookingForm } from "@/components/TransportBookingForm";
+import { startCheckoutAction, startCarHireCheckoutAction, startTransportCheckoutAction } from "./actions";
 
 function tomorrow(): string {
   const d = new Date();
@@ -49,6 +52,58 @@ export default async function ProductPage({
 
   const p = product as Product;
   const adultPriceUsd = p.adult_price_usd ?? 0;
+  const isCarHire = p.product_type === "car_hire";
+  const isTransport = p.product_type === "transport";
+
+  let carTypes: CarType[] = [];
+  let carPackages: CarPackage[] = [];
+  let carPrices: CarPackagePrice[] = [];
+  let transportPrices: TransportPrice[] = [];
+  let meetingPoints: MeetingPoint[] = [];
+
+  if (isCarHire || isTransport) {
+    const { data: meetingPointsData } = await supabase
+      .from("meeting_points")
+      .select("*")
+      .eq("status", "active")
+      .order("name", { ascending: true });
+    meetingPoints = (meetingPointsData ?? []) as MeetingPoint[];
+
+    if (isCarHire) {
+      const { data: carTypesData } = await supabase
+        .from("car_types")
+        .select("*")
+        .eq("product_id", p.id)
+        .eq("status", "active")
+        .order("name", { ascending: true });
+      carTypes = (carTypesData ?? []) as CarType[];
+      const carTypeIds = carTypes.map((c) => c.id);
+
+      const { data: packagesData } =
+        carTypeIds.length > 0
+          ? await supabase
+              .from("car_packages")
+              .select("*")
+              .in("car_type_id", carTypeIds)
+              .eq("status", "active")
+              .order("duration_hours", { ascending: true })
+          : { data: [] as CarPackage[] };
+      carPackages = (packagesData ?? []) as CarPackage[];
+      const packageIds = carPackages.map((pkg) => pkg.id);
+
+      const { data: pricesData } =
+        packageIds.length > 0
+          ? await supabase.from("car_package_prices").select("*").in("car_package_id", packageIds)
+          : { data: [] as CarPackagePrice[] };
+      carPrices = (pricesData ?? []) as CarPackagePrice[];
+    } else {
+      const { data: transportPricesData } = await supabase
+        .from("transport_prices")
+        .select("*")
+        .eq("product_id", p.id);
+      transportPrices = (transportPricesData ?? []) as TransportPrice[];
+    }
+  }
 
   return (
     <>
@@ -77,12 +132,18 @@ export default async function ProductPage({
         </div>
 
         <div className="h-fit rounded-2xl border border-sand-deep bg-white p-6">
-          <div className="font-serif text-2xl font-bold text-ocean">
-            {formatUsd(adultPriceUsd)}{" "}
-            <span className="text-sm font-normal text-ink-soft">
-              ({formatIdr(usdToIdr(adultPriceUsd))}) / person
-            </span>
-          </div>
+          {isCarHire || isTransport ? (
+            <p className="font-serif text-lg font-semibold text-ocean">
+              Price by {isCarHire ? "car, duration & pickup area" : "pickup area"} — pick your options below
+            </p>
+          ) : (
+            <div className="font-serif text-2xl font-bold text-ocean">
+              {formatUsd(adultPriceUsd)}{" "}
+              <span className="text-sm font-normal text-ink-soft">
+                ({formatIdr(usdToIdr(adultPriceUsd))}) / person
+              </span>
+            </div>
+          )}
           <div className="my-4 h-px bg-sand-deep" />
 
           {error && (
@@ -91,7 +152,25 @@ export default async function ProductPage({
             </p>
           )}
 
-          {!p.is_bookable ? (
+          {isCarHire ? (
+            <CarHireBookingForm
+              action={startCarHireCheckoutAction.bind(null, p.id, p.slug)}
+              productTitle={p.title}
+              carTypes={carTypes}
+              packages={carPackages}
+              prices={carPrices}
+              meetingPoints={meetingPoints}
+              defaultDiscountCode={discountCode}
+            />
+          ) : isTransport ? (
+            <TransportBookingForm
+              action={startTransportCheckoutAction.bind(null, p.id, p.slug)}
+              productTitle={p.title}
+              prices={transportPrices}
+              meetingPoints={meetingPoints}
+              defaultDiscountCode={discountCode}
+            />
+          ) : !p.is_bookable ? (
             <>
               <p className="text-sm text-ink-soft">
                 This trip needs manual confirmation before booking -- availability depends on
@@ -193,7 +272,7 @@ export default async function ProductPage({
             </form>
           )}
 
-          {p.is_bookable && (
+          {p.is_bookable && !isCarHire && !isTransport && (
             <a
               href={`/p/${p.slug}/gift`}
               className="mt-3 block rounded-lg border border-sand-deep px-4 py-3 text-center text-sm font-semibold text-ink hover:bg-sand"

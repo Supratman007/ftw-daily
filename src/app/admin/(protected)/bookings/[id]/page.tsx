@@ -47,6 +47,26 @@ export default async function AdminBookingDetailPage({
     .select("*", { count: "exact", head: true })
     .eq("booking_id", b.id);
 
+  let meetingPointName: string | null = null;
+  let carLabel: string | null = null;
+  if (b.pickup_datetime) {
+    if (b.meeting_point_id) {
+      const { data: meetingPoint } = await supabase
+        .from("meeting_points")
+        .select("name")
+        .eq("id", b.meeting_point_id)
+        .maybeSingle();
+      meetingPointName = meetingPoint?.name ?? null;
+    }
+    if (b.car_type_id && b.car_package_id) {
+      const [{ data: carType }, { data: carPackage }] = await Promise.all([
+        supabase.from("car_types").select("name").eq("id", b.car_type_id).maybeSingle(),
+        supabase.from("car_packages").select("duration_hours").eq("id", b.car_package_id).maybeSingle(),
+      ]);
+      carLabel = carType ? `${carType.name}${carPackage ? `, ${carPackage.duration_hours}h` : ""}` : null;
+    }
+  }
+
   return (
     <div className="max-w-xl">
       <Link href="/admin/bookings" className="text-sm font-semibold text-teal hover:underline">
@@ -114,7 +134,15 @@ export default async function AdminBookingDetailPage({
 
       <div className="mt-6 rounded-2xl border border-sand-deep bg-white p-6 text-sm">
         <p className="font-semibold text-ink">Pickup</p>
-        {b.hotel_name || b.room_number ? (
+        {b.pickup_datetime ? (
+          <>
+            <p className="mt-2 text-ink">{new Date(b.pickup_datetime).toLocaleString()}</p>
+            <p className="text-ink-soft">
+              {meetingPointName ?? b.meeting_point_custom ?? "—"}
+              {carLabel && ` · ${carLabel}`}
+            </p>
+          </>
+        ) : b.hotel_name || b.room_number ? (
           <>
             {b.hotel_name && <p className="mt-2 text-ink">{b.hotel_name}</p>}
             {b.room_number && <p className="text-ink-soft">Room {b.room_number}</p>}

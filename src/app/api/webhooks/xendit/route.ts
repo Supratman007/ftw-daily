@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
   const { data: booking } = await supabase
     .from("bookings")
     .select(
-      "id, status, product_id, customer_id, slot_date, pax_count, total_idr, total_usd, booking_code, discount_code_id, discount_code, discount_amount_usd, referred_by_agent_id"
+      "id, status, product_id, customer_id, slot_date, pax_count, total_idr, total_usd, booking_code, discount_code_id, discount_code, discount_amount_usd, referred_by_agent_id, pickup_datetime, meeting_point_id, meeting_point_custom, car_type_id, car_package_id"
     )
     .eq("booking_code", externalId)
     .maybeSingle();
@@ -95,6 +95,8 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    const pickupNote = await buildPickupNote(supabase, booking);
+
     const [{ data: product }, { data: customer }, { data: staff }] = await Promise.all([
       supabase.from("products").select("title").eq("id", booking.product_id).maybeSingle(),
       supabase
@@ -121,6 +123,7 @@ export async function POST(request: NextRequest) {
         bookingUrl: `${siteUrl}/confirmation/${booking.id}`,
         discountCode: booking.discount_code,
         discountAmountUsd: booking.discount_amount_usd,
+        pickupNote,
       });
 
       await Promise.all(
@@ -135,6 +138,7 @@ export async function POST(request: NextRequest) {
             customerName: customer.name,
             customerEmail: customer.email,
             customerPhone: customer.phone,
+            pickupNote,
           })
         )
       );
@@ -183,6 +187,58 @@ export async function POST(request: NextRequest) {
 
   // Any other status (e.g. PENDING) -- nothing to do yet.
   return NextResponse.json({ ok: true, note: `ignored status: ${status}` });
+}
+
+/**
+ * Builds the one-line pickup summary used in both the customer and
+ * staff confirmation emails -- null for every product type that isn't
+ * Car Hire/Transport (spec §6a/§6e), since only those set
+ * pickup_datetime at all.
+ */
+async function buildPickupNote(
+  supabase: ReturnType<typeof createSupabaseServiceRoleClient>,
+  booking: {
+    pickup_datetime: string | null;
+    meeting_point_id: string | null;
+    meeting_point_custom: string | null;
+    car_type_id: string | null;
+    car_package_id: string | null;
+  }
+): Promise<string | null> {
+  if (!booking.pickup_datetime) return null;
+
+  const [meetingPointName, carDetail] = await Promise.all([
+    booking.meeting_point_id
+      ? supabase
+          .from("meeting_points")
+          .select("name")
+          .eq("id", booking.meeting_point_id)
+          .maybeSingle()
+          .then((r) => r.data?.name ?? null)
+      : Promise.resolve(booking.meeting_point_custom),
+    booking.car_type_id && booking.car_package_id
+      ? Promise.all([
+          supabase.from("car_types").select("name").eq("id", booking.car_type_id).maybeSingle(),
+          supabase
+            .from("car_packages")
+            .select("duration_hours")
+            .eq("id", booking.car_package_id)
+            .maybeSingle(),
+        ]).then(([carType, carPackage]) =>
+          carType.data
+            ? `${carType.data.name}${carPackage.data ? `, ${carPackage.data.duration_hours}h` : ""}`
+            : null
+        )
+      : Promise.resolve(null),
+  ]);
+
+  const when = new Date(booking.pickup_datetime).toLocaleString("en-US", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  });
+  const where = meetingPointName ? ` from ${meetingPointName}` : "";
+  const car = carDetail ? ` (${carDetail})` : "";
+  return `${when}${where}${car}`;
 }
 
 /**

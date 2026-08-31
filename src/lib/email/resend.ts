@@ -57,6 +57,10 @@ interface BookingConfirmedEmailParams {
   bookingUrl: string;
   discountCode?: string | null;
   discountAmountUsd?: number;
+  /** Pre-formatted "pickup" line for Car Hire/Transport bookings (spec
+   * §6a/§6e) -- e.g. "Sep 5, 2026, 8:00 AM from Senggigi (Toyota
+   * Avanza, 8h)". Omitted entirely for every other product type. */
+  pickupNote?: string | null;
 }
 
 /** Sends the "booking confirmed" email (spec §6g) to the customer. */
@@ -65,6 +69,9 @@ export async function sendBookingConfirmedEmail(params: BookingConfirmedEmailPar
     params.discountCode && params.discountAmountUsd
       ? `<tr><td style="padding: 6px 0; color: #4B5854;">Discount (${escapeHtml(params.discountCode)})</td><td style="padding: 6px 0; text-align: right;">-${formatUsd(params.discountAmountUsd)}</td></tr>`
       : "";
+  const pickupRow = params.pickupNote
+    ? `<tr><td style="padding: 6px 0; color: #4B5854;">Pickup</td><td style="padding: 6px 0; text-align: right;">${escapeHtml(params.pickupNote)}</td></tr>`
+    : "";
 
   const html = `
     <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
@@ -75,6 +82,7 @@ export async function sendBookingConfirmedEmail(params: BookingConfirmedEmailPar
         <tr><td style="padding: 6px 0; color: #4B5854;">Booking code</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">${escapeHtml(params.bookingCode)}</td></tr>
         <tr><td style="padding: 6px 0; color: #4B5854;">Date</td><td style="padding: 6px 0; text-align: right;">${escapeHtml(params.slotDate)}</td></tr>
         <tr><td style="padding: 6px 0; color: #4B5854;">Travelers</td><td style="padding: 6px 0; text-align: right;">${params.paxCount}</td></tr>
+        ${pickupRow}
         ${discountRow}
         <tr><td style="padding: 6px 0; color: #4B5854;">Total paid</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">${escapeHtml(formatIdr(params.totalIdr))}</td></tr>
       </table>
@@ -139,6 +147,9 @@ interface NewBookingStaffEmailParams {
   customerName: string;
   customerEmail: string;
   customerPhone: string | null;
+  /** Same pickup line as the customer email, so staff know where/when
+   * to send the driver without opening the admin panel. */
+  pickupNote?: string | null;
 }
 
 /**
@@ -149,6 +160,9 @@ interface NewBookingStaffEmailParams {
  * above so one failing never affects the other.
  */
 export async function sendNewBookingStaffEmail(params: NewBookingStaffEmailParams): Promise<void> {
+  const pickupRow = params.pickupNote
+    ? `<tr><td style="padding: 6px 0; color: #4B5854;">Pickup</td><td style="padding: 6px 0; text-align: right;">${escapeHtml(params.pickupNote)}</td></tr>`
+    : "";
   const html = `
     <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
       <h1 style="color: #0F3A3D;">New booking paid</h1>
@@ -157,6 +171,7 @@ export async function sendNewBookingStaffEmail(params: NewBookingStaffEmailParam
         <tr><td style="padding: 6px 0; color: #4B5854;">Booking code</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">${escapeHtml(params.bookingCode)}</td></tr>
         <tr><td style="padding: 6px 0; color: #4B5854;">Date</td><td style="padding: 6px 0; text-align: right;">${escapeHtml(params.slotDate)}</td></tr>
         <tr><td style="padding: 6px 0; color: #4B5854;">Travelers</td><td style="padding: 6px 0; text-align: right;">${params.paxCount}</td></tr>
+        ${pickupRow}
         <tr><td style="padding: 6px 0; color: #4B5854;">Total paid</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">${escapeHtml(formatIdr(params.totalIdr))}</td></tr>
         <tr><td style="padding: 6px 0; color: #4B5854;">Customer</td><td style="padding: 6px 0; text-align: right;">${escapeHtml(params.customerName)}</td></tr>
         <tr><td style="padding: 6px 0; color: #4B5854;">Customer email</td><td style="padding: 6px 0; text-align: right;">${escapeHtml(params.customerEmail)}</td></tr>
@@ -172,6 +187,43 @@ export async function sendNewBookingStaffEmail(params: NewBookingStaffEmailParam
   await sendEmail({
     to: params.toEmail,
     subject: `New booking — ${params.productTitle} (${params.bookingCode})`,
+    html,
+  });
+}
+
+interface PickupTimeChangedStaffEmailParams {
+  toEmail: string;
+  productTitle: string;
+  bookingCode: string;
+  customerName: string;
+  oldPickupNote: string;
+  newPickupNote: string;
+}
+
+/** Spec §6e's self-service pickup-time change -- staff need to know
+ * right away so the driver can be re-briefed, not just find out from
+ * the audit trail after the fact. */
+export async function sendPickupTimeChangedStaffEmail(
+  params: PickupTimeChangedStaffEmailParams
+): Promise<void> {
+  const html = `
+    <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
+      <h1 style="color: #0F3A3D;">Pickup time changed</h1>
+      <p>
+        ${escapeHtml(params.customerName)} changed the pickup time for
+        <strong>${escapeHtml(params.productTitle)}</strong> (${escapeHtml(params.bookingCode)}).
+      </p>
+      <table style="width: 100%; border-collapse: collapse; margin: 16px 0;">
+        <tr><td style="padding: 6px 0; color: #4B5854;">Was</td><td style="padding: 6px 0; text-align: right;">${escapeHtml(params.oldPickupNote)}</td></tr>
+        <tr><td style="padding: 6px 0; color: #4B5854;">Now</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">${escapeHtml(params.newPickupNote)}</td></tr>
+      </table>
+      <p>Please let the driver know.</p>
+    </div>
+  `;
+
+  await sendEmail({
+    to: params.toEmail,
+    subject: `Pickup time changed — ${params.productTitle} (${params.bookingCode})`,
     html,
   });
 }

@@ -4,8 +4,14 @@ import { requireCustomer } from "@/lib/customers/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/service";
 import { formatIdr, formatUsd } from "@/lib/currency";
-import { BOOKING_STATUS_LABELS, type Booking, type Traveler } from "@/lib/bookings/types";
-import { resendConfirmationEmailAction } from "./actions";
+import {
+  BOOKING_STATUS_LABELS,
+  PICKUP_CHANGE_CUTOFF_HOURS,
+  type Booking,
+  type Traveler,
+} from "@/lib/bookings/types";
+import { whatsappLink } from "@/lib/contact";
+import { resendConfirmationEmailAction, changePickupTimeAction } from "./actions";
 import { requestGiftVoucherRefundAction } from "@/app/account/bookings/actions";
 import { sendCustomerMessageAction } from "./chat-actions";
 import { customerLogoutAction } from "@/app/actions";
@@ -145,6 +151,31 @@ export default async function BookingDetailPage({
   const canRequestCancellation =
     b.status === "paid_confirmed" && latestCancellationRequest?.status !== "pending_review";
 
+  let meetingPointName: string | null = null;
+  let carLabel: string | null = null;
+  if (b.pickup_datetime) {
+    if (b.meeting_point_id) {
+      const { data: meetingPoint } = await supabase
+        .from("meeting_points")
+        .select("name")
+        .eq("id", b.meeting_point_id)
+        .maybeSingle();
+      meetingPointName = meetingPoint?.name ?? null;
+    }
+    if (b.car_type_id && b.car_package_id) {
+      const [{ data: carType }, { data: carPackage }] = await Promise.all([
+        supabase.from("car_types").select("name").eq("id", b.car_type_id).maybeSingle(),
+        supabase.from("car_packages").select("duration_hours").eq("id", b.car_package_id).maybeSingle(),
+      ]);
+      carLabel = carType ? `${carType.name}${carPackage ? `, ${carPackage.duration_hours}h` : ""}` : null;
+    }
+  }
+  const hoursUntilPickup = b.pickup_datetime
+    ? (new Date(b.pickup_datetime).getTime() - new Date().getTime()) / 3_600_000
+    : null;
+  const canChangePickupTime =
+    b.status === "paid_confirmed" && hoursUntilPickup !== null && hoursUntilPickup >= PICKUP_CHANGE_CUTOFF_HOURS;
+
   return (
     <div className="max-w-xl">
       <Link href="/account/bookings" className="text-sm font-semibold text-teal hover:underline">
@@ -252,6 +283,74 @@ export default async function BookingDetailPage({
         <p className="mt-1 text-ink-soft">{customer.email}</p>
         {customer.phone && <p className="text-ink-soft">{customer.phone}</p>}
       </div>
+
+      {b.pickup_datetime && (
+        <div className="mt-6 rounded-2xl border border-sand-deep bg-white p-6 text-sm">
+          <p className="font-semibold text-ink">Pickup</p>
+          <p className="mt-1 text-ink">{new Date(b.pickup_datetime).toLocaleString()}</p>
+          <p className="text-ink-soft">
+            {meetingPointName ?? b.meeting_point_custom ?? "—"}
+            {carLabel && ` · ${carLabel}`}
+          </p>
+
+          {canChangePickupTime ? (
+            <details className="mt-3 border-t border-sand-deep pt-3">
+              <summary className="cursor-pointer list-none text-xs font-semibold text-teal hover:underline">
+                Change pickup time
+              </summary>
+              <form
+                action={changePickupTimeAction.bind(null, b.id)}
+                className="mt-2 grid grid-cols-2 gap-2"
+              >
+                <input
+                  type="date"
+                  name="pickup_date"
+                  required
+                  min={new Date().toISOString().slice(0, 10)}
+                  defaultValue={b.pickup_datetime.slice(0, 10)}
+                  className="rounded-lg border border-sand-deep px-2 py-1 text-xs"
+                />
+                <input
+                  type="time"
+                  name="pickup_time"
+                  required
+                  defaultValue={new Date(b.pickup_datetime).toTimeString().slice(0, 5)}
+                  className="rounded-lg border border-sand-deep px-2 py-1 text-xs"
+                />
+                <button
+                  type="submit"
+                  className="col-span-2 mt-1 self-start rounded-lg bg-coral px-3 py-1.5 text-xs font-semibold text-white"
+                >
+                  Save new pickup time
+                </button>
+              </form>
+            </details>
+          ) : (
+            b.status === "paid_confirmed" && (
+              <p className="mt-3 border-t border-sand-deep pt-3 text-xs text-ink-soft">
+                Pickup is too close for a self-service change now.{" "}
+                {whatsappLink(
+                  `Hi, I need to change my pickup time for ${b.products?.title ?? "my trip"} (${b.booking_code}).`
+                ) && (
+                  <a
+                    href={
+                      whatsappLink(
+                        `Hi, I need to change my pickup time for ${b.products?.title ?? "my trip"} (${b.booking_code}).`
+                      ) ?? undefined
+                    }
+                    target="_blank"
+                    rel="noreferrer"
+                    className="font-semibold text-teal underline"
+                  >
+                    Message us on WhatsApp
+                  </a>
+                )}{" "}
+                and we&apos;ll do our best to help.
+              </p>
+            )
+          )}
+        </div>
+      )}
 
       {(b.hotel_name || b.room_number) && (
         <div className="mt-6 rounded-2xl border border-sand-deep bg-white p-6 text-sm">

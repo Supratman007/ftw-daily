@@ -15,6 +15,14 @@ export function usdToIdr(usd: number): number {
   return Math.round((usd * USD_TO_IDR_RATE) / 1000) * 1000;
 }
 
+/** The reverse of usdToIdr -- needed for Car Hire/Transport, where the
+ * admin enters the real price in IDR directly (a price grid, not a
+ * per-person USD rate) but discount codes and commission are still
+ * tracked in USD like every other product. */
+export function idrToUsd(idr: number): number {
+  return idr / USD_TO_IDR_RATE;
+}
+
 export function formatUsd(usd: number): string {
   return `$${usd.toLocaleString("en-US")}`;
 }

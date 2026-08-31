@@ -16,6 +16,9 @@ interface BookingRow {
   product_id: string;
   discount_code: string | null;
   discount_amount_usd: number;
+  pickup_datetime: string | null;
+  meeting_point_id: string | null;
+  meeting_point_custom: string | null;
 }
 
 /**
@@ -39,7 +42,7 @@ export default async function ConfirmationPage({
   const { data: booking } = await supabase
     .from("bookings")
     .select(
-      "id, booking_code, slot_date, pax_count, total_idr, status, product_id, discount_code, discount_amount_usd"
+      "id, booking_code, slot_date, pax_count, total_idr, status, product_id, discount_code, discount_amount_usd, pickup_datetime, meeting_point_id, meeting_point_custom"
     )
     .eq("id", bookingId)
     .eq("customer_id", customer.id)
@@ -95,6 +98,16 @@ export default async function ConfirmationPage({
     .select("title, slug")
     .eq("id", b.product_id)
     .maybeSingle();
+
+  let meetingPointName: string | null = null;
+  if (b.meeting_point_id) {
+    const { data: meetingPoint } = await supabase
+      .from("meeting_points")
+      .select("name")
+      .eq("id", b.meeting_point_id)
+      .maybeSingle();
+    meetingPointName = meetingPoint?.name ?? null;
+  }
 
   if (b.status === "pending_payment") {
     return (
@@ -159,6 +172,16 @@ export default async function ConfirmationPage({
           <span className="text-ink-soft">Travelers</span>
           <span className="text-ink">{b.pax_count}</span>
         </div>
+        {b.pickup_datetime && (
+          <div className="flex justify-between border-b border-sand-deep py-2">
+            <span className="text-ink-soft">Pickup</span>
+            <span className="text-ink">
+              {new Date(b.pickup_datetime).toLocaleString()}
+              {(meetingPointName || b.meeting_point_custom) &&
+                ` — ${meetingPointName ?? b.meeting_point_custom}`}
+            </span>
+          </div>
+        )}
         {b.discount_code && b.discount_amount_usd > 0 && (
           <div className="flex justify-between border-b border-sand-deep py-2">
             <span className="text-ink-soft">Discount ({b.discount_code})</span>
