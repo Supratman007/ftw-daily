@@ -9,6 +9,8 @@ import {
   sendVoucherRedeemedBookingConfirmedEmail,
   sendVoucherRedeemedNeedsAccountEmail,
   sendGiftVoucherRedeemedNotifyGiverEmail,
+  sendGiftVoucherRefundApprovedEmail,
+  sendGiftVoucherRefundDeclinedEmail,
 } from "@/lib/email/resend";
 
 /**
@@ -188,6 +190,91 @@ export async function markVoucherExpiredAction(voucherId: string, formData: Form
 
   const supabase = await createSupabaseServerClient();
   await supabase.from("gift_vouchers").update({ status: "expired" }).eq("id", voucherId);
+
+  redirect(returnTo);
+}
+
+/** Approves a purchaser's refund request -- marks the voucher expired
+ * (it can no longer be redeemed) so it stops showing as outstanding.
+ * Same "money movement is manual" pattern as every other refund in
+ * this app: the actual Xendit refund happens outside the app, in the
+ * Xendit dashboard or via bank transfer, same as cancellation refunds
+ * and commission payouts. */
+export async function approveGiftVoucherRefundAction(voucherId: string, formData: FormData) {
+  await requireAdmin();
+  const returnTo = String(formData.get("return_to") ?? "/admin/vouchers");
+
+  const supabase = await createSupabaseServerClient();
+  const { data: voucher } = await supabase
+    .from("gift_vouchers")
+    .select("id, value_amount_idr, redemption_code, purchaser_customer_id, products(title)")
+    .eq("id", voucherId)
+    .maybeSingle();
+
+  if (!voucher) redirect(`${returnTo}${returnTo.includes("?") ? "&" : "?"}error=Voucher+not+found.`);
+
+  await supabase.from("gift_vouchers").update({ status: "expired" }).eq("id", voucherId);
+
+  const serviceClient = createSupabaseServiceRoleClient();
+  const { data: purchaser } = await serviceClient
+    .from("customers")
+    .select("name, email")
+    .eq("id", voucher.purchaser_customer_id)
+    .maybeSingle();
+
+  if (purchaser) {
+    const productTitle = (voucher as unknown as { products: { title: string } | null }).products?.title ?? "your gift voucher";
+    await sendGiftVoucherRefundApprovedEmail({
+      toEmail: purchaser.email,
+      purchaserName: purchaser.name,
+      productTitle,
+      voucherCode: voucher.redemption_code,
+      refundAmountIdr: voucher.value_amount_idr,
+    });
+  }
+
+  redirect(returnTo);
+}
+
+/** Declines a purchaser's refund request -- clears the request so the
+ * voucher goes back to being a normal, still-valid, still-redeemable
+ * one (rather than staying stuck showing "refund requested" forever). */
+export async function declineGiftVoucherRefundAction(voucherId: string, formData: FormData) {
+  await requireAdmin();
+  const returnTo = String(formData.get("return_to") ?? "/admin/vouchers");
+  const adminNotes = String(formData.get("admin_notes") ?? "").trim();
+
+  const supabase = await createSupabaseServerClient();
+  const { data: voucher } = await supabase
+    .from("gift_vouchers")
+    .select("id, redemption_code, purchaser_customer_id, products(title)")
+    .eq("id", voucherId)
+    .maybeSingle();
+
+  if (!voucher) redirect(`${returnTo}${returnTo.includes("?") ? "&" : "?"}error=Voucher+not+found.`);
+
+  await supabase
+    .from("gift_vouchers")
+    .update({ cancellation_requested_at: null, cancellation_reason: null })
+    .eq("id", voucherId);
+
+  const serviceClient = createSupabaseServiceRoleClient();
+  const { data: purchaser } = await serviceClient
+    .from("customers")
+    .select("name, email")
+    .eq("id", voucher.purchaser_customer_id)
+    .maybeSingle();
+
+  if (purchaser) {
+    const productTitle = (voucher as unknown as { products: { title: string } | null }).products?.title ?? "your gift voucher";
+    await sendGiftVoucherRefundDeclinedEmail({
+      toEmail: purchaser.email,
+      purchaserName: purchaser.name,
+      productTitle,
+      voucherCode: voucher.redemption_code,
+      adminNotes: adminNotes || null,
+    });
+  }
 
   redirect(returnTo);
 }

@@ -31,6 +31,7 @@ export default async function GiftPurchasePage({
     pax?: string;
     recipient_name?: string;
     recipient_email?: string;
+    discount_code?: string;
     error?: string;
   }>;
 }) {
@@ -39,6 +40,7 @@ export default async function GiftPurchasePage({
     pax,
     recipient_name: recipientName,
     recipient_email: recipientEmail,
+    discount_code: discountCode,
     error,
   } = await searchParams;
 
@@ -123,6 +125,20 @@ export default async function GiftPurchasePage({
               required
               defaultValue={paxCount}
               className={inputClass}
+            />
+          </div>
+
+          <div>
+            <label className={labelClass} htmlFor="discount_code">
+              Discount code (optional)
+            </label>
+            <input
+              id="discount_code"
+              name="discount_code"
+              defaultValue={discountCode ?? ""}
+              placeholder="e.g. WELCOME10"
+              className={inputClass}
+              style={{ textTransform: "uppercase" }}
             />
           </div>
 

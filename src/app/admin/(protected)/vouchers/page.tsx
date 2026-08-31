@@ -2,13 +2,26 @@ import Link from "next/link";
 import { requireAdmin } from "@/lib/admin/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { formatIdr } from "@/lib/currency";
-import { confirmVoucherRedemptionAction, markVoucherExpiredAction } from "./actions";
-import type { GiftVoucher } from "@/lib/cancellations/types";
+import {
+  confirmVoucherRedemptionAction,
+  markVoucherExpiredAction,
+  approveGiftVoucherRefundAction,
+  declineGiftVoucherRefundAction,
+} from "./actions";
+import type { GiftVoucher, GiftVoucherStatus } from "@/lib/cancellations/types";
 
 type VoucherRow = GiftVoucher & { products: { title: string } | null };
 
+const VOUCHER_STATUS_LABELS: Record<GiftVoucherStatus, string> = {
+  pending_payment: "Processing payment",
+  issued: "Issued",
+  redeemed: "Redeemed",
+  expired: "Expired",
+};
+
 const STATUS_FILTERS: Array<{ value: string; label: string }> = [
   { value: "pending", label: "Redemption requested" },
+  { value: "refund_requested", label: "Refund requested" },
   { value: "issued", label: "Issued, not yet requested" },
   { value: "redeemed", label: "Redeemed" },
   { value: "expired", label: "Expired" },
@@ -46,6 +59,8 @@ export default async function AdminVouchersPage({
   // record, but nothing depends on it being clicked.
   if (activeFilter === "pending") {
     query = query.eq("status", "issued").not("redemption_requested_at", "is", null).gte("expires_at", nowIso);
+  } else if (activeFilter === "refund_requested") {
+    query = query.eq("status", "issued").not("cancellation_requested_at", "is", null);
   } else if (activeFilter === "issued") {
     query = query.eq("status", "issued").is("redemption_requested_at", null).gte("expires_at", nowIso);
   } else if (activeFilter === "expired") {
@@ -107,7 +122,7 @@ export default async function AdminVouchersPage({
 
         {vouchers.map((v) => {
           const isExpiredByDate = v.status === "issued" && new Date(v.expires_at) < new Date();
-          const displayStatus = isExpiredByDate ? "expired" : v.status;
+          const displayStatus = VOUCHER_STATUS_LABELS[isExpiredByDate ? "expired" : v.status];
           return (
           <div key={v.id} className="rounded-2xl border border-sand-deep bg-white p-5 text-sm">
             <div className="flex items-center justify-between">
@@ -161,6 +176,49 @@ export default async function AdminVouchersPage({
               </div>
             )}
 
+            {v.cancellation_requested_at && v.status === "issued" && (
+              <div className="mt-3 rounded-lg bg-[#FCE6DD] p-3">
+                <p className="text-xs font-semibold uppercase tracking-wide text-coral-dark">
+                  Refund requested
+                </p>
+                {v.cancellation_reason && (
+                  <p className="mt-1 text-ink">&quot;{v.cancellation_reason}&quot;</p>
+                )}
+                <p className="mt-1 text-xs text-coral-dark">
+                  Requested {new Date(v.cancellation_requested_at).toLocaleString()}
+                </p>
+                <div className="mt-3 flex flex-col gap-3 border-t border-coral pt-3 sm:flex-row sm:items-start">
+                  <form action={approveGiftVoucherRefundAction.bind(null, v.id)}>
+                    <input type="hidden" name="return_to" value={returnTo} />
+                    <button
+                      type="submit"
+                      className="rounded-lg bg-coral px-4 py-2 text-xs font-semibold text-white"
+                    >
+                      Approve refund ({formatIdr(v.value_amount_idr)})
+                    </button>
+                  </form>
+                  <form
+                    action={declineGiftVoucherRefundAction.bind(null, v.id)}
+                    className="flex flex-1 flex-col gap-2"
+                  >
+                    <input type="hidden" name="return_to" value={returnTo} />
+                    <textarea
+                      name="admin_notes"
+                      rows={2}
+                      placeholder="Reason for declining (shown to the customer, optional)"
+                      className="rounded-lg border border-sand-deep px-2 py-1 text-xs"
+                    />
+                    <button
+                      type="submit"
+                      className="self-start rounded-lg border border-coral px-4 py-2 text-xs font-semibold text-coral-dark hover:bg-white"
+                    >
+                      Decline
+                    </button>
+                  </form>
+                </div>
+              </div>
+            )}
+
             {v.status === "redeemed" && v.redeemed_booking_id && (
               <p className="mt-3 border-t border-sand-deep pt-3 text-ink-soft">
                 Booked --{" "}
@@ -173,7 +231,10 @@ export default async function AdminVouchersPage({
               </p>
             )}
 
-            {v.status === "issued" && v.redemption_requested_at && !isExpiredByDate && (
+            {v.status === "issued" &&
+              v.redemption_requested_at &&
+              !isExpiredByDate &&
+              !v.cancellation_requested_at && (
               <form
                 action={confirmVoucherRedemptionAction.bind(null, v.id)}
                 className="mt-3 flex flex-wrap items-end gap-3 border-t border-sand-deep pt-3"

@@ -1,0 +1,84 @@
+"use server";
+
+import { redirect } from "next/navigation";
+import { requireCustomer } from "@/lib/customers/auth";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabaseServiceRoleClient } from "@/lib/supabase/service";
+import {
+  sendGiftVoucherRefundRequestedEmail,
+  sendGiftVoucherRefundRequestStaffEmail,
+} from "@/lib/email/resend";
+
+/** The "I want a refund on the gift I bought" path -- previously there
+ * was no way to undo a gift purchase at all, for the customer or for
+ * staff. Only available on a not-yet-redeemed voucher the customer
+ * themselves purchased (one that came from cancelling a booking has
+ * its own, separate lifecycle already). Same "flag it, staff reviews,
+ * the actual Xendit refund happens manually" pattern as every other
+ * refund in this app -- this action only records the request. */
+export async function requestGiftVoucherRefundAction(voucherId: string, formData: FormData) {
+  const customer = await requireCustomer("/account/bookings");
+  const reason = String(formData.get("reason") ?? "").trim();
+
+  function fail(message: string): never {
+    redirect(`/account/bookings?error=${encodeURIComponent(message)}`);
+  }
+
+  if (!reason) fail("Please tell us why, so we can process this quickly.");
+
+  const supabase = await createSupabaseServerClient();
+  const { data: voucher } = await supabase
+    .from("gift_vouchers")
+    .select("id, status, cancellation_requested_at, product_id, redemption_code, recipient_name")
+    .eq("id", voucherId)
+    .eq("purchaser_customer_id", customer.id)
+    .maybeSingle();
+
+  if (!voucher) fail("Voucher not found.");
+  if (voucher.status !== "issued") fail("Only an unused voucher can be refunded.");
+  if (voucher.cancellation_requested_at) fail("You already have a refund request pending on this voucher.");
+
+  const serviceClient = createSupabaseServiceRoleClient();
+  // Service-role, not the customer's session client -- there's no
+  // customer UPDATE policy on gift_vouchers, deliberately: a broad one
+  // would let a customer's own session write to *any* column on their
+  // voucher (status, value_amount_idr, ...), not just these two. Same
+  // reasoning, and the same fix, as the Rinjani passport-linking and
+  // cancellation-evidence bugs earlier in this app's history.
+  const { error: updateError } = await serviceClient
+    .from("gift_vouchers")
+    .update({ cancellation_requested_at: new Date().toISOString(), cancellation_reason: reason })
+    .eq("id", voucherId);
+
+  if (updateError) fail(`Couldn't submit your request: ${updateError.message}`);
+
+  const [{ data: product }, { data: staff }] = await Promise.all([
+    serviceClient.from("products").select("title").eq("id", voucher.product_id).maybeSingle(),
+    serviceClient.from("admin_users").select("email").eq("status", "active"),
+  ]);
+  const productTitle = product?.title ?? "your gift voucher";
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+
+  await Promise.all([
+    sendGiftVoucherRefundRequestedEmail({
+      toEmail: customer.email,
+      purchaserName: customer.name,
+      productTitle,
+      voucherCode: voucher.redemption_code,
+    }),
+    ...(staff ?? []).map((admin) =>
+      sendGiftVoucherRefundRequestStaffEmail({
+        toEmail: admin.email,
+        purchaserName: customer.name,
+        purchaserEmail: customer.email,
+        productTitle,
+        voucherCode: voucher.redemption_code,
+        recipientName: voucher.recipient_name,
+        reason,
+        reviewUrl: `${siteUrl}/admin/vouchers`,
+      })
+    ),
+  ]);
+
+  redirect("/account/bookings?notice=" + encodeURIComponent("Refund request submitted -- we'll be in touch."));
+}

@@ -200,7 +200,9 @@ async function handleGiftVoucherWebhook(
 ) {
   const { data: voucher } = await supabase
     .from("gift_vouchers")
-    .select("id, status, product_id, value_amount_idr, purchaser_customer_id, recipient_name, redemption_code")
+    .select(
+      "id, status, product_id, value_amount_idr, value_amount_usd, purchaser_customer_id, recipient_name, redemption_code, discount_code_id, referred_by_agent_id"
+    )
     .eq("redemption_code", externalId)
     .maybeSingle();
 
@@ -230,6 +232,33 @@ async function handleGiftVoucherWebhook(
 
     if (updateError) {
       return NextResponse.json({ error: updateError.message }, { status: 500 });
+    }
+
+    if (voucher.referred_by_agent_id) {
+      // Same tier-resolution logic as the booking branch above -- a
+      // gift purchase earns commission at whatever tier the agent has
+      // already reached through confirmed *bookings*, but doesn't
+      // itself count toward reaching a higher one.
+      const [{ count: priorConfirmedCount }, { data: tiers }] = await Promise.all([
+        supabase
+          .from("bookings")
+          .select("*", { count: "exact", head: true })
+          .eq("referred_by_agent_id", voucher.referred_by_agent_id)
+          .eq("status", "paid_confirmed"),
+        supabase
+          .from("commission_tiers")
+          .select("id, name, min_referrals, commission_percent, sort_order"),
+      ]);
+
+      const tier = resolveCommissionTier(tiers ?? [], priorConfirmedCount ?? 0);
+      if (tier) {
+        await supabase
+          .from("gift_vouchers")
+          .update({
+            commission_amount_usd: (voucher.value_amount_usd ?? 0) * (tier.commission_percent / 100),
+          })
+          .eq("id", voucher.id);
+      }
     }
 
     const [{ data: product }, { data: purchaser }, { data: staff }] = await Promise.all([
@@ -274,9 +303,13 @@ async function handleGiftVoucherWebhook(
   }
 
   if (FAILED_STATUSES.has(status)) {
-    // No capacity or discount code to release -- a gift purchase never
-    // reserved either (no date was ever chosen).
+    // No capacity to release -- a gift purchase never reserved any
+    // (no date was ever chosen) -- but a discount code use does need
+    // giving back, same as a normal booking's failed-payment path.
     await supabase.from("gift_vouchers").update({ status: "expired" }).eq("id", voucher.id);
+    if (voucher.discount_code_id) {
+      await supabase.rpc("release_discount_code", { p_discount_code_id: voucher.discount_code_id });
+    }
     return NextResponse.json({ ok: true });
   }
 

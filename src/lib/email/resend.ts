@@ -1025,6 +1025,121 @@ export async function sendNewGiftVoucherPurchaseStaffEmail(
   });
 }
 
+interface GiftVoucherRefundRequestedEmailParams {
+  toEmail: string;
+  purchaserName: string;
+  productTitle: string;
+  voucherCode: string;
+}
+
+/** Confirms to the purchaser that their "please refund this gift I
+ * bought" request went through -- same reasoning as every other
+ * "request received" email in this app: the only receipt they get
+ * until staff act on it. */
+export async function sendGiftVoucherRefundRequestedEmail(
+  params: GiftVoucherRefundRequestedEmailParams
+): Promise<void> {
+  const html = `
+    <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
+      <h1 style="color: #0F3A3D;">Got your refund request</h1>
+      <p>Hi ${escapeHtml(params.purchaserName)}, we've received your request to refund the gift voucher <strong>${escapeHtml(params.voucherCode)}</strong> for <strong>${escapeHtml(params.productTitle)}</strong>.</p>
+      <p>We'll review it and get back to you shortly.</p>
+    </div>
+  `;
+
+  await sendEmail({
+    to: params.toEmail,
+    subject: `Refund request received — ${params.voucherCode}`,
+    html,
+  });
+}
+
+interface GiftVoucherRefundRequestStaffEmailParams {
+  toEmail: string;
+  purchaserName: string;
+  purchaserEmail: string;
+  productTitle: string;
+  voucherCode: string;
+  recipientName: string;
+  reason: string;
+  reviewUrl: string;
+}
+
+/** Internal "someone wants a refund on a gift voucher they bought"
+ * notice -- same reasoning as every other new-request staff email in
+ * this app. This is the only place staff learn a request came in. */
+export async function sendGiftVoucherRefundRequestStaffEmail(
+  params: GiftVoucherRefundRequestStaffEmailParams
+): Promise<void> {
+  const html = `
+    <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
+      <h1 style="color: #0F3A3D;">Gift voucher refund request</h1>
+      <p><strong>${escapeHtml(params.purchaserName)}</strong> (${escapeHtml(params.purchaserEmail)}) wants to refund voucher <strong>${escapeHtml(params.voucherCode)}</strong> for <strong>${escapeHtml(params.productTitle)}</strong> (bought for ${escapeHtml(params.recipientName)}).</p>
+      <p style="color: #4B5854;">"${escapeHtml(params.reason)}"</p>
+      <p><a href="${params.reviewUrl}" style="display: inline-block; background: #E1613C; color: #fff; padding: 10px 18px; border-radius: 8px; text-decoration: none;">Review this request</a></p>
+    </div>
+  `;
+
+  await sendEmail({
+    to: params.toEmail,
+    subject: `Gift voucher refund request — ${params.voucherCode}`,
+    html,
+  });
+}
+
+interface GiftVoucherRefundApprovedEmailParams {
+  toEmail: string;
+  purchaserName: string;
+  productTitle: string;
+  voucherCode: string;
+  refundAmountIdr: number;
+}
+
+export async function sendGiftVoucherRefundApprovedEmail(
+  params: GiftVoucherRefundApprovedEmailParams
+): Promise<void> {
+  const html = `
+    <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
+      <h1 style="color: #0F3A3D;">Your refund is approved</h1>
+      <p>Hi ${escapeHtml(params.purchaserName)}, your refund for gift voucher <strong>${escapeHtml(params.voucherCode)}</strong> (${escapeHtml(params.productTitle)}) has been approved.</p>
+      <p>Refund amount: <strong>${escapeHtml(formatIdr(params.refundAmountIdr))}</strong>. This will be processed to your original payment method -- please allow a few business days. The voucher itself is no longer valid.</p>
+    </div>
+  `;
+
+  await sendEmail({
+    to: params.toEmail,
+    subject: `Refund approved — ${params.voucherCode}`,
+    html,
+  });
+}
+
+interface GiftVoucherRefundDeclinedEmailParams {
+  toEmail: string;
+  purchaserName: string;
+  productTitle: string;
+  voucherCode: string;
+  adminNotes: string | null;
+}
+
+export async function sendGiftVoucherRefundDeclinedEmail(
+  params: GiftVoucherRefundDeclinedEmailParams
+): Promise<void> {
+  const html = `
+    <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
+      <h1 style="color: #B3441E;">Your refund request wasn't approved</h1>
+      <p>Hi ${escapeHtml(params.purchaserName)}, we weren't able to approve your refund request for gift voucher <strong>${escapeHtml(params.voucherCode)}</strong> (${escapeHtml(params.productTitle)}).</p>
+      ${params.adminNotes ? `<p style="color: #4B5854;">${escapeHtml(params.adminNotes)}</p>` : ""}
+      <p>The voucher is still valid and can be redeemed as normal. Contact us at <a href="mailto:${escapeHtml(SUPPORT_EMAIL)}" style="color: #1E7A73;">${escapeHtml(SUPPORT_EMAIL)}</a> if you have questions.</p>
+    </div>
+  `;
+
+  await sendEmail({
+    to: params.toEmail,
+    subject: `Update on your refund request — ${params.voucherCode}`,
+    html,
+  });
+}
+
 function escapeHtml(input: string): string {
   return input
     .replace(/&/g, "&amp;")

@@ -52,6 +52,23 @@ export interface GiftVoucher {
   xendit_invoice_url: string | null;
   product_id: string;
   value_amount_idr: number;
+  // Only set for a directly-purchased voucher -- what the customer
+  // actually paid in USD, needed to compute commission the same way a
+  // booking's total_usd does.
+  value_amount_usd: number | null;
+  discount_code_id: string | null;
+  discount_code: string | null;
+  discount_amount_usd: number;
+  referred_by_agent_id: string | null;
+  commission_amount_usd: number | null;
+  commission_status: "pending" | "paid" | null;
+  // Set when the purchaser (not the recipient -- this is the "I want a
+  // refund on the gift I bought" path, unrelated to redemption) asks to
+  // cancel a not-yet-redeemed voucher. Cleared on decline; the voucher
+  // is just marked "expired" on approval, same as any other refund
+  // path in this app -- the actual Xendit refund happens manually.
+  cancellation_requested_at: string | null;
+  cancellation_reason: string | null;
   recipient_name: string;
   recipient_contact: string;
   redemption_code: string;
