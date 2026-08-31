@@ -40,7 +40,7 @@ export async function confirmVoucherRedemptionAction(voucherId: string, formData
   const { data: voucher } = await serviceClient
     .from("gift_vouchers")
     .select(
-      "id, status, expires_at, product_id, value_amount_idr, original_booking_id, redeemed_by_name, redeemed_by_email, requested_slot_date, requested_pax_count, redemption_code, products(title, adult_price_usd, capacity_per_date)"
+      "id, status, expires_at, product_id, value_amount_idr, original_booking_id, purchaser_customer_id, redeemed_by_name, redeemed_by_email, requested_slot_date, requested_pax_count, redemption_code, products(title, adult_price_usd, capacity_per_date)"
     )
     .eq("id", voucherId)
     .maybeSingle();
@@ -62,12 +62,25 @@ export async function confirmVoucherRedemptionAction(voucherId: string, formData
   }).products;
   const productTitle = product?.title ?? "your trip";
 
-  const [{ data: originalBooking }, { data: customer }] = await Promise.all([
-    serviceClient
-      .from("bookings")
-      .select("pax_count, customer_id, customers(name, email)")
-      .eq("id", voucher.original_booking_id)
-      .maybeSingle(),
+  // A voucher's giver is reached one of two ways depending on where it
+  // came from: through the original booking it was cancelled from, or
+  // (for one bought directly at /p/[slug]/gift) the purchaser_customer_id
+  // recorded on the voucher itself.
+  const [{ data: originalBooking }, { data: purchaser }, { data: customer }] = await Promise.all([
+    voucher.original_booking_id
+      ? serviceClient
+          .from("bookings")
+          .select("pax_count, customers(name, email)")
+          .eq("id", voucher.original_booking_id)
+          .maybeSingle()
+      : Promise.resolve({ data: null }),
+    voucher.purchaser_customer_id
+      ? serviceClient
+          .from("customers")
+          .select("name, email")
+          .eq("id", voucher.purchaser_customer_id)
+          .maybeSingle()
+      : Promise.resolve({ data: null }),
     serviceClient.from("customers").select("id").eq("email", voucher.redeemed_by_email).maybeSingle(),
   ]);
 
@@ -137,9 +150,9 @@ export async function confirmVoucherRedemptionAction(voucherId: string, formData
     .eq("id", voucher.id);
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
-  const originalGiver = (
-    originalBooking as unknown as { customers: { name: string; email: string } | null } | null
-  )?.customers;
+  const originalGiver =
+    (originalBooking as unknown as { customers: { name: string; email: string } | null } | null)
+      ?.customers ?? purchaser;
 
   await Promise.all([
     sendVoucherRedeemedBookingConfirmedEmail({

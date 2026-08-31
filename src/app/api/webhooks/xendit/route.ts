@@ -5,6 +5,8 @@ import {
   sendBookingConfirmedEmail,
   sendNewBookingStaffEmail,
   sendPaymentFailedEmail,
+  sendGiftVoucherPurchaseConfirmedEmail,
+  sendNewGiftVoucherPurchaseStaffEmail,
 } from "@/lib/email/resend";
 
 const PAID_STATUSES = new Set(["PAID", "SETTLED"]);
@@ -43,7 +45,7 @@ export async function POST(request: NextRequest) {
     .maybeSingle();
 
   if (!booking) {
-    return NextResponse.json({ ok: true, note: "ignored: no matching booking" });
+    return handleGiftVoucherWebhook(supabase, externalId, status);
   }
 
   // Webhooks can and do retry -- already-processed bookings are a
@@ -180,5 +182,103 @@ export async function POST(request: NextRequest) {
   }
 
   // Any other status (e.g. PENDING) -- nothing to do yet.
+  return NextResponse.json({ ok: true, note: `ignored status: ${status}` });
+}
+
+/**
+ * A standalone gift-voucher purchase (spec §6f follow-up -- previously
+ * a voucher only ever existed as a side effect of cancelling a
+ * booking) uses redemption_code as its Xendit external_id, the same
+ * role booking_code plays for a normal booking. Checked only after the
+ * bookings lookup above comes up empty, same "one payment, one record
+ * to find" shape either way.
+ */
+async function handleGiftVoucherWebhook(
+  supabase: ReturnType<typeof createSupabaseServiceRoleClient>,
+  externalId: string,
+  status: string
+) {
+  const { data: voucher } = await supabase
+    .from("gift_vouchers")
+    .select("id, status, product_id, value_amount_idr, purchaser_customer_id, recipient_name, redemption_code")
+    .eq("redemption_code", externalId)
+    .maybeSingle();
+
+  if (!voucher) {
+    return NextResponse.json({ ok: true, note: "ignored: no matching booking or gift voucher" });
+  }
+
+  // Same "webhooks retry, already-processed is a no-op" reasoning as
+  // the booking branch above.
+  if (voucher.status !== "pending_payment") {
+    return NextResponse.json({ ok: true, note: "already processed" });
+  }
+
+  if (PAID_STATUSES.has(status)) {
+    // 12 months from *now* (actual payment confirmation), not from
+    // whenever the row was first inserted -- the column's own default
+    // would otherwise start the clock at checkout-start time, docking
+    // whatever time someone spent on Xendit's payment page from every
+    // voucher's real validity window.
+    const expiresAt = new Date();
+    expiresAt.setMonth(expiresAt.getMonth() + 12);
+
+    const { error: updateError } = await supabase
+      .from("gift_vouchers")
+      .update({ status: "issued", expires_at: expiresAt.toISOString() })
+      .eq("id", voucher.id);
+
+    if (updateError) {
+      return NextResponse.json({ error: updateError.message }, { status: 500 });
+    }
+
+    const [{ data: product }, { data: purchaser }, { data: staff }] = await Promise.all([
+      supabase.from("products").select("title").eq("id", voucher.product_id).maybeSingle(),
+      supabase
+        .from("customers")
+        .select("name, email")
+        .eq("id", voucher.purchaser_customer_id)
+        .maybeSingle(),
+      supabase.from("admin_users").select("email").eq("status", "active"),
+    ]);
+
+    if (product && purchaser) {
+      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+      await sendGiftVoucherPurchaseConfirmedEmail({
+        toEmail: purchaser.email,
+        purchaserName: purchaser.name,
+        productTitle: product.title,
+        voucherCode: voucher.redemption_code,
+        valueIdr: voucher.value_amount_idr,
+        recipientName: voucher.recipient_name,
+        expiresAt: expiresAt.toISOString(),
+        redeemUrl: `${siteUrl}/redeem?code=${encodeURIComponent(voucher.redemption_code)}`,
+      });
+
+      await Promise.all(
+        (staff ?? []).map((admin) =>
+          sendNewGiftVoucherPurchaseStaffEmail({
+            toEmail: admin.email,
+            productTitle: product.title,
+            valueIdr: voucher.value_amount_idr,
+            voucherCode: voucher.redemption_code,
+            purchaserName: purchaser.name,
+            purchaserEmail: purchaser.email,
+            recipientName: voucher.recipient_name,
+          })
+        )
+      );
+    }
+
+    return NextResponse.json({ ok: true });
+  }
+
+  if (FAILED_STATUSES.has(status)) {
+    // No capacity or discount code to release -- a gift purchase never
+    // reserved either (no date was ever chosen).
+    await supabase.from("gift_vouchers").update({ status: "expired" }).eq("id", voucher.id);
+    return NextResponse.json({ ok: true });
+  }
+
   return NextResponse.json({ ok: true, note: `ignored status: ${status}` });
 }

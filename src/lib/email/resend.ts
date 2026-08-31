@@ -941,6 +941,90 @@ export async function sendCancellationRejectedEmail(
   });
 }
 
+interface GiftVoucherPurchaseConfirmedEmailParams {
+  toEmail: string;
+  purchaserName: string;
+  productTitle: string;
+  voucherCode: string;
+  valueIdr: number;
+  recipientName: string;
+  expiresAt: string;
+  redeemUrl: string;
+}
+
+/** Sent once payment for a standalone-purchased gift voucher (not one
+ * from cancelling a booking) is confirmed -- same "share this code,
+ * here's how they redeem it" shape as
+ * sendCancellationApprovedGiftVoucherEmail, just with purchase-
+ * appropriate copy instead of "your request was converted." */
+export async function sendGiftVoucherPurchaseConfirmedEmail(
+  params: GiftVoucherPurchaseConfirmedEmailParams
+): Promise<void> {
+  const waLink = whatsappLink(`Hi, I'd like to redeem gift voucher ${params.voucherCode}`);
+  const html = `
+    <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
+      <h1 style="color: #0F3A3D;">Your gift voucher is ready</h1>
+      <p>Hi ${escapeHtml(params.purchaserName)}, thanks for your purchase -- <strong>${escapeHtml(params.productTitle)}</strong> is now a gift voucher for ${escapeHtml(params.recipientName)}.</p>
+      <table style="width: 100%; border-collapse: collapse; margin: 16px 0;">
+        <tr><td style="padding: 6px 0; color: #4B5854;">Voucher code</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">${escapeHtml(params.voucherCode)}</td></tr>
+        <tr><td style="padding: 6px 0; color: #4B5854;">Value</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">${escapeHtml(formatIdr(params.valueIdr))}</td></tr>
+        <tr><td style="padding: 6px 0; color: #4B5854;">Expires</td><td style="padding: 6px 0; text-align: right;">${escapeHtml(new Date(params.expiresAt).toLocaleDateString())}</td></tr>
+      </table>
+      <p>Please forward this email or share the code above with ${escapeHtml(params.recipientName)}. When they're ready to book, here's exactly what they should do:</p>
+      <p><a href="${params.redeemUrl}" style="display: inline-block; background: #E1613C; color: #fff; padding: 10px 18px; border-radius: 8px; text-decoration: none;">Redeem this voucher</a></p>
+      <p style="color: #4B5854; font-size: 14px;">
+        That page walks them through submitting their details and preferred date. If they'd rather reach us directly: email
+        <a href="mailto:${escapeHtml(SUPPORT_EMAIL)}" style="color: #1E7A73;">${escapeHtml(SUPPORT_EMAIL)}</a> quoting the voucher code${
+          waLink ? ` or WhatsApp us at <a href="${waLink}" style="color: #1E7A73;">${escapeHtml(WHATSAPP_NUMBER ?? "")}</a>` : ""
+        }.
+      </p>
+    </div>
+  `;
+
+  await sendEmail({
+    to: params.toEmail,
+    subject: `Your gift voucher — ${params.voucherCode}`,
+    html,
+  });
+}
+
+interface NewGiftVoucherPurchaseStaffEmailParams {
+  toEmail: string;
+  productTitle: string;
+  valueIdr: number;
+  voucherCode: string;
+  purchaserName: string;
+  purchaserEmail: string;
+  recipientName: string;
+}
+
+/** Internal "a gift voucher was just bought and paid for" notice --
+ * same reasoning as sendNewBookingStaffEmail, for the same reason: a
+ * standalone gift purchase moves money the same way a normal booking
+ * does, so staff should hear about it the same way. */
+export async function sendNewGiftVoucherPurchaseStaffEmail(
+  params: NewGiftVoucherPurchaseStaffEmailParams
+): Promise<void> {
+  const html = `
+    <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
+      <h1 style="color: #0F3A3D;">New gift voucher purchased</h1>
+      <p><strong>${escapeHtml(params.productTitle)}</strong> was just bought as a gift and paid for.</p>
+      <table style="width: 100%; border-collapse: collapse; margin: 16px 0;">
+        <tr><td style="padding: 6px 0; color: #4B5854;">Voucher code</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">${escapeHtml(params.voucherCode)}</td></tr>
+        <tr><td style="padding: 6px 0; color: #4B5854;">Value</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">${escapeHtml(formatIdr(params.valueIdr))}</td></tr>
+        <tr><td style="padding: 6px 0; color: #4B5854;">Purchased by</td><td style="padding: 6px 0; text-align: right;">${escapeHtml(params.purchaserName)} (${escapeHtml(params.purchaserEmail)})</td></tr>
+        <tr><td style="padding: 6px 0; color: #4B5854;">For</td><td style="padding: 6px 0; text-align: right;">${escapeHtml(params.recipientName)}</td></tr>
+      </table>
+    </div>
+  `;
+
+  await sendEmail({
+    to: params.toEmail,
+    subject: `New gift voucher purchased — ${params.voucherCode}`,
+    html,
+  });
+}
+
 function escapeHtml(input: string): string {
   return input
     .replace(/&/g, "&amp;")

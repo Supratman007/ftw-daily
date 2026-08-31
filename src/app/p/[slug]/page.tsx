@@ -192,6 +192,15 @@ export default async function ProductPage({
               </button>
             </form>
           )}
+
+          {p.is_bookable && (
+            <a
+              href={`/p/${p.slug}/gift`}
+              className="mt-3 block rounded-lg border border-sand-deep px-4 py-3 text-center text-sm font-semibold text-ink hover:bg-sand"
+            >
+              🎁 Give this trip as a gift
+            </a>
+          )}
         </div>
       </div>
       </main>

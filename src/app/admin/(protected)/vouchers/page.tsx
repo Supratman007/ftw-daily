@@ -119,6 +119,9 @@ export default async function AdminVouchersPage({
               </span>
             </div>
             <p className="mt-1 font-semibold text-ink">{v.products?.title ?? "Trip"}</p>
+            <p className="text-xs text-ink-soft">
+              {v.original_booking_id ? "From a cancellation" : "Purchased directly as a gift"}
+            </p>
             <dl className="mt-2 space-y-1">
               <div className="flex justify-between">
                 <dt className="text-ink-soft">Originally for</dt>

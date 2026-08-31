@@ -2,7 +2,7 @@ export type CancellationPath = "standard" | "force_majeure";
 export type CancellationStatus = "pending_review" | "approved" | "rejected";
 export type CancellationResolution = "refund" | "reschedule" | "gift_voucher" | "rejected";
 export type CancellationPreferredResolution = "refund" | "reschedule" | "gift_voucher";
-export type GiftVoucherStatus = "issued" | "redeemed" | "expired";
+export type GiftVoucherStatus = "pending_payment" | "issued" | "redeemed" | "expired";
 
 export interface CancellationPolicyTier {
   id: string;
@@ -41,7 +41,15 @@ export interface CancellationRequest {
 
 export interface GiftVoucher {
   id: string;
-  original_booking_id: string;
+  // Null for a directly-purchased voucher (see purchaser_customer_id
+  // instead) -- only set for one that came out of cancelling an
+  // existing booking.
+  original_booking_id: string | null;
+  // Null for a voucher that came out of a cancellation -- only set for
+  // one bought directly via /p/[slug]/gift.
+  purchaser_customer_id: string | null;
+  xendit_invoice_id: string | null;
+  xendit_invoice_url: string | null;
   product_id: string;
   value_amount_idr: number;
   recipient_name: string;
