@@ -222,6 +222,7 @@ export async function approveGiftVoucherAction(requestId: string, formData: Form
   const recipientContact = String(formData.get("recipient_contact") ?? "").trim();
   const adminNotes = String(formData.get("admin_notes") ?? "").trim();
   const valueAmountRaw = String(formData.get("value_amount_idr") ?? "").trim();
+  const expiresAtRaw = String(formData.get("expires_at") ?? "").trim();
 
   function fail(message: string): never {
     redirect(`/admin/cancellations/${requestId}?error=${encodeURIComponent(message)}`);
@@ -243,6 +244,24 @@ export async function approveGiftVoucherAction(requestId: string, formData: Form
     fail("Please enter a valid voucher value.");
   }
 
+  // Policy: a voucher's validity window is set right here at approval,
+  // constrained to 3-6 months out -- long enough to be usable, short
+  // enough that it isn't an open-ended liability. Enforced server-side
+  // (not just the form's min/max) since a form attribute alone can be
+  // bypassed.
+  if (!expiresAtRaw || Number.isNaN(Date.parse(expiresAtRaw))) {
+    fail("Please choose a valid expiry date.");
+  }
+  const minExpiry = new Date();
+  minExpiry.setMonth(minExpiry.getMonth() + 3);
+  const maxExpiry = new Date();
+  maxExpiry.setMonth(maxExpiry.getMonth() + 6);
+  const minExpiryStr = minExpiry.toISOString().slice(0, 10);
+  const maxExpiryStr = maxExpiry.toISOString().slice(0, 10);
+  if (expiresAtRaw < minExpiryStr || expiresAtRaw > maxExpiryStr) {
+    fail(`Expiry must be between ${minExpiryStr} and ${maxExpiryStr} (3-6 months from today).`);
+  }
+
   const { error: voucherError } = await supabase.from("gift_vouchers").insert({
     original_booking_id: booking.id,
     product_id: booking.product_id,
@@ -250,6 +269,7 @@ export async function approveGiftVoucherAction(requestId: string, formData: Form
     recipient_name: recipientName,
     recipient_contact: recipientContact,
     redemption_code: generateVoucherCode(),
+    expires_at: new Date(`${expiresAtRaw}T23:59:59Z`).toISOString(),
   });
 
   if (voucherError) {

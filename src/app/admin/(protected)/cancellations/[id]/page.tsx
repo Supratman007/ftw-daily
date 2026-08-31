@@ -66,6 +66,17 @@ export default async function AdminCancellationDetailPage({
 
   const isPending = request.status === "pending_review";
 
+  // Policy: a voucher issued from a cancellation is valid for 3-6
+  // months from the moment it's approved, admin's choice within that
+  // window -- enforced again server-side in the action itself, this is
+  // just the form's own min/max/default.
+  const minExpiryDate = new Date();
+  minExpiryDate.setMonth(minExpiryDate.getMonth() + 3);
+  const maxExpiryDate = new Date();
+  maxExpiryDate.setMonth(maxExpiryDate.getMonth() + 6);
+  const minExpiry = minExpiryDate.toISOString().slice(0, 10);
+  const maxExpiry = maxExpiryDate.toISOString().slice(0, 10);
+
   return (
     <div className="max-w-xl">
       <Link href="/admin/cancellations" className="text-sm font-semibold text-teal hover:underline">
@@ -265,6 +276,18 @@ export default async function AdminCancellationDetailPage({
                     ? request.calculated_refund_amount_idr ?? request.bookings?.total_idr ?? 0
                     : request.bookings?.total_idr ?? 0
                 }
+                className="mt-1 w-full rounded-lg border border-sand-deep px-3 py-2 text-sm text-ink"
+              />
+            </label>
+            <label className="text-xs text-ink-soft">
+              Voucher expires (3-6 months from today)
+              <input
+                type="date"
+                name="expires_at"
+                required
+                min={minExpiry}
+                max={maxExpiry}
+                defaultValue={maxExpiry}
                 className="mt-1 w-full rounded-lg border border-sand-deep px-3 py-2 text-sm text-ink"
               />
             </label>
