@@ -215,7 +215,7 @@ async function buildPickupNote(
           .eq("id", booking.meeting_point_id)
           .maybeSingle()
           .then((r) => r.data?.name ?? null)
-      : Promise.resolve(booking.meeting_point_custom),
+      : Promise.resolve<string | null>(null),
     booking.car_type_id && booking.car_package_id
       ? Promise.all([
           supabase.from("car_types").select("name").eq("id", booking.car_type_id).maybeSingle(),
@@ -236,7 +236,8 @@ async function buildPickupNote(
     dateStyle: "medium",
     timeStyle: "short",
   });
-  const where = meetingPointName ? ` from ${meetingPointName}` : "";
+  const whereParts = [meetingPointName, booking.meeting_point_custom].filter(Boolean);
+  const where = whereParts.length > 0 ? ` from ${whereParts.join(", ")}` : "";
   const car = carDetail ? ` (${carDetail})` : "";
   return `${when}${where}${car}`;
 }

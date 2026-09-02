@@ -53,22 +53,27 @@ export function CarHireBookingForm({
     () => new Set(prices.filter((p) => p.car_package_id === effectivePackageId).map((p) => p.meeting_point_id)),
     [prices, effectivePackageId]
   );
-  const availableMeetingPoints = meetingPoints.filter((mp) => pricedMeetingPointIds.has(mp.id));
 
+  // Every active meeting point is always selectable -- not just the
+  // ones already priced for the current car/duration -- so a customer
+  // can pick any real area and see either a price or a "we'll quote
+  // you" message, rather than the area disappearing from the list
+  // entirely just because this particular combination isn't priced
+  // yet. Defaults to a priced one when one exists, purely so the form
+  // opens showing a real price rather than a blank one.
   const [meetingPointId, setMeetingPointId] = useState(
-    availableMeetingPoints[0]?.id ?? OTHER_MEETING_POINT_VALUE
+    meetingPoints.find((mp) => pricedMeetingPointIds.has(mp.id))?.id ??
+      meetingPoints[0]?.id ??
+      OTHER_MEETING_POINT_VALUE
   );
-  const effectiveMeetingPointId = availableMeetingPoints.some((mp) => mp.id === meetingPointId)
-    ? meetingPointId
-    : (availableMeetingPoints[0]?.id ?? OTHER_MEETING_POINT_VALUE);
 
   const price = prices.find(
-    (p) => p.car_package_id === effectivePackageId && p.meeting_point_id === effectiveMeetingPointId
+    (p) => p.car_package_id === effectivePackageId && p.meeting_point_id === meetingPointId
   );
 
   const selectedCarType = carTypes.find((c) => c.id === carTypeId);
   const selectedPackage = packagesForCarType.find((p) => p.id === effectivePackageId);
-  const isOther = effectiveMeetingPointId === OTHER_MEETING_POINT_VALUE;
+  const isOther = meetingPointId === OTHER_MEETING_POINT_VALUE;
 
   return (
     <form action={action} className="flex flex-col gap-3">
@@ -112,30 +117,40 @@ export function CarHireBookingForm({
         Pickup area
         <select
           name="meeting_point_id"
-          value={effectiveMeetingPointId}
+          value={meetingPointId}
           onChange={(e) => setMeetingPointId(e.target.value)}
           className={inputClass}
         >
-          {availableMeetingPoints.map((mp) => (
+          {meetingPoints.map((mp) => (
             <option key={mp.id} value={mp.id}>
               {mp.name}
+              {!pricedMeetingPointIds.has(mp.id) ? " (ask us for a price)" : ""}
             </option>
           ))}
-          <option value={OTHER_MEETING_POINT_VALUE}>Other — contact us for a quote</option>
+          <option value={OTHER_MEETING_POINT_VALUE}>Other — not on the list</option>
         </select>
       </label>
 
-      {isOther && (
-        <label className={labelClass}>
-          Tell us your pickup location
-          <input
-            type="text"
-            name="meeting_point_custom"
-            placeholder="e.g. name of hotel/area"
-            className={inputClass}
-          />
-        </label>
-      )}
+      <label className={labelClass}>
+        {isOther ? "Tell us your pickup location" : "Exact pickup spot (optional)"}
+        <input
+          type="text"
+          name="meeting_point_custom"
+          required={isOther}
+          placeholder={
+            isOther
+              ? "e.g. name of hotel/area"
+              : "e.g. Sunset Hotel, lobby -- or Lombok Airport, domestic arrivals"
+          }
+          className={inputClass}
+        />
+        {!isOther && (
+          <span className="mt-1 block text-[11px] font-normal normal-case text-ink-soft">
+            The area above sets the price -- this is just so the driver finds you: hotel name and
+            where to wait, or the exact airport terminal/gate.
+          </span>
+        )}
+      </label>
 
       <div className="grid grid-cols-2 gap-3">
         <label className={labelClass}>

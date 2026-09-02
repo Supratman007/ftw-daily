@@ -289,7 +289,7 @@ export default async function BookingDetailPage({
           <p className="font-semibold text-ink">Pickup</p>
           <p className="mt-1 text-ink">{new Date(b.pickup_datetime).toLocaleString()}</p>
           <p className="text-ink-soft">
-            {meetingPointName ?? b.meeting_point_custom ?? "—"}
+            {[meetingPointName, b.meeting_point_custom].filter(Boolean).join(", ") || "—"}
             {carLabel && ` · ${carLabel}`}
           </p>
 

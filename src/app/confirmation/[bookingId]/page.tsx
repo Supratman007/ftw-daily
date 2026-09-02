@@ -178,7 +178,7 @@ export default async function ConfirmationPage({
             <span className="text-ink">
               {new Date(b.pickup_datetime).toLocaleString()}
               {(meetingPointName || b.meeting_point_custom) &&
-                ` — ${meetingPointName ?? b.meeting_point_custom}`}
+                ` — ${[meetingPointName, b.meeting_point_custom].filter(Boolean).join(", ")}`}
             </span>
           </div>
         )}

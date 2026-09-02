@@ -406,7 +406,12 @@ export async function startCarHireCheckoutAction(productId: string, slug: string
     car_package_id: pkg.id,
     pickup_datetime: pickupDatetime.toISOString(),
     meeting_point_id: meetingPoint?.id ?? null,
-    meeting_point_custom: meetingPoint ? null : meetingPointCustom,
+    // When a real area was chosen, meetingPointCustom is just the
+    // extra "find me here" detail (hotel/room, airport gate) --
+    // otherwise it's the pickup location itself, already required
+    // above. Either way it's worth keeping, so it's never dropped just
+    // because a real meeting point was also selected.
+    meeting_point_custom: meetingPointCustom || null,
   });
 
   if (insertError) {
@@ -577,7 +582,9 @@ export async function startTransportCheckoutAction(productId: string, slug: stri
     referred_by_agent_id: referredByAgentId,
     pickup_datetime: pickupDatetime.toISOString(),
     meeting_point_id: meetingPoint?.id ?? null,
-    meeting_point_custom: meetingPoint ? null : meetingPointCustom,
+    // Same reasoning as Car Hire above: keep the "find me here" detail
+    // regardless of whether a real area was also selected.
+    meeting_point_custom: meetingPointCustom || null,
   });
 
   if (insertError) {

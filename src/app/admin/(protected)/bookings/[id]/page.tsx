@@ -138,7 +138,7 @@ export default async function AdminBookingDetailPage({
           <>
             <p className="mt-2 text-ink">{new Date(b.pickup_datetime).toLocaleString()}</p>
             <p className="text-ink-soft">
-              {meetingPointName ?? b.meeting_point_custom ?? "—"}
+              {[meetingPointName, b.meeting_point_custom].filter(Boolean).join(", ") || "—"}
               {carLabel && ` · ${carLabel}`}
             </p>
           </>
