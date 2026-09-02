@@ -67,6 +67,27 @@ export default async function AdminBookingDetailPage({
     }
   }
 
+  // A pre-filled, no-recipient wa.me link -- opening it drops the admin
+  // straight into WhatsApp's own "choose who to send this to" screen,
+  // so they can pick the driver (or a driver group chat) from their
+  // own contacts. There's no driver-contacts feature in this app, so
+  // this is deliberately the whole mechanism: it never needs one.
+  let driverMessageLink: string | null = null;
+  if (b.pickup_datetime) {
+    const area = [meetingPointName, b.meeting_point_custom].filter(Boolean).join(", ") || "Not set";
+    const lines = [
+      "New pickup:",
+      `Trip: ${b.products?.title ?? "Trip"}`,
+      `Booking: ${b.booking_code}`,
+      `Pickup: ${new Date(b.pickup_datetime).toLocaleString()}`,
+      carLabel ? `Car: ${carLabel}` : null,
+      `Area: ${area}`,
+      `Customer: ${b.customers?.name ?? "—"}`,
+      b.pickup_whatsapp_number ? `Customer WhatsApp: ${b.pickup_whatsapp_number}` : null,
+    ].filter((line): line is string => Boolean(line));
+    driverMessageLink = `https://wa.me/?text=${encodeURIComponent(lines.join("\n"))}`;
+  }
+
   return (
     <div className="max-w-xl">
       <Link href="/admin/bookings" className="text-sm font-semibold text-teal hover:underline">
@@ -152,6 +173,16 @@ export default async function AdminBookingDetailPage({
                   Message {b.pickup_whatsapp_number} on WhatsApp →
                 </a>
               </p>
+            )}
+            {driverMessageLink && (
+              <a
+                href={driverMessageLink}
+                target="_blank"
+                rel="noreferrer"
+                className="mt-3 inline-block rounded-lg border border-sand-deep px-3 py-1.5 text-xs font-semibold text-ink hover:bg-sand"
+              >
+                Send trip details to driver via WhatsApp →
+              </a>
             )}
           </>
         ) : b.hotel_name || b.room_number ? (
