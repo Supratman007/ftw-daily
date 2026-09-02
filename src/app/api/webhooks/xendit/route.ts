@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
   const { data: booking } = await supabase
     .from("bookings")
     .select(
-      "id, status, product_id, customer_id, slot_date, pax_count, total_idr, total_usd, booking_code, discount_code_id, discount_code, discount_amount_usd, referred_by_agent_id, pickup_datetime, meeting_point_id, meeting_point_custom, car_type_id, car_package_id, transport_vehicle_type_id, pickup_whatsapp_number"
+      "id, status, product_id, customer_id, slot_date, pax_count, total_idr, total_usd, booking_code, discount_code_id, discount_code, discount_amount_usd, referred_by_agent_id, pickup_datetime, meeting_point_id, meeting_point_custom, car_type_id, car_package_id, transport_vehicle_type_id, pickup_whatsapp_number, passenger_name, flight_details"
     )
     .eq("booking_code", externalId)
     .maybeSingle();
@@ -140,6 +140,8 @@ export async function POST(request: NextRequest) {
             customerPhone: customer.phone,
             pickupNote,
             pickupWhatsappNumber: booking.pickup_whatsapp_number,
+            passengerName: booking.passenger_name,
+            flightDetails: booking.flight_details,
           })
         )
       );

@@ -92,7 +92,8 @@ export default async function AdminBookingDetailPage({
       `Pickup: ${new Date(b.pickup_datetime).toLocaleString()}`,
       carLabel ? `Car: ${carLabel}` : null,
       `Area: ${area}`,
-      `Customer: ${b.customers?.name ?? "—"}`,
+      `Passenger: ${b.passenger_name ?? b.customers?.name ?? "—"}`,
+      b.flight_details ? `Flight: ${b.flight_details}` : null,
       b.pickup_whatsapp_number ? `Customer WhatsApp: ${b.pickup_whatsapp_number}` : null,
     ].filter((line): line is string => Boolean(line));
     driverMessageLink = `https://wa.me/?text=${encodeURIComponent(lines.join("\n"))}`;
@@ -172,6 +173,8 @@ export default async function AdminBookingDetailPage({
               {[meetingPointName, b.meeting_point_custom].filter(Boolean).join(", ") || "—"}
               {carLabel && ` · ${carLabel}`}
             </p>
+            {b.passenger_name && <p className="mt-1 text-ink-soft">Passenger: {b.passenger_name}</p>}
+            {b.flight_details && <p className="text-ink-soft">Flight: {b.flight_details}</p>}
             {b.pickup_whatsapp_number && (
               <p className="mt-1 text-ink-soft">
                 <a

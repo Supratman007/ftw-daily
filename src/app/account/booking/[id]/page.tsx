@@ -302,6 +302,8 @@ export default async function BookingDetailPage({
             {[meetingPointName, b.meeting_point_custom].filter(Boolean).join(", ") || "—"}
             {carLabel && ` · ${carLabel}`}
           </p>
+          {b.passenger_name && <p className="text-ink-soft">Passenger: {b.passenger_name}</p>}
+          {b.flight_details && <p className="text-ink-soft">Flight: {b.flight_details}</p>}
           {b.pickup_whatsapp_number && (
             <p className="text-ink-soft">
               Your driver will WhatsApp you on {b.pickup_whatsapp_number} when they arrive.

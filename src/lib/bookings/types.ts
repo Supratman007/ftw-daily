@@ -53,6 +53,11 @@ export interface Booking {
   // time so the driver has a direct line to the customer on arrival,
   // separate from the account's own (possibly stale) phone number.
   pickup_whatsapp_number: string | null;
+  // Car Hire / Transport only -- who's actually traveling (not
+  // necessarily the account holder who booked online), and flight
+  // details for an airport pickup so the driver can track the flight.
+  passenger_name: string | null;
+  flight_details: string | null;
   created_at: string;
   updated_at: string;
 }

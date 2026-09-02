@@ -116,6 +116,17 @@ export function TransportBookingForm({
       </label>
 
       <label className={labelClass}>
+        Passenger name
+        <input
+          type="text"
+          name="passenger_name"
+          required
+          placeholder="Who's traveling? (if not you, their full name)"
+          className={inputClass}
+        />
+      </label>
+
+      <label className={labelClass}>
         WhatsApp number for pickup
         <input
           type="tel"
@@ -139,6 +150,20 @@ export function TransportBookingForm({
           <input type="time" name="pickup_time" required defaultValue="08:00" className={inputClass} />
         </label>
       </div>
+
+      <label className={labelClass}>
+        Flight number / arrival details (optional)
+        <input
+          type="text"
+          name="flight_details"
+          placeholder="e.g. Garuda GA402, arriving 14:30"
+          className={inputClass}
+        />
+        <span className="mt-1 block text-[11px] font-normal normal-case text-ink-soft">
+          Picking up from the airport? This helps your driver track your flight and be there when
+          you land.
+        </span>
+      </label>
 
       <label className={labelClass}>
         Discount code (optional)

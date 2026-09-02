@@ -23,6 +23,8 @@ interface BookingRow {
   car_type_id: string | null;
   car_package_id: string | null;
   transport_vehicle_type_id: string | null;
+  passenger_name: string | null;
+  flight_details: string | null;
 }
 
 /**
@@ -46,7 +48,7 @@ export default async function ConfirmationPage({
   const { data: booking } = await supabase
     .from("bookings")
     .select(
-      "id, booking_code, slot_date, pax_count, total_idr, status, product_id, discount_code, discount_amount_usd, pickup_datetime, meeting_point_id, meeting_point_custom, pickup_whatsapp_number, car_type_id, car_package_id, transport_vehicle_type_id"
+      "id, booking_code, slot_date, pax_count, total_idr, status, product_id, discount_code, discount_amount_usd, pickup_datetime, meeting_point_id, meeting_point_custom, pickup_whatsapp_number, car_type_id, car_package_id, transport_vehicle_type_id, passenger_name, flight_details"
     )
     .eq("id", bookingId)
     .eq("customer_id", customer.id)
@@ -204,6 +206,18 @@ export default async function ConfirmationPage({
                 ` — ${[meetingPointName, b.meeting_point_custom].filter(Boolean).join(", ")}`}
               {carLabel && ` (${carLabel})`}
             </span>
+          </div>
+        )}
+        {b.passenger_name && (
+          <div className="flex justify-between border-b border-sand-deep py-2">
+            <span className="text-ink-soft">Passenger</span>
+            <span className="text-ink">{b.passenger_name}</span>
+          </div>
+        )}
+        {b.flight_details && (
+          <div className="flex justify-between border-b border-sand-deep py-2">
+            <span className="text-ink-soft">Flight</span>
+            <span className="text-ink">{b.flight_details}</span>
           </div>
         )}
         {b.pickup_whatsapp_number && (

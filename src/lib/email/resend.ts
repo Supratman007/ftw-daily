@@ -154,6 +154,10 @@ interface NewBookingStaffEmailParams {
    * dispatching the driver can message the customer directly from
    * this email the moment the driver's on site. */
   pickupWhatsappNumber?: string | null;
+  /** Car Hire/Transport only -- who's actually traveling, and their
+   * flight details for an airport pickup so the driver can track it. */
+  passengerName?: string | null;
+  flightDetails?: string | null;
 }
 
 /**
@@ -170,6 +174,12 @@ export async function sendNewBookingStaffEmail(params: NewBookingStaffEmailParam
   const pickupWhatsappRow = params.pickupWhatsappNumber
     ? `<tr><td style="padding: 6px 0; color: #4B5854;">Driver contact</td><td style="padding: 6px 0; text-align: right;"><a href="https://wa.me/${params.pickupWhatsappNumber.replace(/\D/g, "")}" style="color: #0F766E; font-weight: 600;">${escapeHtml(params.pickupWhatsappNumber)} (WhatsApp)</a></td></tr>`
     : "";
+  const passengerRow = params.passengerName
+    ? `<tr><td style="padding: 6px 0; color: #4B5854;">Passenger</td><td style="padding: 6px 0; text-align: right;">${escapeHtml(params.passengerName)}</td></tr>`
+    : "";
+  const flightRow = params.flightDetails
+    ? `<tr><td style="padding: 6px 0; color: #4B5854;">Flight</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">${escapeHtml(params.flightDetails)}</td></tr>`
+    : "";
   const html = `
     <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
       <h1 style="color: #0F3A3D;">New booking paid</h1>
@@ -179,6 +189,8 @@ export async function sendNewBookingStaffEmail(params: NewBookingStaffEmailParam
         <tr><td style="padding: 6px 0; color: #4B5854;">Date</td><td style="padding: 6px 0; text-align: right;">${escapeHtml(params.slotDate)}</td></tr>
         <tr><td style="padding: 6px 0; color: #4B5854;">Travelers</td><td style="padding: 6px 0; text-align: right;">${params.paxCount}</td></tr>
         ${pickupRow}
+        ${passengerRow}
+        ${flightRow}
         ${pickupWhatsappRow}
         <tr><td style="padding: 6px 0; color: #4B5854;">Total paid</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">${escapeHtml(formatIdr(params.totalIdr))}</td></tr>
         <tr><td style="padding: 6px 0; color: #4B5854;">Customer</td><td style="padding: 6px 0; text-align: right;">${escapeHtml(params.customerName)}</td></tr>
