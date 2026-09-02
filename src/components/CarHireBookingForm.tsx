@@ -75,6 +75,10 @@ export function CarHireBookingForm({
   const selectedPackage = packagesForCarType.find((p) => p.id === effectivePackageId);
   const isOther = meetingPointId === OTHER_MEETING_POINT_VALUE;
 
+  const [paxCount, setPaxCount] = useState(1);
+  const maxPax = selectedCarType?.capacity_tier ?? 6;
+  const paxTooMany = paxCount > maxPax;
+
   return (
     <form action={action} className="flex flex-col gap-3">
       <label className={labelClass}>
@@ -94,6 +98,26 @@ export function CarHireBookingForm({
             </option>
           ))}
         </select>
+      </label>
+
+      <label className={labelClass}>
+        Number of passengers
+        <input
+          type="number"
+          name="pax_count"
+          min={1}
+          max={maxPax}
+          required
+          value={paxCount}
+          onChange={(e) => setPaxCount(Number(e.target.value) || 1)}
+          className={inputClass}
+        />
+        {paxTooMany && (
+          <span className="mt-1 block text-[11px] font-normal normal-case text-coral-dark">
+            {selectedCarType?.name ?? "This car"} seats up to {maxPax} — please choose a bigger
+            car or fewer passengers.
+          </span>
+        )}
       </label>
 
       <label className={labelClass}>
@@ -245,7 +269,7 @@ export function CarHireBookingForm({
 
       <button
         type="submit"
-        disabled={!price || packagesForCarType.length === 0}
+        disabled={!price || packagesForCarType.length === 0 || paxTooMany}
         className="mt-2 rounded-lg bg-coral px-4 py-3 text-sm font-semibold text-white disabled:opacity-50"
       >
         Continue to checkout

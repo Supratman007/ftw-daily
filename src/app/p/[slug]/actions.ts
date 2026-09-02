@@ -219,6 +219,8 @@ export async function startCarHireCheckoutAction(productId: string, slug: string
   const meetingPointIdInput = String(formData.get("meeting_point_id") ?? "");
   const meetingPointCustom = String(formData.get("meeting_point_custom") ?? "").trim();
   const passengerName = String(formData.get("passenger_name") ?? "").trim();
+  const paxCountRaw = Number(formData.get("pax_count") ?? "0");
+  const paxCount = Number.isInteger(paxCountRaw) ? paxCountRaw : 0;
   const pickupWhatsappNumber = String(formData.get("pickup_whatsapp_number") ?? "").trim();
   const flightDetails = String(formData.get("flight_details") ?? "").trim();
   const pickupDate = String(formData.get("pickup_date") ?? "");
@@ -243,6 +245,9 @@ export async function startCarHireCheckoutAction(productId: string, slug: string
   }
   if (!passengerName) {
     fail("Please tell us who's traveling.");
+  }
+  if (paxCount < 1) {
+    fail("Please choose how many passengers are traveling.");
   }
   // At least a few digits -- not a strict phone format check (customers
   // type these every possible way: spaces, dashes, with/without "+"),
@@ -283,6 +288,9 @@ export async function startCarHireCheckoutAction(productId: string, slug: string
     fail("Please choose a car.");
   }
   const ct = carType as CarType;
+  if (paxCount > ct.capacity_tier) {
+    fail(`${ct.name} seats up to ${ct.capacity_tier} -- please choose a bigger car or fewer passengers.`);
+  }
 
   const { data: carPackage } = await supabase
     .from("car_packages")
@@ -401,11 +409,7 @@ export async function startCarHireCheckoutAction(productId: string, slug: string
     customer_id: customer.id,
     product_id: p.id,
     slot_date: pickupDate,
-    // No separate traveler count for Car Hire (spec §6a) -- the car's
-    // own seat capacity is the only headcount that means anything
-    // here, stored so it still shows up anywhere pax_count is
-    // displayed (e.g. "Travelers: 6").
-    pax_count: ct.capacity_tier,
+    pax_count: paxCount,
     subtotal_usd: subtotalUsd,
     total_usd: finalSubtotalUsd,
     total_idr: totalIdr,
@@ -451,6 +455,8 @@ export async function startTransportCheckoutAction(productId: string, slug: stri
   const dropoffIdInput = String(formData.get("dropoff_meeting_point_id") ?? "");
   const dropoffCustom = String(formData.get("dropoff_location_custom") ?? "").trim();
   const passengerName = String(formData.get("passenger_name") ?? "").trim();
+  const paxCountRaw = Number(formData.get("pax_count") ?? "0");
+  const paxCount = Number.isInteger(paxCountRaw) ? paxCountRaw : 0;
   const pickupWhatsappNumber = String(formData.get("pickup_whatsapp_number") ?? "").trim();
   const flightDetails = String(formData.get("flight_details") ?? "").trim();
   const pickupDate = String(formData.get("pickup_date") ?? "");
@@ -485,6 +491,9 @@ export async function startTransportCheckoutAction(productId: string, slug: stri
   }
   if (!passengerName) {
     fail("Please tell us who's traveling.");
+  }
+  if (paxCount < 1 || paxCount > 20) {
+    fail("Please choose between 1 and 20 passengers.");
   }
   if (pickupWhatsappNumber.replace(/\D/g, "").length < 8) {
     fail("Please enter a valid WhatsApp number so your driver can reach you.");
@@ -641,9 +650,7 @@ export async function startTransportCheckoutAction(productId: string, slug: stri
     product_id: p.id,
     slot_date: pickupDate,
     transport_vehicle_type_id: vehicleType.id,
-    // No per-person pricing for Transport either -- 1 is a sentinel,
-    // not a real headcount (see the same note on Car Hire above).
-    pax_count: 1,
+    pax_count: paxCount,
     subtotal_usd: subtotalUsd,
     total_usd: finalSubtotalUsd,
     total_idr: totalIdr,

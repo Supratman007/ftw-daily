@@ -80,6 +80,19 @@ export function TransportBookingForm({
         </select>
       </label>
 
+      <label className={labelClass}>
+        Number of passengers
+        <input
+          type="number"
+          name="pax_count"
+          min={1}
+          max={20}
+          required
+          defaultValue={1}
+          className={inputClass}
+        />
+      </label>
+
       <div className="grid grid-cols-2 gap-3">
         <label className={labelClass}>
           Pick up from
