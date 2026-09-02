@@ -83,6 +83,20 @@ export function TransportBookingForm({
         )}
       </label>
 
+      <label className={labelClass}>
+        WhatsApp number for pickup
+        <input
+          type="tel"
+          name="pickup_whatsapp_number"
+          required
+          placeholder="e.g. +62 812 3456 7890"
+          className={inputClass}
+        />
+        <span className="mt-1 block text-[11px] font-normal normal-case text-ink-soft">
+          Your driver will message you here when they arrive.
+        </span>
+      </label>
+
       <div className="grid grid-cols-2 gap-3">
         <label className={labelClass}>
           Pickup date

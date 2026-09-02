@@ -141,6 +141,18 @@ export default async function AdminBookingDetailPage({
               {[meetingPointName, b.meeting_point_custom].filter(Boolean).join(", ") || "—"}
               {carLabel && ` · ${carLabel}`}
             </p>
+            {b.pickup_whatsapp_number && (
+              <p className="mt-1 text-ink-soft">
+                <a
+                  href={`https://wa.me/${b.pickup_whatsapp_number.replace(/\D/g, "")}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="font-semibold text-teal underline"
+                >
+                  Message {b.pickup_whatsapp_number} on WhatsApp →
+                </a>
+              </p>
+            )}
           </>
         ) : b.hotel_name || b.room_number ? (
           <>

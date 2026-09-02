@@ -218,6 +218,7 @@ export async function startCarHireCheckoutAction(productId: string, slug: string
   const carPackageId = String(formData.get("car_package_id") ?? "");
   const meetingPointIdInput = String(formData.get("meeting_point_id") ?? "");
   const meetingPointCustom = String(formData.get("meeting_point_custom") ?? "").trim();
+  const pickupWhatsappNumber = String(formData.get("pickup_whatsapp_number") ?? "").trim();
   const pickupDate = String(formData.get("pickup_date") ?? "");
   const pickupTime = String(formData.get("pickup_time") ?? "");
   const discountCodeInput = String(formData.get("discount_code") ?? "").trim();
@@ -237,6 +238,14 @@ export async function startCarHireCheckoutAction(productId: string, slug: string
   }
   if (isOtherMeetingPoint && !meetingPointCustom) {
     fail("Please tell us your pickup location.");
+  }
+  // At least a few digits -- not a strict phone format check (customers
+  // type these every possible way: spaces, dashes, with/without "+"),
+  // just enough to catch someone leaving it blank or typing junk. The
+  // driver messaging this number on arrival is the whole point of
+  // asking for it.
+  if (pickupWhatsappNumber.replace(/\D/g, "").length < 8) {
+    fail("Please enter a valid WhatsApp number so your driver can reach you.");
   }
 
   const pickupDatetime = new Date(`${pickupDate}T${pickupTime}:00`);
@@ -412,6 +421,7 @@ export async function startCarHireCheckoutAction(productId: string, slug: string
     // above. Either way it's worth keeping, so it's never dropped just
     // because a real meeting point was also selected.
     meeting_point_custom: meetingPointCustom || null,
+    pickup_whatsapp_number: pickupWhatsappNumber,
   });
 
   if (insertError) {
@@ -430,6 +440,7 @@ export async function startCarHireCheckoutAction(productId: string, slug: string
 export async function startTransportCheckoutAction(productId: string, slug: string, formData: FormData) {
   const meetingPointIdInput = String(formData.get("meeting_point_id") ?? "");
   const meetingPointCustom = String(formData.get("meeting_point_custom") ?? "").trim();
+  const pickupWhatsappNumber = String(formData.get("pickup_whatsapp_number") ?? "").trim();
   const pickupDate = String(formData.get("pickup_date") ?? "");
   const pickupTime = String(formData.get("pickup_time") ?? "");
   const discountCodeInput = String(formData.get("discount_code") ?? "").trim();
@@ -449,6 +460,9 @@ export async function startTransportCheckoutAction(productId: string, slug: stri
   }
   if (isOtherMeetingPoint && !meetingPointCustom) {
     fail("Please tell us your pickup location.");
+  }
+  if (pickupWhatsappNumber.replace(/\D/g, "").length < 8) {
+    fail("Please enter a valid WhatsApp number so your driver can reach you.");
   }
 
   const pickupDatetime = new Date(`${pickupDate}T${pickupTime}:00`);
@@ -585,6 +599,7 @@ export async function startTransportCheckoutAction(productId: string, slug: stri
     // Same reasoning as Car Hire above: keep the "find me here" detail
     // regardless of whether a real area was also selected.
     meeting_point_custom: meetingPointCustom || null,
+    pickup_whatsapp_number: pickupWhatsappNumber,
   });
 
   if (insertError) {

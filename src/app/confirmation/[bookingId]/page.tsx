@@ -19,6 +19,7 @@ interface BookingRow {
   pickup_datetime: string | null;
   meeting_point_id: string | null;
   meeting_point_custom: string | null;
+  pickup_whatsapp_number: string | null;
 }
 
 /**
@@ -42,7 +43,7 @@ export default async function ConfirmationPage({
   const { data: booking } = await supabase
     .from("bookings")
     .select(
-      "id, booking_code, slot_date, pax_count, total_idr, status, product_id, discount_code, discount_amount_usd, pickup_datetime, meeting_point_id, meeting_point_custom"
+      "id, booking_code, slot_date, pax_count, total_idr, status, product_id, discount_code, discount_amount_usd, pickup_datetime, meeting_point_id, meeting_point_custom, pickup_whatsapp_number"
     )
     .eq("id", bookingId)
     .eq("customer_id", customer.id)
@@ -180,6 +181,12 @@ export default async function ConfirmationPage({
               {(meetingPointName || b.meeting_point_custom) &&
                 ` — ${[meetingPointName, b.meeting_point_custom].filter(Boolean).join(", ")}`}
             </span>
+          </div>
+        )}
+        {b.pickup_whatsapp_number && (
+          <div className="flex justify-between border-b border-sand-deep py-2">
+            <span className="text-ink-soft">Driver will WhatsApp</span>
+            <span className="text-ink">{b.pickup_whatsapp_number}</span>
           </div>
         )}
         {b.discount_code && b.discount_amount_usd > 0 && (

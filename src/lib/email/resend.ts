@@ -150,6 +150,10 @@ interface NewBookingStaffEmailParams {
   /** Same pickup line as the customer email, so staff know where/when
    * to send the driver without opening the admin panel. */
   pickupNote?: string | null;
+  /** Car Hire/Transport only -- a clickable wa.me link so whoever's
+   * dispatching the driver can message the customer directly from
+   * this email the moment the driver's on site. */
+  pickupWhatsappNumber?: string | null;
 }
 
 /**
@@ -163,6 +167,9 @@ export async function sendNewBookingStaffEmail(params: NewBookingStaffEmailParam
   const pickupRow = params.pickupNote
     ? `<tr><td style="padding: 6px 0; color: #4B5854;">Pickup</td><td style="padding: 6px 0; text-align: right;">${escapeHtml(params.pickupNote)}</td></tr>`
     : "";
+  const pickupWhatsappRow = params.pickupWhatsappNumber
+    ? `<tr><td style="padding: 6px 0; color: #4B5854;">Driver contact</td><td style="padding: 6px 0; text-align: right;"><a href="https://wa.me/${params.pickupWhatsappNumber.replace(/\D/g, "")}" style="color: #0F766E; font-weight: 600;">${escapeHtml(params.pickupWhatsappNumber)} (WhatsApp)</a></td></tr>`
+    : "";
   const html = `
     <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
       <h1 style="color: #0F3A3D;">New booking paid</h1>
@@ -172,6 +179,7 @@ export async function sendNewBookingStaffEmail(params: NewBookingStaffEmailParam
         <tr><td style="padding: 6px 0; color: #4B5854;">Date</td><td style="padding: 6px 0; text-align: right;">${escapeHtml(params.slotDate)}</td></tr>
         <tr><td style="padding: 6px 0; color: #4B5854;">Travelers</td><td style="padding: 6px 0; text-align: right;">${params.paxCount}</td></tr>
         ${pickupRow}
+        ${pickupWhatsappRow}
         <tr><td style="padding: 6px 0; color: #4B5854;">Total paid</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">${escapeHtml(formatIdr(params.totalIdr))}</td></tr>
         <tr><td style="padding: 6px 0; color: #4B5854;">Customer</td><td style="padding: 6px 0; text-align: right;">${escapeHtml(params.customerName)}</td></tr>
         <tr><td style="padding: 6px 0; color: #4B5854;">Customer email</td><td style="padding: 6px 0; text-align: right;">${escapeHtml(params.customerEmail)}</td></tr>

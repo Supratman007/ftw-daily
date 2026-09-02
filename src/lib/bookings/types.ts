@@ -46,6 +46,10 @@ export interface Booking {
   // doesn't use pickup at all.
   meeting_point_id: string | null;
   meeting_point_custom: string | null;
+  // Car Hire / Transport only -- a fresh number captured at booking
+  // time so the driver has a direct line to the customer on arrival,
+  // separate from the account's own (possibly stale) phone number.
+  pickup_whatsapp_number: string | null;
   created_at: string;
   updated_at: string;
 }

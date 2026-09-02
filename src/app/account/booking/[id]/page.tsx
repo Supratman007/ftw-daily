@@ -292,6 +292,11 @@ export default async function BookingDetailPage({
             {[meetingPointName, b.meeting_point_custom].filter(Boolean).join(", ") || "—"}
             {carLabel && ` · ${carLabel}`}
           </p>
+          {b.pickup_whatsapp_number && (
+            <p className="text-ink-soft">
+              Your driver will WhatsApp you on {b.pickup_whatsapp_number} when they arrive.
+            </p>
+          )}
 
           {canChangePickupTime ? (
             <details className="mt-3 border-t border-sand-deep pt-3">
