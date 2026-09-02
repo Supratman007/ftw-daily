@@ -34,9 +34,21 @@ export interface CarPackagePrice {
   price_idr: number;
 }
 
-export interface TransportPrice {
+/** A Transport product's vehicle/service tiers -- e.g. "Sedan (up to 4
+ * pax)" vs "Van (up to 10 pax)", or "Shared Speedboat" vs "Private
+ * Speedboat" for a Gili Islands transfer. Same role as CarType above,
+ * just without the fixed 4/6-seat regulation constraint. */
+export interface TransportVehicleType {
   id: string;
   product_id: string;
+  name: string;
+  capacity_note: string | null;
+  status: "active" | "inactive";
+}
+
+export interface TransportPrice {
+  id: string;
+  vehicle_type_id: string;
   meeting_point_id: string;
   price_idr: number;
 }

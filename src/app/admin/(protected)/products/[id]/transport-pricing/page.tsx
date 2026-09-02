@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { requireAdmin } from "@/lib/admin/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { saveTransportPricesAction } from "./actions";
-import type { MeetingPoint, TransportPrice } from "@/lib/cars/types";
+import type { MeetingPoint, TransportPrice, TransportVehicleType } from "@/lib/cars/types";
 import type { Product } from "@/lib/products/types";
 
 export default async function TransportPricingPage({
@@ -29,12 +29,20 @@ export default async function TransportPricingPage({
     notFound();
   }
 
-  const { data: pricesData } = await supabase
-    .from("transport_prices")
+  const { data: vehicleTypesData } = await supabase
+    .from("transport_vehicle_types")
     .select("*")
-    .eq("product_id", productId);
+    .eq("product_id", productId)
+    .order("name", { ascending: true });
+  const vehicleTypes = (vehicleTypesData ?? []) as TransportVehicleType[];
+  const vehicleTypeIds = vehicleTypes.map((v) => v.id);
+
+  const { data: pricesData } =
+    vehicleTypeIds.length > 0
+      ? await supabase.from("transport_prices").select("*").in("vehicle_type_id", vehicleTypeIds)
+      : { data: [] as TransportPrice[] };
   const prices = (pricesData ?? []) as TransportPrice[];
-  const priceByMeetingPoint = new Map(prices.map((p) => [p.meeting_point_id, p.price_idr]));
+  const priceByKey = new Map(prices.map((p) => [`${p.vehicle_type_id}__${p.meeting_point_id}`, p.price_idr]));
 
   const { data: meetingPointsData } = await supabase
     .from("meeting_points")
@@ -52,8 +60,8 @@ export default async function TransportPricingPage({
         Transport pricing — {(product as Product).title}
       </h1>
       <p className="mt-1 text-sm text-ink-soft">
-        Price is set per pickup area only — leave a row blank if this transport isn&apos;t offered
-        from there.
+        Price is set per vehicle/service type and pickup area -- e.g. Sedan vs. Van, or Shared vs.
+        Private Speedboat for a Gili Islands transfer.
       </p>
 
       {error && (
@@ -67,6 +75,59 @@ export default async function TransportPricingPage({
         </p>
       )}
 
+      <div className="mt-8 flex items-center justify-between">
+        <h2 className="font-serif text-lg font-semibold text-ink">Vehicle / service types</h2>
+        <Link
+          href={`/admin/products/${productId}/transport-pricing/vehicle-types/new`}
+          className="rounded-lg bg-coral px-4 py-2 text-sm font-semibold text-white"
+        >
+          + Add vehicle/service type
+        </Link>
+      </div>
+
+      {vehicleTypes.length === 0 ? (
+        <p className="mt-4 text-sm text-ink-soft">
+          No vehicle/service types yet — add one (e.g. &quot;Sedan, up to 4 passengers&quot;) to get
+          started. If you only offer one option, a single type still works fine.
+        </p>
+      ) : (
+        <div className="mt-4 overflow-hidden rounded-lg border border-sand-deep bg-white">
+          <table className="w-full text-left text-sm">
+            <thead className="bg-sand text-xs uppercase text-ink-soft">
+              <tr>
+                <th className="px-4 py-2">Name</th>
+                <th className="px-4 py-2">Capacity note</th>
+                <th className="px-4 py-2">Status</th>
+                <th className="px-4 py-2" />
+              </tr>
+            </thead>
+            <tbody>
+              {vehicleTypes.map((v) => (
+                <tr key={v.id} className="border-t border-sand-deep">
+                  <td className="px-4 py-2 font-medium text-ink">{v.name}</td>
+                  <td className="px-4 py-2 text-ink-soft">{v.capacity_note ?? "—"}</td>
+                  <td className="px-4 py-2 text-ink-soft">{v.status}</td>
+                  <td className="px-4 py-2 text-right">
+                    <Link
+                      href={`/admin/products/${productId}/transport-pricing/vehicle-types/${v.id}/edit`}
+                      className="text-teal underline"
+                    >
+                      Edit
+                    </Link>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      <h2 className="mt-10 font-serif text-lg font-semibold text-ink">Price grid</h2>
+      <p className="mt-1 text-sm text-ink-soft">
+        One row per vehicle/service type, one column per pickup area. Leave a cell blank if that
+        combination isn&apos;t offered.
+      </p>
+
       {meetingPoints.length === 0 ? (
         <p className="mt-4 text-sm text-ink-soft">
           Add at least one{" "}
@@ -75,30 +136,43 @@ export default async function TransportPricingPage({
           </Link>{" "}
           before setting prices.
         </p>
+      ) : vehicleTypes.length === 0 ? (
+        <p className="mt-4 text-sm text-ink-soft">
+          Add a vehicle/service type above before setting prices.
+        </p>
       ) : (
-        <form action={saveTransportPricesAction.bind(null, productId)} className="mt-6 max-w-md">
-          <table className="w-full border-collapse text-left text-sm">
+        <form action={saveTransportPricesAction.bind(null, productId)} className="mt-4 overflow-x-auto">
+          <table className="min-w-full border-collapse text-left text-sm">
             <thead className="bg-sand text-xs uppercase text-ink-soft">
               <tr>
-                <th className="border border-sand-deep px-3 py-2">Pickup area</th>
-                <th className="border border-sand-deep px-3 py-2">Price (IDR)</th>
+                <th className="border border-sand-deep px-3 py-2">Vehicle / service</th>
+                {meetingPoints.map((mp) => (
+                  <th key={mp.id} className="border border-sand-deep px-3 py-2">
+                    {mp.name}
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody>
-              {meetingPoints.map((mp) => (
-                <tr key={mp.id}>
-                  <td className="border border-sand-deep px-3 py-2 font-medium text-ink">{mp.name}</td>
-                  <td className="border border-sand-deep px-2 py-1">
-                    <input
-                      type="number"
-                      min={0}
-                      step={1000}
-                      name={`price__${mp.id}`}
-                      defaultValue={priceByMeetingPoint.get(mp.id) ?? ""}
-                      placeholder="—"
-                      className="w-32 rounded border border-sand-deep px-2 py-1 text-sm outline-none focus:border-teal"
-                    />
+              {vehicleTypes.map((v) => (
+                <tr key={v.id}>
+                  <td className="border border-sand-deep px-3 py-2 font-medium text-ink">
+                    {v.name}
+                    {v.capacity_note && <span className="block text-xs text-ink-soft">{v.capacity_note}</span>}
                   </td>
+                  {meetingPoints.map((mp) => (
+                    <td key={mp.id} className="border border-sand-deep px-2 py-1">
+                      <input
+                        type="number"
+                        min={0}
+                        step={1000}
+                        name={`price__${v.id}__${mp.id}`}
+                        defaultValue={priceByKey.get(`${v.id}__${mp.id}`) ?? ""}
+                        placeholder="—"
+                        className="w-28 rounded border border-sand-deep px-2 py-1 text-sm outline-none focus:border-teal"
+                      />
+                    </td>
+                  ))}
                 </tr>
               ))}
             </tbody>

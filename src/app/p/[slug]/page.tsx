@@ -2,7 +2,14 @@ import { notFound } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { formatIdr, formatUsd, usdToIdr } from "@/lib/currency";
 import type { Product } from "@/lib/products/types";
-import type { CarType, CarPackage, CarPackagePrice, MeetingPoint, TransportPrice } from "@/lib/cars/types";
+import type {
+  CarType,
+  CarPackage,
+  CarPackagePrice,
+  MeetingPoint,
+  TransportPrice,
+  TransportVehicleType,
+} from "@/lib/cars/types";
 import { SiteHeader } from "@/components/SiteHeader";
 import { CarHireBookingForm } from "@/components/CarHireBookingForm";
 import { TransportBookingForm } from "@/components/TransportBookingForm";
@@ -58,6 +65,7 @@ export default async function ProductPage({
   let carTypes: CarType[] = [];
   let carPackages: CarPackage[] = [];
   let carPrices: CarPackagePrice[] = [];
+  let transportVehicleTypes: TransportVehicleType[] = [];
   let transportPrices: TransportPrice[] = [];
   let meetingPoints: MeetingPoint[] = [];
 
@@ -97,10 +105,19 @@ export default async function ProductPage({
           : { data: [] as CarPackagePrice[] };
       carPrices = (pricesData ?? []) as CarPackagePrice[];
     } else {
-      const { data: transportPricesData } = await supabase
-        .from("transport_prices")
+      const { data: vehicleTypesData } = await supabase
+        .from("transport_vehicle_types")
         .select("*")
-        .eq("product_id", p.id);
+        .eq("product_id", p.id)
+        .eq("status", "active")
+        .order("name", { ascending: true });
+      transportVehicleTypes = (vehicleTypesData ?? []) as TransportVehicleType[];
+      const vehicleTypeIds = transportVehicleTypes.map((v) => v.id);
+
+      const { data: transportPricesData } =
+        vehicleTypeIds.length > 0
+          ? await supabase.from("transport_prices").select("*").in("vehicle_type_id", vehicleTypeIds)
+          : { data: [] as TransportPrice[] };
       transportPrices = (transportPricesData ?? []) as TransportPrice[];
     }
   }
@@ -166,6 +183,7 @@ export default async function ProductPage({
             <TransportBookingForm
               action={startTransportCheckoutAction.bind(null, p.id, p.slug)}
               productTitle={p.title}
+              vehicleTypes={transportVehicleTypes}
               prices={transportPrices}
               meetingPoints={meetingPoints}
               defaultDiscountCode={discountCode}

@@ -39,6 +39,9 @@ export interface Booking {
   // car_package_id are null for every other product type.
   car_type_id: string | null;
   car_package_id: string | null;
+  // Transport only -- which vehicle/service tier (e.g. Sedan vs. Van,
+  // Shared vs. Private Speedboat) was booked.
+  transport_vehicle_type_id: string | null;
   pickup_datetime: string | null;
   // Mutually exclusive by convention: meeting_point_id is set if
   // chosen from the admin-managed list, meeting_point_custom if

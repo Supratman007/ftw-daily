@@ -20,6 +20,9 @@ interface BookingRow {
   meeting_point_id: string | null;
   meeting_point_custom: string | null;
   pickup_whatsapp_number: string | null;
+  car_type_id: string | null;
+  car_package_id: string | null;
+  transport_vehicle_type_id: string | null;
 }
 
 /**
@@ -43,7 +46,7 @@ export default async function ConfirmationPage({
   const { data: booking } = await supabase
     .from("bookings")
     .select(
-      "id, booking_code, slot_date, pax_count, total_idr, status, product_id, discount_code, discount_amount_usd, pickup_datetime, meeting_point_id, meeting_point_custom, pickup_whatsapp_number"
+      "id, booking_code, slot_date, pax_count, total_idr, status, product_id, discount_code, discount_amount_usd, pickup_datetime, meeting_point_id, meeting_point_custom, pickup_whatsapp_number, car_type_id, car_package_id, transport_vehicle_type_id"
     )
     .eq("id", bookingId)
     .eq("customer_id", customer.id)
@@ -108,6 +111,25 @@ export default async function ConfirmationPage({
       .eq("id", b.meeting_point_id)
       .maybeSingle();
     meetingPointName = meetingPoint?.name ?? null;
+  }
+
+  let carLabel: string | null = null;
+  if (b.car_type_id && b.car_package_id) {
+    const [{ data: carType }, { data: carPackage }] = await Promise.all([
+      supabase.from("car_types").select("name").eq("id", b.car_type_id).maybeSingle(),
+      supabase.from("car_packages").select("duration_hours").eq("id", b.car_package_id).maybeSingle(),
+    ]);
+    carLabel = carType ? `${carType.name}${carPackage ? `, ${carPackage.duration_hours}h` : ""}` : null;
+  }
+  if (b.transport_vehicle_type_id) {
+    const { data: vehicleType } = await supabase
+      .from("transport_vehicle_types")
+      .select("name, capacity_note")
+      .eq("id", b.transport_vehicle_type_id)
+      .maybeSingle();
+    carLabel = vehicleType
+      ? `${vehicleType.name}${vehicleType.capacity_note ? `, ${vehicleType.capacity_note}` : ""}`
+      : null;
   }
 
   if (b.status === "pending_payment") {
@@ -180,6 +202,7 @@ export default async function ConfirmationPage({
               {new Date(b.pickup_datetime).toLocaleString()}
               {(meetingPointName || b.meeting_point_custom) &&
                 ` — ${[meetingPointName, b.meeting_point_custom].filter(Boolean).join(", ")}`}
+              {carLabel && ` (${carLabel})`}
             </span>
           </div>
         )}

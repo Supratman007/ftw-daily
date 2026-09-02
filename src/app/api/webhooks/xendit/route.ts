@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
   const { data: booking } = await supabase
     .from("bookings")
     .select(
-      "id, status, product_id, customer_id, slot_date, pax_count, total_idr, total_usd, booking_code, discount_code_id, discount_code, discount_amount_usd, referred_by_agent_id, pickup_datetime, meeting_point_id, meeting_point_custom, car_type_id, car_package_id, pickup_whatsapp_number"
+      "id, status, product_id, customer_id, slot_date, pax_count, total_idr, total_usd, booking_code, discount_code_id, discount_code, discount_amount_usd, referred_by_agent_id, pickup_datetime, meeting_point_id, meeting_point_custom, car_type_id, car_package_id, transport_vehicle_type_id, pickup_whatsapp_number"
     )
     .eq("booking_code", externalId)
     .maybeSingle();
@@ -204,11 +204,12 @@ async function buildPickupNote(
     meeting_point_custom: string | null;
     car_type_id: string | null;
     car_package_id: string | null;
+    transport_vehicle_type_id: string | null;
   }
 ): Promise<string | null> {
   if (!booking.pickup_datetime) return null;
 
-  const [meetingPointName, carDetail] = await Promise.all([
+  const [meetingPointName, carDetail, vehicleDetail] = await Promise.all([
     booking.meeting_point_id
       ? supabase
           .from("meeting_points")
@@ -230,7 +231,15 @@ async function buildPickupNote(
             ? `${carType.data.name}${carPackage.data ? `, ${carPackage.data.duration_hours}h` : ""}`
             : null
         )
-      : Promise.resolve(null),
+      : Promise.resolve<string | null>(null),
+    booking.transport_vehicle_type_id
+      ? supabase
+          .from("transport_vehicle_types")
+          .select("name")
+          .eq("id", booking.transport_vehicle_type_id)
+          .maybeSingle()
+          .then((r) => r.data?.name ?? null)
+      : Promise.resolve<string | null>(null),
   ]);
 
   const when = new Date(booking.pickup_datetime).toLocaleString("en-US", {
@@ -239,7 +248,7 @@ async function buildPickupNote(
   });
   const whereParts = [meetingPointName, booking.meeting_point_custom].filter(Boolean);
   const where = whereParts.length > 0 ? ` from ${whereParts.join(", ")}` : "";
-  const car = carDetail ? ` (${carDetail})` : "";
+  const car = carDetail ?? vehicleDetail ? ` (${carDetail ?? vehicleDetail})` : "";
   return `${when}${where}${car}`;
 }
 

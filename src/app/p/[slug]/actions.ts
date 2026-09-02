@@ -438,6 +438,7 @@ export async function startCarHireCheckoutAction(productId: string, slug: string
  * involved.
  */
 export async function startTransportCheckoutAction(productId: string, slug: string, formData: FormData) {
+  const vehicleTypeId = String(formData.get("vehicle_type_id") ?? "");
   const meetingPointIdInput = String(formData.get("meeting_point_id") ?? "");
   const meetingPointCustom = String(formData.get("meeting_point_custom") ?? "").trim();
   const pickupWhatsappNumber = String(formData.get("pickup_whatsapp_number") ?? "").trim();
@@ -485,6 +486,16 @@ export async function startTransportCheckoutAction(productId: string, slug: stri
   }
   const p = product as Product;
 
+  const { data: vehicleType } = await supabase
+    .from("transport_vehicle_types")
+    .select("*")
+    .eq("id", vehicleTypeId)
+    .eq("product_id", p.id)
+    .maybeSingle();
+  if (!vehicleType) {
+    fail("Please choose a vehicle/service option.");
+  }
+
   let meetingPoint: MeetingPoint | null = null;
   if (!isOtherMeetingPoint) {
     const { data: meetingPointData } = await supabase
@@ -504,13 +515,13 @@ export async function startTransportCheckoutAction(productId: string, slug: stri
     const { data: priceRow } = await supabase
       .from("transport_prices")
       .select("price_idr")
-      .eq("product_id", p.id)
+      .eq("vehicle_type_id", vehicleType.id)
       .eq("meeting_point_id", meetingPoint.id)
       .maybeSingle();
     priceIdr = priceRow?.price_idr ?? null;
   }
   if (priceIdr === null) {
-    fail("We don't have a set price for that pickup area yet -- please contact us for a quote.");
+    fail("We don't have a set price for that combination yet -- please contact us for a quote.");
   }
 
   const subtotalUsd = idrToUsd(priceIdr);
@@ -566,7 +577,7 @@ export async function startTransportCheckoutAction(productId: string, slug: stri
       externalId: bookingCode,
       amountIdr: totalIdr,
       payerEmail: customer.email,
-      description: p.title,
+      description: `${p.title} — ${vehicleType.name}`,
       successRedirectUrl: `${siteUrl}/confirmation/${bookingId}`,
       failureRedirectUrl: `${siteUrl}/p/${slug}`,
     });
@@ -581,6 +592,7 @@ export async function startTransportCheckoutAction(productId: string, slug: stri
     customer_id: customer.id,
     product_id: p.id,
     slot_date: pickupDate,
+    transport_vehicle_type_id: vehicleType.id,
     // No per-person pricing for Transport either -- 1 is a sentinel,
     // not a real headcount (see the same note on Car Hire above).
     pax_count: 1,

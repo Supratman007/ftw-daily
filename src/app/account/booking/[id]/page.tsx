@@ -169,6 +169,16 @@ export default async function BookingDetailPage({
       ]);
       carLabel = carType ? `${carType.name}${carPackage ? `, ${carPackage.duration_hours}h` : ""}` : null;
     }
+    if (b.transport_vehicle_type_id) {
+      const { data: vehicleType } = await supabase
+        .from("transport_vehicle_types")
+        .select("name, capacity_note")
+        .eq("id", b.transport_vehicle_type_id)
+        .maybeSingle();
+      carLabel = vehicleType
+        ? `${vehicleType.name}${vehicleType.capacity_note ? `, ${vehicleType.capacity_note}` : ""}`
+        : null;
+    }
   }
   const hoursUntilPickup = b.pickup_datetime
     ? (new Date(b.pickup_datetime).getTime() - new Date().getTime()) / 3_600_000

@@ -3,7 +3,12 @@
 import { useState } from "react";
 import { formatIdr } from "@/lib/currency";
 import { whatsappLink } from "@/lib/contact";
-import { OTHER_MEETING_POINT_VALUE, type MeetingPoint, type TransportPrice } from "@/lib/cars/types";
+import {
+  OTHER_MEETING_POINT_VALUE,
+  type MeetingPoint,
+  type TransportPrice,
+  type TransportVehicleType,
+} from "@/lib/cars/types";
 
 function tomorrow(): string {
   const d = new Date();
@@ -17,6 +22,7 @@ const inputClass = "mt-1 w-full rounded-lg border border-sand-deep px-3 py-2 tex
 interface TransportBookingFormProps {
   action: (formData: FormData) => void | Promise<void>;
   productTitle: string;
+  vehicleTypes: TransportVehicleType[];
   prices: TransportPrice[];
   meetingPoints: MeetingPoint[];
   defaultDiscountCode?: string;
@@ -25,11 +31,16 @@ interface TransportBookingFormProps {
 export function TransportBookingForm({
   action,
   productTitle,
+  vehicleTypes,
   prices,
   meetingPoints,
   defaultDiscountCode,
 }: TransportBookingFormProps) {
-  const pricedMeetingPointIds = new Set(prices.map((p) => p.meeting_point_id));
+  const [vehicleTypeId, setVehicleTypeId] = useState(vehicleTypes[0]?.id ?? "");
+
+  const pricedMeetingPointIds = new Set(
+    prices.filter((p) => p.vehicle_type_id === vehicleTypeId).map((p) => p.meeting_point_id)
+  );
 
   // Same reasoning as CarHireBookingForm: every active meeting point
   // is selectable, priced or not, so an area never just disappears
@@ -40,10 +51,31 @@ export function TransportBookingForm({
       OTHER_MEETING_POINT_VALUE
   );
   const isOther = meetingPointId === OTHER_MEETING_POINT_VALUE;
-  const price = prices.find((p) => p.meeting_point_id === meetingPointId);
+  const price = prices.find(
+    (p) => p.vehicle_type_id === vehicleTypeId && p.meeting_point_id === meetingPointId
+  );
+  const selectedVehicleType = vehicleTypes.find((v) => v.id === vehicleTypeId);
 
   return (
     <form action={action} className="flex flex-col gap-3">
+      <label className={labelClass}>
+        Vehicle / service
+        <select
+          name="vehicle_type_id"
+          value={vehicleTypeId}
+          onChange={(e) => setVehicleTypeId(e.target.value)}
+          className={inputClass}
+        >
+          {vehicleTypes.length === 0 && <option value="">No options set up yet</option>}
+          {vehicleTypes.map((v) => (
+            <option key={v.id} value={v.id}>
+              {v.name}
+              {v.capacity_note ? ` — ${v.capacity_note}` : ""}
+            </option>
+          ))}
+        </select>
+      </label>
+
       <label className={labelClass}>
         Pickup area
         <select
@@ -121,10 +153,18 @@ export function TransportBookingForm({
 
       <div className="rounded-lg border border-sand-deep bg-sand p-3 text-sm">
         {price ? (
-          <div className="font-serif text-xl font-bold text-ocean">{formatIdr(price.price_idr)}</div>
+          <>
+            {selectedVehicleType && (
+              <span className="text-ink-soft">
+                {selectedVehicleType.name}
+                {selectedVehicleType.capacity_note ? ` · ${selectedVehicleType.capacity_note}` : ""}
+              </span>
+            )}
+            <div className="mt-1 font-serif text-xl font-bold text-ocean">{formatIdr(price.price_idr)}</div>
+          </>
         ) : (
           <p className="text-ink-soft">
-            We don&apos;t have a set price for that pickup area yet.{" "}
+            We don&apos;t have a set price for that combination yet.{" "}
             <a
               href={whatsappLink(`Hi, I'd like a quote for ${productTitle}.`) ?? undefined}
               target="_blank"
@@ -140,7 +180,7 @@ export function TransportBookingForm({
 
       <button
         type="submit"
-        disabled={!price}
+        disabled={!price || vehicleTypes.length === 0}
         className="mt-2 rounded-lg bg-coral px-4 py-3 text-sm font-semibold text-white disabled:opacity-50"
       >
         Continue to checkout
