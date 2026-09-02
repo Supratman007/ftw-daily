@@ -52,34 +52,46 @@ export async function updateTransportVehicleTypeAction(
 }
 
 /** Same spreadsheet-style bulk save as Car Hire's price grid -- one
- * field per (vehicle_type_id, meeting_point_id) cell, named
- * "price__<vehicleTypeId>__<meetingPointId>". An emptied cell deletes
- * that price (meaning "not offered on this vehicle from this area"). */
+ * field per (vehicle_type_id, from_meeting_point_id,
+ * to_meeting_point_id) cell, named
+ * "price__<vehicleTypeId>__<fromId>__<toId>". An emptied cell deletes
+ * that route (meaning "we don't run this route on this vehicle"). */
 export async function saveTransportPricesAction(productId: string, formData: FormData) {
   await requireAdmin();
   const supabase = await createSupabaseServerClient();
 
-  const upserts: { vehicle_type_id: string; meeting_point_id: string; price_idr: number }[] = [];
-  const deletes: { vehicle_type_id: string; meeting_point_id: string }[] = [];
+  const upserts: {
+    vehicle_type_id: string;
+    from_meeting_point_id: string;
+    to_meeting_point_id: string;
+    price_idr: number;
+  }[] = [];
+  const deletes: { vehicle_type_id: string; from_meeting_point_id: string; to_meeting_point_id: string }[] =
+    [];
 
   for (const [key, rawValue] of formData.entries()) {
-    const match = key.match(/^price__(.+)__(.+)$/);
+    const match = key.match(/^price__(.+)__(.+)__(.+)$/);
     if (!match) continue;
-    const [, vehicleTypeId, meetingPointId] = match;
+    const [, vehicleTypeId, fromId, toId] = match;
     const value = String(rawValue).trim();
     if (value === "") {
-      deletes.push({ vehicle_type_id: vehicleTypeId, meeting_point_id: meetingPointId });
+      deletes.push({ vehicle_type_id: vehicleTypeId, from_meeting_point_id: fromId, to_meeting_point_id: toId });
       continue;
     }
     const price = Number(value);
     if (!Number.isFinite(price) || price < 0) continue;
-    upserts.push({ vehicle_type_id: vehicleTypeId, meeting_point_id: meetingPointId, price_idr: price });
+    upserts.push({
+      vehicle_type_id: vehicleTypeId,
+      from_meeting_point_id: fromId,
+      to_meeting_point_id: toId,
+      price_idr: price,
+    });
   }
 
   if (upserts.length > 0) {
     const { error } = await supabase
       .from("transport_prices")
-      .upsert(upserts, { onConflict: "vehicle_type_id,meeting_point_id" });
+      .upsert(upserts, { onConflict: "vehicle_type_id,from_meeting_point_id,to_meeting_point_id" });
     if (error) {
       redirect(
         `/admin/products/${productId}/transport-pricing?error=${encodeURIComponent(error.message)}`
@@ -92,7 +104,8 @@ export async function saveTransportPricesAction(productId: string, formData: For
       .from("transport_prices")
       .delete()
       .eq("vehicle_type_id", d.vehicle_type_id)
-      .eq("meeting_point_id", d.meeting_point_id);
+      .eq("from_meeting_point_id", d.from_meeting_point_id)
+      .eq("to_meeting_point_id", d.to_meeting_point_id);
   }
 
   redirect(`/admin/products/${productId}/transport-pricing?saved=1`);

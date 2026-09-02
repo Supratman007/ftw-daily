@@ -48,6 +48,7 @@ export default async function AdminBookingDetailPage({
     .eq("booking_id", b.id);
 
   let meetingPointName: string | null = null;
+  let dropoffPointName: string | null = null;
   let carLabel: string | null = null;
   if (b.pickup_datetime) {
     if (b.meeting_point_id) {
@@ -57,6 +58,14 @@ export default async function AdminBookingDetailPage({
         .eq("id", b.meeting_point_id)
         .maybeSingle();
       meetingPointName = meetingPoint?.name ?? null;
+    }
+    if (b.dropoff_meeting_point_id) {
+      const { data: dropoffPoint } = await supabase
+        .from("meeting_points")
+        .select("name")
+        .eq("id", b.dropoff_meeting_point_id)
+        .maybeSingle();
+      dropoffPointName = dropoffPoint?.name ?? null;
     }
     if (b.car_type_id && b.car_package_id) {
       const [{ data: carType }, { data: carPackage }] = await Promise.all([
@@ -84,14 +93,16 @@ export default async function AdminBookingDetailPage({
   // this is deliberately the whole mechanism: it never needs one.
   let driverMessageLink: string | null = null;
   if (b.pickup_datetime) {
-    const area = [meetingPointName, b.meeting_point_custom].filter(Boolean).join(", ") || "Not set";
+    const pickupArea = [meetingPointName, b.meeting_point_custom].filter(Boolean).join(", ") || "Not set";
+    const dropoffArea = [dropoffPointName, b.dropoff_location_custom].filter(Boolean).join(", ") || null;
     const lines = [
       "New pickup:",
       `Trip: ${b.products?.title ?? "Trip"}`,
       `Booking: ${b.booking_code}`,
       `Pickup: ${new Date(b.pickup_datetime).toLocaleString()}`,
       carLabel ? `Car: ${carLabel}` : null,
-      `Area: ${area}`,
+      `From: ${pickupArea}`,
+      dropoffArea ? `To: ${dropoffArea}` : null,
       `Passenger: ${b.passenger_name ?? b.customers?.name ?? "—"}`,
       b.flight_details ? `Flight: ${b.flight_details}` : null,
       b.pickup_whatsapp_number ? `Customer WhatsApp: ${b.pickup_whatsapp_number}` : null,
@@ -170,9 +181,14 @@ export default async function AdminBookingDetailPage({
           <>
             <p className="mt-2 text-ink">{new Date(b.pickup_datetime).toLocaleString()}</p>
             <p className="text-ink-soft">
-              {[meetingPointName, b.meeting_point_custom].filter(Boolean).join(", ") || "—"}
+              From: {[meetingPointName, b.meeting_point_custom].filter(Boolean).join(", ") || "—"}
               {carLabel && ` · ${carLabel}`}
             </p>
+            {(dropoffPointName || b.dropoff_location_custom) && (
+              <p className="text-ink-soft">
+                To: {[dropoffPointName, b.dropoff_location_custom].filter(Boolean).join(", ")}
+              </p>
+            )}
             {b.passenger_name && <p className="mt-1 text-ink-soft">Passenger: {b.passenger_name}</p>}
             {b.flight_details && <p className="text-ink-soft">Flight: {b.flight_details}</p>}
             {b.pickup_whatsapp_number && (

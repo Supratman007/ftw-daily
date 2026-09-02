@@ -37,23 +37,27 @@ export function TransportBookingForm({
   defaultDiscountCode,
 }: TransportBookingFormProps) {
   const [vehicleTypeId, setVehicleTypeId] = useState(vehicleTypes[0]?.id ?? "");
+  const [pickupId, setPickupId] = useState(meetingPoints[0]?.id ?? OTHER_MEETING_POINT_VALUE);
+  const [dropoffId, setDropoffId] = useState(meetingPoints[1]?.id ?? OTHER_MEETING_POINT_VALUE);
 
-  const pricedMeetingPointIds = new Set(
-    prices.filter((p) => p.vehicle_type_id === vehicleTypeId).map((p) => p.meeting_point_id)
-  );
+  const isPickupOther = pickupId === OTHER_MEETING_POINT_VALUE;
+  const isDropoffOther = dropoffId === OTHER_MEETING_POINT_VALUE;
+  const sameArea = !isPickupOther && !isDropoffOther && pickupId === dropoffId;
 
-  // Same reasoning as CarHireBookingForm: every active meeting point
-  // is selectable, priced or not, so an area never just disappears
-  // from the list because no one's priced it yet.
-  const [meetingPointId, setMeetingPointId] = useState(
-    meetingPoints.find((mp) => pricedMeetingPointIds.has(mp.id))?.id ??
-      meetingPoints[0]?.id ??
-      OTHER_MEETING_POINT_VALUE
-  );
-  const isOther = meetingPointId === OTHER_MEETING_POINT_VALUE;
-  const price = prices.find(
-    (p) => p.vehicle_type_id === vehicleTypeId && p.meeting_point_id === meetingPointId
-  );
+  // A route is priced in whichever direction the admin entered it --
+  // most operators charge the same either way, so a route entered only
+  // as (A -> B) still quotes correctly for a customer going B -> A,
+  // but an explicit (B -> A) row (if the admin set a different price
+  // for that direction) always wins.
+  const price =
+    !sameArea && !isPickupOther && !isDropoffOther
+      ? prices.find(
+          (p) => p.vehicle_type_id === vehicleTypeId && p.from_meeting_point_id === pickupId && p.to_meeting_point_id === dropoffId
+        ) ??
+        prices.find(
+          (p) => p.vehicle_type_id === vehicleTypeId && p.from_meeting_point_id === dropoffId && p.to_meeting_point_id === pickupId
+        )
+      : undefined;
   const selectedVehicleType = vehicleTypes.find((v) => v.id === vehicleTypeId);
 
   return (
@@ -76,44 +80,91 @@ export function TransportBookingForm({
         </select>
       </label>
 
-      <label className={labelClass}>
-        Pickup area
-        <select
-          name="meeting_point_id"
-          value={meetingPointId}
-          onChange={(e) => setMeetingPointId(e.target.value)}
-          className={inputClass}
-        >
-          {meetingPoints.map((mp) => (
-            <option key={mp.id} value={mp.id}>
-              {mp.name}
-              {!pricedMeetingPointIds.has(mp.id) ? " (ask us for a price)" : ""}
-            </option>
-          ))}
-          <option value={OTHER_MEETING_POINT_VALUE}>Other — not on the list</option>
-        </select>
-      </label>
+      <div className="grid grid-cols-2 gap-3">
+        <label className={labelClass}>
+          Pick up from
+          <select
+            name="meeting_point_id"
+            value={pickupId}
+            onChange={(e) => setPickupId(e.target.value)}
+            className={inputClass}
+          >
+            {meetingPoints.map((mp) => (
+              <option key={mp.id} value={mp.id}>
+                {mp.name}
+              </option>
+            ))}
+            <option value={OTHER_MEETING_POINT_VALUE}>Other — not on the list</option>
+          </select>
+        </label>
+        <label className={labelClass}>
+          Drop off at
+          <select
+            name="dropoff_meeting_point_id"
+            value={dropoffId}
+            onChange={(e) => setDropoffId(e.target.value)}
+            className={inputClass}
+          >
+            {meetingPoints.map((mp) => (
+              <option key={mp.id} value={mp.id}>
+                {mp.name}
+              </option>
+            ))}
+            <option value={OTHER_MEETING_POINT_VALUE}>Other — not on the list</option>
+          </select>
+        </label>
+      </div>
+      {sameArea && (
+        <p className="text-xs text-coral-dark">Pickup and drop-off can&apos;t be the same area.</p>
+      )}
 
-      <label className={labelClass}>
-        {isOther ? "Tell us your pickup location" : "Exact pickup spot (optional)"}
-        <input
-          type="text"
-          name="meeting_point_custom"
-          required={isOther}
-          placeholder={
-            isOther
-              ? "e.g. name of hotel/area"
-              : "e.g. Sunset Hotel, lobby -- or Lombok Airport, domestic arrivals"
-          }
-          className={inputClass}
-        />
-        {!isOther && (
-          <span className="mt-1 block text-[11px] font-normal normal-case text-ink-soft">
-            The area above sets the price -- this is just so the driver finds you: hotel name and
-            where to wait, or the exact airport terminal/gate.
-          </span>
-        )}
-      </label>
+      {isPickupOther && (
+        <label className={labelClass}>
+          Tell us your pickup location
+          <input
+            type="text"
+            name="meeting_point_custom"
+            required
+            placeholder="e.g. name of hotel/area"
+            className={inputClass}
+          />
+        </label>
+      )}
+      {!isPickupOther && (
+        <label className={labelClass}>
+          Exact pickup spot (optional)
+          <input
+            type="text"
+            name="meeting_point_custom"
+            placeholder="e.g. Sunset Hotel, lobby -- or Lombok Airport, domestic arrivals"
+            className={inputClass}
+          />
+        </label>
+      )}
+
+      {isDropoffOther && (
+        <label className={labelClass}>
+          Tell us your drop-off location
+          <input
+            type="text"
+            name="dropoff_location_custom"
+            required
+            placeholder="e.g. name of hotel/area"
+            className={inputClass}
+          />
+        </label>
+      )}
+      {!isDropoffOther && (
+        <label className={labelClass}>
+          Exact drop-off spot (optional)
+          <input
+            type="text"
+            name="dropoff_location_custom"
+            placeholder="e.g. The Oberoi, Gili Trawangan -- or Tete Batu, The Sira Resort"
+            className={inputClass}
+          />
+        </label>
+      )}
 
       <label className={labelClass}>
         Passenger name
@@ -189,7 +240,7 @@ export function TransportBookingForm({
           </>
         ) : (
           <p className="text-ink-soft">
-            We don&apos;t have a set price for that combination yet.{" "}
+            We don&apos;t have a set price for that route yet.{" "}
             <a
               href={whatsappLink(`Hi, I'd like a quote for ${productTitle}.`) ?? undefined}
               target="_blank"
@@ -205,7 +256,7 @@ export function TransportBookingForm({
 
       <button
         type="submit"
-        disabled={!price || vehicleTypes.length === 0}
+        disabled={!price || vehicleTypes.length === 0 || sameArea}
         className="mt-2 rounded-lg bg-coral px-4 py-3 text-sm font-semibold text-white disabled:opacity-50"
       >
         Continue to checkout

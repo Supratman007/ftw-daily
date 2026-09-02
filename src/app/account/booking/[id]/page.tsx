@@ -152,6 +152,7 @@ export default async function BookingDetailPage({
     b.status === "paid_confirmed" && latestCancellationRequest?.status !== "pending_review";
 
   let meetingPointName: string | null = null;
+  let dropoffPointName: string | null = null;
   let carLabel: string | null = null;
   if (b.pickup_datetime) {
     if (b.meeting_point_id) {
@@ -161,6 +162,14 @@ export default async function BookingDetailPage({
         .eq("id", b.meeting_point_id)
         .maybeSingle();
       meetingPointName = meetingPoint?.name ?? null;
+    }
+    if (b.dropoff_meeting_point_id) {
+      const { data: dropoffPoint } = await supabase
+        .from("meeting_points")
+        .select("name")
+        .eq("id", b.dropoff_meeting_point_id)
+        .maybeSingle();
+      dropoffPointName = dropoffPoint?.name ?? null;
     }
     if (b.car_type_id && b.car_package_id) {
       const [{ data: carType }, { data: carPackage }] = await Promise.all([
@@ -299,9 +308,14 @@ export default async function BookingDetailPage({
           <p className="font-semibold text-ink">Pickup</p>
           <p className="mt-1 text-ink">{new Date(b.pickup_datetime).toLocaleString()}</p>
           <p className="text-ink-soft">
-            {[meetingPointName, b.meeting_point_custom].filter(Boolean).join(", ") || "—"}
+            From: {[meetingPointName, b.meeting_point_custom].filter(Boolean).join(", ") || "—"}
             {carLabel && ` · ${carLabel}`}
           </p>
+          {(dropoffPointName || b.dropoff_location_custom) && (
+            <p className="text-ink-soft">
+              To: {[dropoffPointName, b.dropoff_location_custom].filter(Boolean).join(", ")}
+            </p>
+          )}
           {b.passenger_name && <p className="text-ink-soft">Passenger: {b.passenger_name}</p>}
           {b.flight_details && <p className="text-ink-soft">Flight: {b.flight_details}</p>}
           {b.pickup_whatsapp_number && (

@@ -19,6 +19,8 @@ interface BookingRow {
   pickup_datetime: string | null;
   meeting_point_id: string | null;
   meeting_point_custom: string | null;
+  dropoff_meeting_point_id: string | null;
+  dropoff_location_custom: string | null;
   pickup_whatsapp_number: string | null;
   car_type_id: string | null;
   car_package_id: string | null;
@@ -48,7 +50,7 @@ export default async function ConfirmationPage({
   const { data: booking } = await supabase
     .from("bookings")
     .select(
-      "id, booking_code, slot_date, pax_count, total_idr, status, product_id, discount_code, discount_amount_usd, pickup_datetime, meeting_point_id, meeting_point_custom, pickup_whatsapp_number, car_type_id, car_package_id, transport_vehicle_type_id, passenger_name, flight_details"
+      "id, booking_code, slot_date, pax_count, total_idr, status, product_id, discount_code, discount_amount_usd, pickup_datetime, meeting_point_id, meeting_point_custom, dropoff_meeting_point_id, dropoff_location_custom, pickup_whatsapp_number, car_type_id, car_package_id, transport_vehicle_type_id, passenger_name, flight_details"
     )
     .eq("id", bookingId)
     .eq("customer_id", customer.id)
@@ -113,6 +115,16 @@ export default async function ConfirmationPage({
       .eq("id", b.meeting_point_id)
       .maybeSingle();
     meetingPointName = meetingPoint?.name ?? null;
+  }
+
+  let dropoffPointName: string | null = null;
+  if (b.dropoff_meeting_point_id) {
+    const { data: dropoffPoint } = await supabase
+      .from("meeting_points")
+      .select("name")
+      .eq("id", b.dropoff_meeting_point_id)
+      .maybeSingle();
+    dropoffPointName = dropoffPoint?.name ?? null;
   }
 
   let carLabel: string | null = null;
@@ -205,6 +217,14 @@ export default async function ConfirmationPage({
               {(meetingPointName || b.meeting_point_custom) &&
                 ` — ${[meetingPointName, b.meeting_point_custom].filter(Boolean).join(", ")}`}
               {carLabel && ` (${carLabel})`}
+            </span>
+          </div>
+        )}
+        {(dropoffPointName || b.dropoff_location_custom) && (
+          <div className="flex justify-between border-b border-sand-deep py-2">
+            <span className="text-ink-soft">Drop-off</span>
+            <span className="text-ink">
+              {[dropoffPointName, b.dropoff_location_custom].filter(Boolean).join(", ")}
             </span>
           </div>
         )}

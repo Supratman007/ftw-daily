@@ -42,7 +42,9 @@ export default async function TransportPricingPage({
       ? await supabase.from("transport_prices").select("*").in("vehicle_type_id", vehicleTypeIds)
       : { data: [] as TransportPrice[] };
   const prices = (pricesData ?? []) as TransportPrice[];
-  const priceByKey = new Map(prices.map((p) => [`${p.vehicle_type_id}__${p.meeting_point_id}`, p.price_idr]));
+  const priceByKey = new Map(
+    prices.map((p) => [`${p.vehicle_type_id}__${p.from_meeting_point_id}__${p.to_meeting_point_id}`, p.price_idr])
+  );
 
   const { data: meetingPointsData } = await supabase
     .from("meeting_points")
@@ -60,8 +62,9 @@ export default async function TransportPricingPage({
         Transport pricing — {(product as Product).title}
       </h1>
       <p className="mt-1 text-sm text-ink-soft">
-        Price is set per vehicle/service type and pickup area -- e.g. Sedan vs. Van, or Shared vs.
-        Private Speedboat for a Gili Islands transfer.
+        Price is set per vehicle/service type and per route (from one area to another) -- e.g.
+        Airport ↔ Senggigi, Senggigi ↔ Tete Batu, on a Sedan vs. a Van. There&apos;s no need for a
+        separate product per destination -- add every route this product runs here.
       </p>
 
       {error && (
@@ -122,64 +125,76 @@ export default async function TransportPricingPage({
         </div>
       )}
 
-      <h2 className="mt-10 font-serif text-lg font-semibold text-ink">Price grid</h2>
+      <h2 className="mt-10 font-serif text-lg font-semibold text-ink">Route prices</h2>
       <p className="mt-1 text-sm text-ink-soft">
-        One row per vehicle/service type, one column per pickup area. Leave a cell blank if that
-        combination isn&apos;t offered.
+        One grid per vehicle/service type -- rows are where the trip starts, columns are where it
+        ends. Leave a cell blank if you don&apos;t run that route. Most operators only fill in a
+        handful of real routes, not the whole grid.
       </p>
 
-      {meetingPoints.length === 0 ? (
+      {meetingPoints.length < 2 ? (
         <p className="mt-4 text-sm text-ink-soft">
-          Add at least one{" "}
+          Add at least two{" "}
           <Link href="/admin/meeting-points" className="text-teal underline">
-            meeting point
+            meeting points
           </Link>{" "}
-          before setting prices.
+          before setting routes.
         </p>
       ) : vehicleTypes.length === 0 ? (
         <p className="mt-4 text-sm text-ink-soft">
-          Add a vehicle/service type above before setting prices.
+          Add a vehicle/service type above before setting routes.
         </p>
       ) : (
-        <form action={saveTransportPricesAction.bind(null, productId)} className="mt-4 overflow-x-auto">
-          <table className="min-w-full border-collapse text-left text-sm">
-            <thead className="bg-sand text-xs uppercase text-ink-soft">
-              <tr>
-                <th className="border border-sand-deep px-3 py-2">Vehicle / service</th>
-                {meetingPoints.map((mp) => (
-                  <th key={mp.id} className="border border-sand-deep px-3 py-2">
-                    {mp.name}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {vehicleTypes.map((v) => (
-                <tr key={v.id}>
-                  <td className="border border-sand-deep px-3 py-2 font-medium text-ink">
-                    {v.name}
-                    {v.capacity_note && <span className="block text-xs text-ink-soft">{v.capacity_note}</span>}
-                  </td>
-                  {meetingPoints.map((mp) => (
-                    <td key={mp.id} className="border border-sand-deep px-2 py-1">
-                      <input
-                        type="number"
-                        min={0}
-                        step={1000}
-                        name={`price__${v.id}__${mp.id}`}
-                        defaultValue={priceByKey.get(`${v.id}__${mp.id}`) ?? ""}
-                        placeholder="—"
-                        className="w-28 rounded border border-sand-deep px-2 py-1 text-sm outline-none focus:border-teal"
-                      />
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <form action={saveTransportPricesAction.bind(null, productId)} className="mt-4 flex flex-col gap-8">
+          {vehicleTypes.map((v) => (
+            <div key={v.id}>
+              <p className="mb-2 font-semibold text-ink">
+                {v.name}
+                {v.capacity_note && <span className="font-normal text-ink-soft"> — {v.capacity_note}</span>}
+              </p>
+              <div className="overflow-x-auto">
+                <table className="min-w-full border-collapse text-left text-sm">
+                  <thead className="bg-sand text-xs uppercase text-ink-soft">
+                    <tr>
+                      <th className="border border-sand-deep px-3 py-2">From \ To</th>
+                      {meetingPoints.map((to) => (
+                        <th key={to.id} className="border border-sand-deep px-3 py-2">
+                          {to.name}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {meetingPoints.map((from) => (
+                      <tr key={from.id}>
+                        <td className="border border-sand-deep px-3 py-2 font-medium text-ink">{from.name}</td>
+                        {meetingPoints.map((to) =>
+                          from.id === to.id ? (
+                            <td key={to.id} className="border border-sand-deep bg-sand px-2 py-1" />
+                          ) : (
+                            <td key={to.id} className="border border-sand-deep px-2 py-1">
+                              <input
+                                type="number"
+                                min={0}
+                                step={1000}
+                                name={`price__${v.id}__${from.id}__${to.id}`}
+                                defaultValue={priceByKey.get(`${v.id}__${from.id}__${to.id}`) ?? ""}
+                                placeholder="—"
+                                className="w-28 rounded border border-sand-deep px-2 py-1 text-sm outline-none focus:border-teal"
+                              />
+                            </td>
+                          )
+                        )}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ))}
           <button
             type="submit"
-            className="mt-4 rounded-lg bg-coral px-4 py-2 text-sm font-semibold text-white"
+            className="self-start rounded-lg bg-coral px-4 py-2 text-sm font-semibold text-white"
           >
             Save all prices
           </button>

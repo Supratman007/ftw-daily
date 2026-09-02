@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
   const { data: booking } = await supabase
     .from("bookings")
     .select(
-      "id, status, product_id, customer_id, slot_date, pax_count, total_idr, total_usd, booking_code, discount_code_id, discount_code, discount_amount_usd, referred_by_agent_id, pickup_datetime, meeting_point_id, meeting_point_custom, car_type_id, car_package_id, transport_vehicle_type_id, pickup_whatsapp_number, passenger_name, flight_details"
+      "id, status, product_id, customer_id, slot_date, pax_count, total_idr, total_usd, booking_code, discount_code_id, discount_code, discount_amount_usd, referred_by_agent_id, pickup_datetime, meeting_point_id, meeting_point_custom, dropoff_meeting_point_id, dropoff_location_custom, car_type_id, car_package_id, transport_vehicle_type_id, pickup_whatsapp_number, passenger_name, flight_details"
     )
     .eq("booking_code", externalId)
     .maybeSingle();
@@ -204,6 +204,8 @@ async function buildPickupNote(
     pickup_datetime: string | null;
     meeting_point_id: string | null;
     meeting_point_custom: string | null;
+    dropoff_meeting_point_id: string | null;
+    dropoff_location_custom: string | null;
     car_type_id: string | null;
     car_package_id: string | null;
     transport_vehicle_type_id: string | null;
@@ -211,12 +213,20 @@ async function buildPickupNote(
 ): Promise<string | null> {
   if (!booking.pickup_datetime) return null;
 
-  const [meetingPointName, carDetail, vehicleDetail] = await Promise.all([
+  const [meetingPointName, dropoffPointName, carDetail, vehicleDetail] = await Promise.all([
     booking.meeting_point_id
       ? supabase
           .from("meeting_points")
           .select("name")
           .eq("id", booking.meeting_point_id)
+          .maybeSingle()
+          .then((r) => r.data?.name ?? null)
+      : Promise.resolve<string | null>(null),
+    booking.dropoff_meeting_point_id
+      ? supabase
+          .from("meeting_points")
+          .select("name")
+          .eq("id", booking.dropoff_meeting_point_id)
           .maybeSingle()
           .then((r) => r.data?.name ?? null)
       : Promise.resolve<string | null>(null),
@@ -250,8 +260,10 @@ async function buildPickupNote(
   });
   const whereParts = [meetingPointName, booking.meeting_point_custom].filter(Boolean);
   const where = whereParts.length > 0 ? ` from ${whereParts.join(", ")}` : "";
+  const toParts = [dropoffPointName, booking.dropoff_location_custom].filter(Boolean);
+  const to = toParts.length > 0 ? ` to ${toParts.join(", ")}` : "";
   const car = carDetail ?? vehicleDetail ? ` (${carDetail ?? vehicleDetail})` : "";
-  return `${when}${where}${car}`;
+  return `${when}${where}${to}${car}`;
 }
 
 /**

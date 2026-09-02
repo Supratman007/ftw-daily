@@ -49,6 +49,12 @@ export interface Booking {
   // doesn't use pickup at all.
   meeting_point_id: string | null;
   meeting_point_custom: string | null;
+  // Transport only -- the drop-off end of the trip, same "real area or
+  // custom exact spot" shape as pickup above. Null for Car Hire (the
+  // car stays with the customer -- there's no separate drop-off) and
+  // every other product type.
+  dropoff_meeting_point_id: string | null;
+  dropoff_location_custom: string | null;
   // Car Hire / Transport only -- a fresh number captured at booking
   // time so the driver has a direct line to the customer on arrival,
   // separate from the account's own (possibly stale) phone number.

@@ -448,6 +448,8 @@ export async function startTransportCheckoutAction(productId: string, slug: stri
   const vehicleTypeId = String(formData.get("vehicle_type_id") ?? "");
   const meetingPointIdInput = String(formData.get("meeting_point_id") ?? "");
   const meetingPointCustom = String(formData.get("meeting_point_custom") ?? "").trim();
+  const dropoffIdInput = String(formData.get("dropoff_meeting_point_id") ?? "");
+  const dropoffCustom = String(formData.get("dropoff_location_custom") ?? "").trim();
   const passengerName = String(formData.get("passenger_name") ?? "").trim();
   const pickupWhatsappNumber = String(formData.get("pickup_whatsapp_number") ?? "").trim();
   const flightDetails = String(formData.get("flight_details") ?? "").trim();
@@ -470,6 +472,16 @@ export async function startTransportCheckoutAction(productId: string, slug: stri
   }
   if (isOtherMeetingPoint && !meetingPointCustom) {
     fail("Please tell us your pickup location.");
+  }
+  const isOtherDropoff = dropoffIdInput === OTHER_MEETING_POINT_VALUE;
+  if (!isOtherDropoff && !dropoffIdInput) {
+    fail("Please choose a drop-off area.");
+  }
+  if (isOtherDropoff && !dropoffCustom) {
+    fail("Please tell us your drop-off location.");
+  }
+  if (!isOtherMeetingPoint && !isOtherDropoff && meetingPointIdInput === dropoffIdInput) {
+    fail("Pickup and drop-off can't be the same area.");
   }
   if (!passengerName) {
     fail("Please tell us who's traveling.");
@@ -522,18 +534,42 @@ export async function startTransportCheckoutAction(productId: string, slug: stri
     meetingPoint = meetingPointData as MeetingPoint;
   }
 
-  let priceIdr: number | null = null;
-  if (meetingPoint) {
-    const { data: priceRow } = await supabase
-      .from("transport_prices")
-      .select("price_idr")
-      .eq("vehicle_type_id", vehicleType.id)
-      .eq("meeting_point_id", meetingPoint.id)
+  let dropoffPoint: MeetingPoint | null = null;
+  if (!isOtherDropoff) {
+    const { data: dropoffData } = await supabase
+      .from("meeting_points")
+      .select("*")
+      .eq("id", dropoffIdInput)
+      .eq("status", "active")
       .maybeSingle();
-    priceIdr = priceRow?.price_idr ?? null;
+    if (!dropoffData) {
+      fail("That drop-off area isn't available anymore -- please pick another.");
+    }
+    dropoffPoint = dropoffData as MeetingPoint;
+  }
+
+  // A route priced only in one direction still quotes for the reverse
+  // trip -- most operators charge the same either way -- but an
+  // explicit row for the exact direction the customer picked always
+  // wins over the reverse fallback.
+  let priceIdr: number | null = null;
+  if (meetingPoint && dropoffPoint) {
+    const { data: priceRows } = await supabase
+      .from("transport_prices")
+      .select("price_idr, from_meeting_point_id, to_meeting_point_id")
+      .eq("vehicle_type_id", vehicleType.id)
+      .in("from_meeting_point_id", [meetingPoint.id, dropoffPoint.id])
+      .in("to_meeting_point_id", [meetingPoint.id, dropoffPoint.id]);
+    const exact = priceRows?.find(
+      (r) => r.from_meeting_point_id === meetingPoint.id && r.to_meeting_point_id === dropoffPoint.id
+    );
+    const reverse = priceRows?.find(
+      (r) => r.from_meeting_point_id === dropoffPoint.id && r.to_meeting_point_id === meetingPoint.id
+    );
+    priceIdr = exact?.price_idr ?? reverse?.price_idr ?? null;
   }
   if (priceIdr === null) {
-    fail("We don't have a set price for that combination yet -- please contact us for a quote.");
+    fail("We don't have a set price for that route yet -- please contact us for a quote.");
   }
 
   const subtotalUsd = idrToUsd(priceIdr);
@@ -589,7 +625,7 @@ export async function startTransportCheckoutAction(productId: string, slug: stri
       externalId: bookingCode,
       amountIdr: totalIdr,
       payerEmail: customer.email,
-      description: `${p.title} — ${vehicleType.name}`,
+      description: `${p.title} — ${vehicleType.name} (${meetingPoint?.name ?? meetingPointCustom} → ${dropoffPoint?.name ?? dropoffCustom})`,
       successRedirectUrl: `${siteUrl}/confirmation/${bookingId}`,
       failureRedirectUrl: `${siteUrl}/p/${slug}`,
     });
@@ -623,6 +659,8 @@ export async function startTransportCheckoutAction(productId: string, slug: stri
     // Same reasoning as Car Hire above: keep the "find me here" detail
     // regardless of whether a real area was also selected.
     meeting_point_custom: meetingPointCustom || null,
+    dropoff_meeting_point_id: dropoffPoint?.id ?? null,
+    dropoff_location_custom: dropoffCustom || null,
     pickup_whatsapp_number: pickupWhatsappNumber,
     passenger_name: passengerName,
     flight_details: flightDetails || null,

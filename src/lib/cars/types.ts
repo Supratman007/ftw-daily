@@ -46,10 +46,17 @@ export interface TransportVehicleType {
   status: "active" | "inactive";
 }
 
+/** A specific route: this vehicle/service type, from one area to
+ * another. Point-to-point, not anchored to any one fixed location --
+ * a product can hold every route it offers (Airport<->Senggigi,
+ * Senggigi<->Tete Batu, ...), same shape as how every competitor's
+ * per-route page works, just as rows in one grid instead of separate
+ * pages. */
 export interface TransportPrice {
   id: string;
   vehicle_type_id: string;
-  meeting_point_id: string;
+  from_meeting_point_id: string;
+  to_meeting_point_id: string;
   price_idr: number;
 }
 
