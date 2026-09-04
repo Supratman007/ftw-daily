@@ -3,7 +3,6 @@
 import { useMemo, useState } from "react";
 import { formatIdr } from "@/lib/currency";
 import { whatsappLink } from "@/lib/contact";
-import { VehicleDetailPanel } from "@/components/VehicleDetailPanel";
 import {
   OTHER_MEETING_POINT_VALUE,
   type CarType,
@@ -29,6 +28,10 @@ interface CarHireBookingFormProps {
   prices: CarPackagePrice[];
   meetingPoints: MeetingPoint[];
   defaultDiscountCode?: string;
+  /** Lets the page's main-column detail panel (photos, description,
+   * features) stay in sync with the picker here, without duplicating
+   * this form's own selection state. */
+  onCarTypeChange?: (carType: CarType | undefined) => void;
 }
 
 export function CarHireBookingForm({
@@ -39,6 +42,7 @@ export function CarHireBookingForm({
   prices,
   meetingPoints,
   defaultDiscountCode,
+  onCarTypeChange,
 }: CarHireBookingFormProps) {
   const [carTypeId, setCarTypeId] = useState(carTypes[0]?.id ?? "");
   const packagesForCarType = useMemo(
@@ -100,6 +104,7 @@ export function CarHireBookingForm({
                 onChange={() => {
                   setCarTypeId(c.id);
                   setPackageId("");
+                  onCarTypeChange?.(c);
                 }}
                 className="sr-only"
               />
@@ -117,25 +122,6 @@ export function CarHireBookingForm({
           ))}
         </div>
       </div>
-
-      {selectedCarType && (
-        <VehicleDetailPanel
-          key={selectedCarType.id}
-          name={selectedCarType.name}
-          galleryUrls={
-            selectedCarType.gallery_urls?.length
-              ? selectedCarType.gallery_urls
-              : selectedCarType.image_url
-                ? [selectedCarType.image_url]
-                : []
-          }
-          capacityLabel={`${selectedCarType.capacity_tier} seats`}
-          recommendedFor={selectedCarType.recommended_for}
-          description={selectedCarType.description}
-          features={selectedCarType.features}
-          placeholderEmoji="🚗"
-        />
-      )}
 
       <label className={labelClass}>
         Number of passengers

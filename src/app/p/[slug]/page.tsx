@@ -11,8 +11,8 @@ import type {
   TransportVehicleType,
 } from "@/lib/cars/types";
 import { SiteHeader } from "@/components/SiteHeader";
-import { CarHireBookingForm } from "@/components/CarHireBookingForm";
-import { TransportBookingForm } from "@/components/TransportBookingForm";
+import { CarHireProductSection } from "@/components/CarHireProductSection";
+import { TransportProductSection } from "@/components/TransportProductSection";
 import { startCheckoutAction, startCarHireCheckoutAction, startTransportCheckoutAction } from "./actions";
 
 function tomorrow(): string {
@@ -135,6 +135,34 @@ export default async function ProductPage({
         />
       )}
 
+      {isCarHire ? (
+        <CarHireProductSection
+          title={p.title}
+          location={p.location}
+          durationLabel={p.duration_label}
+          description={p.description}
+          action={startCarHireCheckoutAction.bind(null, p.id, p.slug)}
+          carTypes={carTypes}
+          packages={carPackages}
+          prices={carPrices}
+          meetingPoints={meetingPoints}
+          defaultDiscountCode={discountCode}
+          error={error}
+        />
+      ) : isTransport ? (
+        <TransportProductSection
+          title={p.title}
+          location={p.location}
+          durationLabel={p.duration_label}
+          description={p.description}
+          action={startTransportCheckoutAction.bind(null, p.id, p.slug)}
+          vehicleTypes={transportVehicleTypes}
+          prices={transportPrices}
+          meetingPoints={meetingPoints}
+          defaultDiscountCode={discountCode}
+          error={error}
+        />
+      ) : (
       <div className="grid gap-8 md:grid-cols-[1.4fr_1fr]">
         <div>
           <p className="font-mono text-xs uppercase tracking-widest text-ink-soft">
@@ -149,18 +177,12 @@ export default async function ProductPage({
         </div>
 
         <div className="h-fit rounded-2xl border border-sand-deep bg-white p-6">
-          {isCarHire || isTransport ? (
-            <p className="font-serif text-lg font-semibold text-ocean">
-              Price by {isCarHire ? "car, duration & pickup area" : "pickup area"} — pick your options below
-            </p>
-          ) : (
-            <div className="font-serif text-2xl font-bold text-ocean">
-              {formatUsd(adultPriceUsd)}{" "}
-              <span className="text-sm font-normal text-ink-soft">
-                ({formatIdr(usdToIdr(adultPriceUsd))}) / person
-              </span>
-            </div>
-          )}
+          <div className="font-serif text-2xl font-bold text-ocean">
+            {formatUsd(adultPriceUsd)}{" "}
+            <span className="text-sm font-normal text-ink-soft">
+              ({formatIdr(usdToIdr(adultPriceUsd))}) / person
+            </span>
+          </div>
           <div className="my-4 h-px bg-sand-deep" />
 
           {error && (
@@ -169,26 +191,7 @@ export default async function ProductPage({
             </p>
           )}
 
-          {isCarHire ? (
-            <CarHireBookingForm
-              action={startCarHireCheckoutAction.bind(null, p.id, p.slug)}
-              productTitle={p.title}
-              carTypes={carTypes}
-              packages={carPackages}
-              prices={carPrices}
-              meetingPoints={meetingPoints}
-              defaultDiscountCode={discountCode}
-            />
-          ) : isTransport ? (
-            <TransportBookingForm
-              action={startTransportCheckoutAction.bind(null, p.id, p.slug)}
-              productTitle={p.title}
-              vehicleTypes={transportVehicleTypes}
-              prices={transportPrices}
-              meetingPoints={meetingPoints}
-              defaultDiscountCode={discountCode}
-            />
-          ) : !p.is_bookable ? (
+          {!p.is_bookable ? (
             <>
               <p className="text-sm text-ink-soft">
                 This trip needs manual confirmation before booking -- availability depends on
@@ -290,7 +293,7 @@ export default async function ProductPage({
             </form>
           )}
 
-          {p.is_bookable && !isCarHire && !isTransport && (
+          {p.is_bookable && (
             <a
               href={`/p/${p.slug}/gift`}
               className="mt-3 block rounded-lg border border-sand-deep px-4 py-3 text-center text-sm font-semibold text-ink hover:bg-sand"
@@ -300,6 +303,7 @@ export default async function ProductPage({
           )}
         </div>
       </div>
+      )}
       </main>
     </>
   );

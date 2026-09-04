@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { formatIdr } from "@/lib/currency";
 import { whatsappLink } from "@/lib/contact";
-import { VehicleDetailPanel } from "@/components/VehicleDetailPanel";
 import {
   OTHER_MEETING_POINT_VALUE,
   type MeetingPoint,
@@ -27,6 +26,10 @@ interface TransportBookingFormProps {
   prices: TransportPrice[];
   meetingPoints: MeetingPoint[];
   defaultDiscountCode?: string;
+  /** Lets the page's main-column detail panel (photos, description,
+   * features) stay in sync with the picker here, without duplicating
+   * this form's own selection state. */
+  onVehicleTypeChange?: (vehicleType: TransportVehicleType | undefined) => void;
 }
 
 export function TransportBookingForm({
@@ -36,6 +39,7 @@ export function TransportBookingForm({
   prices,
   meetingPoints,
   defaultDiscountCode,
+  onVehicleTypeChange,
 }: TransportBookingFormProps) {
   const [vehicleTypeId, setVehicleTypeId] = useState(vehicleTypes[0]?.id ?? "");
   const [pickupId, setPickupId] = useState(meetingPoints[0]?.id ?? OTHER_MEETING_POINT_VALUE);
@@ -81,7 +85,10 @@ export function TransportBookingForm({
                   name="vehicle_type_id"
                   value={v.id}
                   checked={vehicleTypeId === v.id}
-                  onChange={() => setVehicleTypeId(v.id)}
+                  onChange={() => {
+                    setVehicleTypeId(v.id);
+                    onVehicleTypeChange?.(v);
+                  }}
                   className="sr-only"
                 />
                 {v.image_url ? (
@@ -99,25 +106,6 @@ export function TransportBookingForm({
           </div>
         )}
       </div>
-
-      {selectedVehicleType && (
-        <VehicleDetailPanel
-          key={selectedVehicleType.id}
-          name={selectedVehicleType.name}
-          galleryUrls={
-            selectedVehicleType.gallery_urls?.length
-              ? selectedVehicleType.gallery_urls
-              : selectedVehicleType.image_url
-                ? [selectedVehicleType.image_url]
-                : []
-          }
-          capacityLabel={selectedVehicleType.capacity_note}
-          recommendedFor={selectedVehicleType.recommended_for}
-          description={selectedVehicleType.description}
-          features={selectedVehicleType.features}
-          placeholderEmoji="🚐"
-        />
-      )}
 
       <label className={labelClass}>
         Number of passengers
