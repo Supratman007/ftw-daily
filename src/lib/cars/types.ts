@@ -43,6 +43,7 @@ export interface TransportVehicleType {
   product_id: string;
   name: string;
   capacity_note: string | null;
+  image_url: string | null;
   status: "active" | "inactive";
 }
 

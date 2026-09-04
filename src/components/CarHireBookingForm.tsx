@@ -81,24 +81,41 @@ export function CarHireBookingForm({
 
   return (
     <form action={action} className="flex flex-col gap-3">
-      <label className={labelClass}>
-        Car
-        <select
-          name="car_type_id"
-          value={carTypeId}
-          onChange={(e) => {
-            setCarTypeId(e.target.value);
-            setPackageId("");
-          }}
-          className={inputClass}
-        >
+      <div>
+        <p className={labelClass}>Car</p>
+        <div className="mt-1 grid grid-cols-2 gap-3 sm:grid-cols-3">
           {carTypes.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.name} — {c.capacity_tier} seats
-            </option>
+            <label
+              key={c.id}
+              className={`cursor-pointer overflow-hidden rounded-lg border-2 text-left transition ${
+                carTypeId === c.id ? "border-coral" : "border-sand-deep hover:border-teal"
+              }`}
+            >
+              <input
+                type="radio"
+                name="car_type_id"
+                value={c.id}
+                checked={carTypeId === c.id}
+                onChange={() => {
+                  setCarTypeId(c.id);
+                  setPackageId("");
+                }}
+                className="sr-only"
+              />
+              {c.image_url ? (
+                // eslint-disable-next-line @next/next/no-img-element -- prototype-stage booking flow; Next/Image optimization is a later polish pass
+                <img src={c.image_url} alt={c.name} className="h-20 w-full object-cover" />
+              ) : (
+                <div className="flex h-20 w-full items-center justify-center bg-sand text-2xl">🚗</div>
+              )}
+              <div className="px-2 py-1.5">
+                <p className="text-xs font-semibold text-ink">{c.name}</p>
+                <p className="text-[11px] text-ink-soft">{c.capacity_tier} seats</p>
+              </div>
+            </label>
           ))}
-        </select>
-      </label>
+        </div>
+      </div>
 
       <label className={labelClass}>
         Number of passengers

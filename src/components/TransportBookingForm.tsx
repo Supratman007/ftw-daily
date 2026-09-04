@@ -62,23 +62,42 @@ export function TransportBookingForm({
 
   return (
     <form action={action} className="flex flex-col gap-3">
-      <label className={labelClass}>
-        Vehicle / service
-        <select
-          name="vehicle_type_id"
-          value={vehicleTypeId}
-          onChange={(e) => setVehicleTypeId(e.target.value)}
-          className={inputClass}
-        >
-          {vehicleTypes.length === 0 && <option value="">No options set up yet</option>}
-          {vehicleTypes.map((v) => (
-            <option key={v.id} value={v.id}>
-              {v.name}
-              {v.capacity_note ? ` — ${v.capacity_note}` : ""}
-            </option>
-          ))}
-        </select>
-      </label>
+      <div>
+        <p className={labelClass}>Vehicle / service</p>
+        {vehicleTypes.length === 0 ? (
+          <p className="mt-1 text-sm text-ink-soft">No options set up yet</p>
+        ) : (
+          <div className="mt-1 grid grid-cols-2 gap-3 sm:grid-cols-3">
+            {vehicleTypes.map((v) => (
+              <label
+                key={v.id}
+                className={`cursor-pointer overflow-hidden rounded-lg border-2 text-left transition ${
+                  vehicleTypeId === v.id ? "border-coral" : "border-sand-deep hover:border-teal"
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="vehicle_type_id"
+                  value={v.id}
+                  checked={vehicleTypeId === v.id}
+                  onChange={() => setVehicleTypeId(v.id)}
+                  className="sr-only"
+                />
+                {v.image_url ? (
+                  // eslint-disable-next-line @next/next/no-img-element -- prototype-stage booking flow; Next/Image optimization is a later polish pass
+                  <img src={v.image_url} alt={v.name} className="h-20 w-full object-cover" />
+                ) : (
+                  <div className="flex h-20 w-full items-center justify-center bg-sand text-2xl">🚐</div>
+                )}
+                <div className="px-2 py-1.5">
+                  <p className="text-xs font-semibold text-ink">{v.name}</p>
+                  {v.capacity_note && <p className="text-[11px] text-ink-soft">{v.capacity_note}</p>}
+                </div>
+              </label>
+            ))}
+          </div>
+        )}
+      </div>
 
       <label className={labelClass}>
         Number of passengers

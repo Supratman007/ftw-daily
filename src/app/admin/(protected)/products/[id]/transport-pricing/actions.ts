@@ -9,6 +9,7 @@ function toVehicleTypeRow(formData: FormData, productId: string) {
     product_id: productId,
     name: String(formData.get("name") ?? "").trim(),
     capacity_note: String(formData.get("capacity_note") ?? "").trim() || null,
+    image_url: String(formData.get("image_url") ?? "").trim() || null,
     status: formData.get("status") === "inactive" ? "inactive" : "active",
   };
 }

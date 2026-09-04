@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import type { TransportVehicleType } from "@/lib/cars/types";
 
 const inputClass =
@@ -13,6 +15,28 @@ interface TransportVehicleTypeFormProps {
 }
 
 export function TransportVehicleTypeForm({ action, vehicleType, error }: TransportVehicleTypeFormProps) {
+  const [imageUrl, setImageUrl] = useState(vehicleType?.image_url ?? "");
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+
+  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    setUploadError(null);
+    const supabase = createSupabaseBrowserClient();
+    const path = `${crypto.randomUUID()}-${file.name}`;
+    const { error: uploadErr } = await supabase.storage.from("product-images").upload(path, file);
+    if (uploadErr) {
+      setUploadError(`Couldn't upload ${file.name}: ${uploadErr.message}`);
+    } else {
+      const { data } = supabase.storage.from("product-images").getPublicUrl(path);
+      setImageUrl(data.publicUrl);
+    }
+    setUploading(false);
+    e.target.value = "";
+  }
+
   return (
     <form action={action} className="mt-6 flex max-w-md flex-col gap-4">
       {error && (
@@ -49,6 +73,18 @@ export function TransportVehicleTypeForm({ action, vehicleType, error }: Transpo
       </div>
 
       <div>
+        <label className={labelClass}>Photo (optional, but customers see it before choosing)</label>
+        <input type="file" accept="image/*" onChange={handleFileChange} />
+        {uploading && <p className="mt-1 text-xs text-ink-soft">Uploading…</p>}
+        {uploadError && <p className="mt-1 text-xs text-coral-dark">{uploadError}</p>}
+        {imageUrl && (
+          // eslint-disable-next-line @next/next/no-img-element -- admin-only tool, not worth Image's optimization pipeline here
+          <img src={imageUrl} alt="" className="mt-3 h-20 w-20 rounded-lg object-cover" />
+        )}
+        <input type="hidden" name="image_url" value={imageUrl} />
+      </div>
+
+      <div>
         <label className={labelClass} htmlFor="status">
           Status
         </label>
@@ -65,7 +101,8 @@ export function TransportVehicleTypeForm({ action, vehicleType, error }: Transpo
 
       <button
         type="submit"
-        className="mt-2 self-start rounded-lg bg-coral px-4 py-2 text-sm font-semibold text-white"
+        disabled={uploading}
+        className="mt-2 self-start rounded-lg bg-coral px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
       >
         {vehicleType ? "Save changes" : "Add vehicle/service type"}
       </button>
