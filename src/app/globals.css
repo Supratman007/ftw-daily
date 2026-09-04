@@ -1,0 +1,43 @@
+@import "tailwindcss";
+
+:root {
+  /* Brand palette, matching the approved prototype (adventure-lombok-booking-prototype.jsx) */
+  --color-ocean: #0f3a3d;
+  --color-teal: #166e73;
+  --color-teal-light: #e5f1ef;
+  --color-sand: #f4ecda;
+  --color-sand-deep: #e9dbbb;
+  --color-rice: #6e8f45;
+  --color-coral: #e1613c;
+  --color-coral-dark: #b8471f;
+  --color-ink: #182421;
+  --color-ink-soft: #4b5854;
+
+  --background: #ffffff;
+  --foreground: var(--color-ink);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-inter);
+  --font-serif: var(--font-fraunces);
+  --font-mono: var(--font-plex-mono);
+
+  --color-ocean: var(--color-ocean);
+  --color-teal: var(--color-teal);
+  --color-teal-light: var(--color-teal-light);
+  --color-sand: var(--color-sand);
+  --color-sand-deep: var(--color-sand-deep);
+  --color-rice: var(--color-rice);
+  --color-coral: var(--color-coral);
+  --color-coral-dark: var(--color-coral-dark);
+  --color-ink: var(--color-ink);
+  --color-ink-soft: var(--color-ink-soft);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-inter), Arial, Helvetica, sans-serif;
+}
