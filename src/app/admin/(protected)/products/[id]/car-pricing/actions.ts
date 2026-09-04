@@ -3,10 +3,10 @@
 import { redirect } from "next/navigation";
 import { requireAdmin } from "@/lib/admin/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { CAR_DURATION_OPTIONS } from "@/lib/cars/types";
 
 function toCarTypeRow(formData: FormData, productId: string) {
-  const capacityTier = Number(formData.get("capacity_tier")) === 6 ? 6 : 4;
+  const capacityRaw = Number(formData.get("capacity_tier"));
+  const capacityTier = Number.isFinite(capacityRaw) && capacityRaw > 0 ? Math.round(capacityRaw) : 0;
   const featuresRaw = String(formData.get("features") ?? "");
   const galleryUrls = formData.getAll("gallery_urls").map(String).filter(Boolean);
   return {
@@ -31,12 +31,12 @@ function toCarTypeRow(formData: FormData, productId: string) {
 export async function createCarTypeAction(productId: string, formData: FormData) {
   await requireAdmin();
   const row = toCarTypeRow(formData, productId);
+  const newPath = `/admin/products/${productId}/car-pricing/car-types/new`;
   if (!row.name) {
-    redirect(
-      `/admin/products/${productId}/car-pricing/car-types/new?error=${encodeURIComponent(
-        "Name is required."
-      )}`
-    );
+    redirect(`${newPath}?error=${encodeURIComponent("Name is required.")}`);
+  }
+  if (row.capacity_tier < 1) {
+    redirect(`${newPath}?error=${encodeURIComponent("Seats must be a number greater than 0.")}`);
   }
 
   const supabase = await createSupabaseServerClient();
@@ -61,6 +61,9 @@ export async function updateCarTypeAction(
   if (!row.name) {
     redirect(`${editPath}?error=${encodeURIComponent("Name is required.")}`);
   }
+  if (row.capacity_tier < 1) {
+    redirect(`${editPath}?error=${encodeURIComponent("Seats must be a number greater than 0.")}`);
+  }
 
   const supabase = await createSupabaseServerClient();
   const { error } = await supabase.from("car_types").update(row).eq("id", carTypeId);
@@ -72,10 +75,8 @@ export async function updateCarTypeAction(
 }
 
 function toCarPackageRow(formData: FormData, carTypeId: string) {
-  const duration = Number(formData.get("duration_hours"));
-  const durationHours = (CAR_DURATION_OPTIONS as readonly number[]).includes(duration)
-    ? duration
-    : CAR_DURATION_OPTIONS[0];
+  const durationRaw = Number(formData.get("duration_hours"));
+  const durationHours = Number.isFinite(durationRaw) && durationRaw > 0 ? Math.round(durationRaw) : 0;
   const overtimeRate = Number(formData.get("overtime_rate_per_hour_idr"));
   return {
     car_type_id: carTypeId,
@@ -93,6 +94,9 @@ export async function createCarPackageAction(
   await requireAdmin();
   const row = toCarPackageRow(formData, carTypeId);
   const newPath = `/admin/products/${productId}/car-pricing/car-types/${carTypeId}/packages/new`;
+  if (row.duration_hours < 1) {
+    redirect(`${newPath}?error=${encodeURIComponent("Duration must be a number greater than 0.")}`);
+  }
   if (row.overtime_rate_per_hour_idr < 0) {
     redirect(`${newPath}?error=${encodeURIComponent("Overtime rate must be zero or more.")}`);
   }
@@ -115,6 +119,9 @@ export async function updateCarPackageAction(
   await requireAdmin();
   const row = toCarPackageRow(formData, carTypeId);
   const editPath = `/admin/products/${productId}/car-pricing/car-types/${carTypeId}/packages/${packageId}/edit`;
+  if (row.duration_hours < 1) {
+    redirect(`${editPath}?error=${encodeURIComponent("Duration must be a number greater than 0.")}`);
+  }
   if (row.overtime_rate_per_hour_idr < 0) {
     redirect(`${editPath}?error=${encodeURIComponent("Overtime rate must be zero or more.")}`);
   }

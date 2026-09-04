@@ -13,7 +13,11 @@ export interface CarType {
   id: string;
   product_id: string;
   name: string;
-  capacity_tier: 4 | 6;
+  // Any positive number -- was fixed to 4 or 6, opened up so a bigger
+  // fleet isn't blocked by the app. Seats above 6 legally require a
+  // licensed guide under Indonesian regulation (spec §6a); that's on
+  // the admin to account for, not enforced here anymore.
+  capacity_tier: number;
   image_url: string | null;
   features: string[];
   // Marketing copy shown in the product-page detail panel once this
@@ -28,7 +32,8 @@ export interface CarType {
 export interface CarPackage {
   id: string;
   car_type_id: string;
-  duration_hours: 6 | 8 | 10;
+  // Any positive number of hours -- was fixed to 6, 8, or 10.
+  duration_hours: number;
   overtime_rate_per_hour_idr: number;
   status: "active" | "inactive";
 }
@@ -71,8 +76,11 @@ export interface TransportPrice {
   price_idr: number;
 }
 
-export const CAR_DURATION_OPTIONS = [6, 8, 10] as const;
-export const CAR_CAPACITY_TIER_OPTIONS = [4, 6] as const;
+/** Just the pre-filled default when an admin adds a new duration
+ * package/car type -- both fields accept any positive number now, not
+ * a fixed list. */
+export const DEFAULT_CAR_DURATION_HOURS = 6;
+export const DEFAULT_CAR_CAPACITY_TIER = 4;
 
 /** Where "Other -- enter your address" fits in a meeting-point picker
  * -- not a real meeting_points row, just a sentinel value the

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
-import { CAR_CAPACITY_TIER_OPTIONS, type CarType } from "@/lib/cars/types";
+import { DEFAULT_CAR_CAPACITY_TIER, type CarType } from "@/lib/cars/types";
 
 const inputClass =
   "w-full rounded-lg border border-sand-deep px-3 py-2 text-sm outline-none focus:border-teal";
@@ -73,21 +73,18 @@ export function CarTypeForm({ action, carType, error }: CarTypeFormProps) {
         <label className={labelClass} htmlFor="capacity_tier">
           Seats
         </label>
-        <select
+        <input
           id="capacity_tier"
           name="capacity_tier"
-          defaultValue={carType?.capacity_tier ?? CAR_CAPACITY_TIER_OPTIONS[0]}
+          type="number"
+          min={1}
+          required
+          defaultValue={carType?.capacity_tier ?? DEFAULT_CAR_CAPACITY_TIER}
           className={inputClass}
-        >
-          {CAR_CAPACITY_TIER_OPTIONS.map((tier) => (
-            <option key={tier} value={tier}>
-              {tier} seats
-            </option>
-          ))}
-        </select>
+        />
         <p className="mt-1 text-xs text-ink-soft">
-          Capped at 6 seats -- anything larger needs a licensed guide under Indonesian
-          regulation, which isn&apos;t handled by this booking flow.
+          Above 6 seats legally needs a licensed guide under Indonesian regulation -- make sure
+          you can operate it properly before adding a bigger car.
         </p>
       </div>
 

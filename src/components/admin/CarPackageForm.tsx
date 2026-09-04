@@ -1,6 +1,6 @@
 "use client";
 
-import { CAR_DURATION_OPTIONS, type CarPackage } from "@/lib/cars/types";
+import { DEFAULT_CAR_DURATION_HOURS, type CarPackage } from "@/lib/cars/types";
 
 const inputClass =
   "w-full rounded-lg border border-sand-deep px-3 py-2 text-sm outline-none focus:border-teal";
@@ -25,18 +25,17 @@ export function CarPackageForm({ action, carPackage, error }: CarPackageFormProp
         <label className={labelClass} htmlFor="duration_hours">
           Duration
         </label>
-        <select
+        <input
           id="duration_hours"
           name="duration_hours"
-          defaultValue={carPackage?.duration_hours ?? CAR_DURATION_OPTIONS[0]}
+          type="number"
+          min={1}
+          max={24}
+          required
+          defaultValue={carPackage?.duration_hours ?? DEFAULT_CAR_DURATION_HOURS}
           className={inputClass}
-        >
-          {CAR_DURATION_OPTIONS.map((hours) => (
-            <option key={hours} value={hours}>
-              {hours} hours
-            </option>
-          ))}
-        </select>
+        />
+        <p className="mt-1 text-xs text-ink-soft">In hours, e.g. 4, 6, 8, 10, 12.</p>
       </div>
 
       <div>
