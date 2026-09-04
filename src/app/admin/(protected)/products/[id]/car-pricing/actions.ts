@@ -8,15 +8,22 @@ import { CAR_DURATION_OPTIONS } from "@/lib/cars/types";
 function toCarTypeRow(formData: FormData, productId: string) {
   const capacityTier = Number(formData.get("capacity_tier")) === 6 ? 6 : 4;
   const featuresRaw = String(formData.get("features") ?? "");
+  const galleryUrls = formData.getAll("gallery_urls").map(String).filter(Boolean);
   return {
     product_id: productId,
     name: String(formData.get("name") ?? "").trim(),
     capacity_tier: capacityTier,
-    image_url: String(formData.get("image_url") ?? "").trim() || null,
+    // The first uploaded photo doubles as the thumbnail shown on the
+    // picker card -- gallery_urls holds the full set shown once this
+    // car is selected.
+    image_url: galleryUrls[0] ?? null,
+    gallery_urls: galleryUrls,
     features: featuresRaw
       .split(",")
       .map((f) => f.trim())
       .filter(Boolean),
+    recommended_for: String(formData.get("recommended_for") ?? "").trim() || null,
+    description: String(formData.get("description") ?? "").trim() || null,
     status: formData.get("status") === "inactive" ? "inactive" : "active",
   };
 }

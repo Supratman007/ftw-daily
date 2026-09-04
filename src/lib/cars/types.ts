@@ -16,6 +16,12 @@ export interface CarType {
   capacity_tier: 4 | 6;
   image_url: string | null;
   features: string[];
+  // Marketing copy shown in the product-page detail panel once this
+  // car is selected -- description is the full pitch, recommended_for
+  // a short one-liner (e.g. "Best for couples & small families").
+  description: string | null;
+  recommended_for: string | null;
+  gallery_urls: string[];
   status: "active" | "inactive";
 }
 
@@ -44,6 +50,10 @@ export interface TransportVehicleType {
   name: string;
   capacity_note: string | null;
   image_url: string | null;
+  features: string[];
+  description: string | null;
+  recommended_for: string | null;
+  gallery_urls: string[];
   status: "active" | "inactive";
 }
 

@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { formatIdr } from "@/lib/currency";
 import { whatsappLink } from "@/lib/contact";
+import { VehicleDetailPanel } from "@/components/VehicleDetailPanel";
 import {
   OTHER_MEETING_POINT_VALUE,
   type CarType,
@@ -116,6 +117,25 @@ export function CarHireBookingForm({
           ))}
         </div>
       </div>
+
+      {selectedCarType && (
+        <VehicleDetailPanel
+          key={selectedCarType.id}
+          name={selectedCarType.name}
+          galleryUrls={
+            selectedCarType.gallery_urls?.length
+              ? selectedCarType.gallery_urls
+              : selectedCarType.image_url
+                ? [selectedCarType.image_url]
+                : []
+          }
+          capacityLabel={`${selectedCarType.capacity_tier} seats`}
+          recommendedFor={selectedCarType.recommended_for}
+          description={selectedCarType.description}
+          features={selectedCarType.features}
+          placeholderEmoji="🚗"
+        />
+      )}
 
       <label className={labelClass}>
         Number of passengers

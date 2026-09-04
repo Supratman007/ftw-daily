@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { formatIdr } from "@/lib/currency";
 import { whatsappLink } from "@/lib/contact";
+import { VehicleDetailPanel } from "@/components/VehicleDetailPanel";
 import {
   OTHER_MEETING_POINT_VALUE,
   type MeetingPoint,
@@ -98,6 +99,25 @@ export function TransportBookingForm({
           </div>
         )}
       </div>
+
+      {selectedVehicleType && (
+        <VehicleDetailPanel
+          key={selectedVehicleType.id}
+          name={selectedVehicleType.name}
+          galleryUrls={
+            selectedVehicleType.gallery_urls?.length
+              ? selectedVehicleType.gallery_urls
+              : selectedVehicleType.image_url
+                ? [selectedVehicleType.image_url]
+                : []
+          }
+          capacityLabel={selectedVehicleType.capacity_note}
+          recommendedFor={selectedVehicleType.recommended_for}
+          description={selectedVehicleType.description}
+          features={selectedVehicleType.features}
+          placeholderEmoji="🚐"
+        />
+      )}
 
       <label className={labelClass}>
         Number of passengers

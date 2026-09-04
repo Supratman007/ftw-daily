@@ -15,26 +15,36 @@ interface CarTypeFormProps {
 }
 
 export function CarTypeForm({ action, carType, error }: CarTypeFormProps) {
-  const [imageUrl, setImageUrl] = useState(carType?.image_url ?? "");
+  const [images, setImages] = useState<string[]>(
+    carType?.gallery_urls?.length ? carType.gallery_urls : carType?.image_url ? [carType.image_url] : []
+  );
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
     setUploading(true);
     setUploadError(null);
     const supabase = createSupabaseBrowserClient();
-    const path = `${crypto.randomUUID()}-${file.name}`;
-    const { error: uploadErr } = await supabase.storage.from("product-images").upload(path, file);
-    if (uploadErr) {
-      setUploadError(`Couldn't upload ${file.name}: ${uploadErr.message}`);
-    } else {
+    const uploaded: string[] = [];
+    for (const file of Array.from(files)) {
+      const path = `${crypto.randomUUID()}-${file.name}`;
+      const { error: uploadErr } = await supabase.storage.from("product-images").upload(path, file);
+      if (uploadErr) {
+        setUploadError(`Couldn't upload ${file.name}: ${uploadErr.message}`);
+        continue;
+      }
       const { data } = supabase.storage.from("product-images").getPublicUrl(path);
-      setImageUrl(data.publicUrl);
+      uploaded.push(data.publicUrl);
     }
+    setImages((prev) => [...prev, ...uploaded]);
     setUploading(false);
     e.target.value = "";
+  }
+
+  function removeImage(url: string) {
+    setImages((prev) => prev.filter((u) => u !== url));
   }
 
   return (
@@ -82,6 +92,36 @@ export function CarTypeForm({ action, carType, error }: CarTypeFormProps) {
       </div>
 
       <div>
+        <label className={labelClass} htmlFor="recommended_for">
+          Recommended for (optional)
+        </label>
+        <input
+          id="recommended_for"
+          name="recommended_for"
+          defaultValue={carType?.recommended_for ?? ""}
+          placeholder="e.g. Best for couples & small families"
+          className={inputClass}
+        />
+        <p className="mt-1 text-xs text-ink-soft">
+          A short highlight shown right under the photo -- keep it to one line.
+        </p>
+      </div>
+
+      <div>
+        <label className={labelClass} htmlFor="description">
+          Description (optional)
+        </label>
+        <textarea
+          id="description"
+          name="description"
+          rows={4}
+          defaultValue={carType?.description ?? ""}
+          placeholder="What makes this car a good choice? Comfort, luggage space, road type it's suited for..."
+          className={inputClass}
+        />
+      </div>
+
+      <div>
         <label className={labelClass} htmlFor="features">
           Features (comma-separated, optional)
         </label>
@@ -95,15 +135,32 @@ export function CarTypeForm({ action, carType, error }: CarTypeFormProps) {
       </div>
 
       <div>
-        <label className={labelClass}>Photo (optional)</label>
-        <input type="file" accept="image/*" onChange={handleFileChange} />
+        <label className={labelClass}>Photos</label>
+        <input type="file" accept="image/*" multiple onChange={handleFileChange} />
         {uploading && <p className="mt-1 text-xs text-ink-soft">Uploading…</p>}
         {uploadError && <p className="mt-1 text-xs text-coral-dark">{uploadError}</p>}
-        {imageUrl && (
-          // eslint-disable-next-line @next/next/no-img-element -- admin-only tool, not worth Image's optimization pipeline here
-          <img src={imageUrl} alt="" className="mt-3 h-20 w-20 rounded-lg object-cover" />
+        {images.length > 0 && (
+          <div className="mt-3 flex flex-wrap gap-3">
+            {images.map((url) => (
+              <div key={url} className="relative">
+                {/* eslint-disable-next-line @next/next/no-img-element -- admin-only tool, not worth Image's optimization pipeline here */}
+                <img src={url} alt="" className="h-20 w-20 rounded-lg object-cover" />
+                <button
+                  type="button"
+                  onClick={() => removeImage(url)}
+                  className="absolute -right-2 -top-2 rounded-full bg-coral px-1.5 text-xs text-white"
+                >
+                  ×
+                </button>
+                <input type="hidden" name="gallery_urls" value={url} />
+              </div>
+            ))}
+          </div>
         )}
-        <input type="hidden" name="image_url" value={imageUrl} />
+        <p className="mt-1 text-xs text-ink-soft">
+          The first photo is used as the thumbnail; customers see all of them once this car is
+          selected.
+        </p>
       </div>
 
       <div>
