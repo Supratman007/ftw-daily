@@ -14,12 +14,7 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { CarHireProductSection } from "@/components/CarHireProductSection";
 import { TransportProductSection } from "@/components/TransportProductSection";
 import { startCheckoutAction, startCarHireCheckoutAction, startTransportCheckoutAction } from "./actions";
-
-function tomorrow(): string {
-  const d = new Date();
-  d.setDate(d.getDate() + 1);
-  return d.toISOString().slice(0, 10);
-}
+import { earliestBookableDate } from "@/lib/products/leadTime";
 
 export default async function ProductPage({
   params,
@@ -61,6 +56,9 @@ export default async function ProductPage({
   const adultPriceUsd = p.adult_price_usd ?? 0;
   const isCarHire = p.product_type === "car_hire";
   const isTransport = p.product_type === "transport";
+  // Keeps the date picker itself from ever offering a date the server
+  // would reject -- see src/lib/products/leadTime.ts.
+  const minDate = earliestBookableDate(p.min_lead_hours);
 
   let carTypes: CarType[] = [];
   let carPackages: CarPackage[] = [];
@@ -147,6 +145,7 @@ export default async function ProductPage({
           prices={carPrices}
           meetingPoints={meetingPoints}
           defaultDiscountCode={discountCode}
+          minPickupDate={minDate}
           error={error}
         />
       ) : isTransport ? (
@@ -160,6 +159,7 @@ export default async function ProductPage({
           prices={transportPrices}
           meetingPoints={meetingPoints}
           defaultDiscountCode={discountCode}
+          minPickupDate={minDate}
           error={error}
         />
       ) : (
@@ -205,8 +205,8 @@ export default async function ProductPage({
                     type="date"
                     name="date"
                     required
-                    min={tomorrow()}
-                    defaultValue={date ?? tomorrow()}
+                    min={minDate}
+                    defaultValue={date ?? minDate}
                     className="mt-1 w-full rounded-lg border border-sand-deep px-3 py-2 text-sm"
                   />
                 </label>
@@ -238,8 +238,8 @@ export default async function ProductPage({
                   type="date"
                   name="date"
                   required
-                  min={tomorrow()}
-                  defaultValue={date ?? tomorrow()}
+                  min={minDate}
+                  defaultValue={date ?? minDate}
                   className="mt-1 w-full rounded-lg border border-sand-deep px-3 py-2 text-sm"
                 />
               </label>

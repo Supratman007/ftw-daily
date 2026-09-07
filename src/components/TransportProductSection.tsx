@@ -15,6 +15,10 @@ interface TransportProductSectionProps {
   prices: TransportPrice[];
   meetingPoints: MeetingPoint[];
   defaultDiscountCode?: string;
+  /** Earliest pickup date the product's minimum booking notice still
+   * allows -- computed server-side (src/lib/products/leadTime.ts) so
+   * the calendar never offers a date the server would reject. */
+  minPickupDate: string;
   error?: string;
 }
 
@@ -32,6 +36,7 @@ export function TransportProductSection({
   prices,
   meetingPoints,
   defaultDiscountCode,
+  minPickupDate,
   error,
 }: TransportProductSectionProps) {
   const [selectedVehicleType, setSelectedVehicleType] = useState<TransportVehicleType | undefined>(
@@ -92,6 +97,7 @@ export function TransportProductSection({
           prices={prices}
           meetingPoints={meetingPoints}
           defaultDiscountCode={defaultDiscountCode}
+          minPickupDate={minPickupDate}
           onVehicleTypeChange={setSelectedVehicleType}
         />
       </div>

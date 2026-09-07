@@ -35,3 +35,31 @@ export function pickupDatetimeInBusinessTimezone(dateStr: string, timeStr: strin
 export function hasEnoughLeadTime(tripStart: Date, minLeadHours: number): boolean {
   return tripStart.getTime() - Date.now() >= minLeadHours * 60 * 60 * 1000;
 }
+
+/** The earliest calendar date (YYYY-MM-DD, Lombok time) whose midnight
+ * start is still at least `minLeadHours` away from right now -- i.e.
+ * the first date `tripStartFromDate` would accept. Used to set the
+ * date picker's `min` on date-only products (Tours, Activities, the
+ * Rinjani-style request form) so the calendar itself only ever offers
+ * dates the server will actually accept, instead of relying on the
+ * customer to hit a rejection message after picking one that's too
+ * soon. */
+export function earliestBookableDate(minLeadHours: number): string {
+  const thresholdMs = Date.now() + minLeadHours * 60 * 60 * 1000;
+  // Shift the threshold instant into Lombok wall-clock time, then read
+  // its date/time parts as UTC -- sidesteps relying on the server's
+  // own timezone (Vercel runs in UTC, but this works regardless).
+  const shifted = new Date(thresholdMs + 8 * 60 * 60 * 1000);
+  const base = new Date(
+    Date.UTC(shifted.getUTCFullYear(), shifted.getUTCMonth(), shifted.getUTCDate())
+  );
+  // If the threshold falls after local midnight, that calendar day's
+  // own midnight is already too early -- the next day is the first one
+  // that clears the bar.
+  const fallsAfterMidnight =
+    shifted.getUTCHours() || shifted.getUTCMinutes() || shifted.getUTCSeconds() || shifted.getUTCMilliseconds();
+  if (fallsAfterMidnight) {
+    base.setUTCDate(base.getUTCDate() + 1);
+  }
+  return base.toISOString().slice(0, 10);
+}

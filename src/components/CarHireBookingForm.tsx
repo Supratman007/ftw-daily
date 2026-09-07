@@ -11,12 +11,6 @@ import {
   type MeetingPoint,
 } from "@/lib/cars/types";
 
-function tomorrow(): string {
-  const d = new Date();
-  d.setDate(d.getDate() + 1);
-  return d.toISOString().slice(0, 10);
-}
-
 const labelClass = "text-xs font-semibold uppercase tracking-wide text-ink-soft";
 const inputClass = "mt-1 w-full rounded-lg border border-sand-deep px-3 py-2 text-sm";
 
@@ -28,6 +22,9 @@ interface CarHireBookingFormProps {
   prices: CarPackagePrice[];
   meetingPoints: MeetingPoint[];
   defaultDiscountCode?: string;
+  /** Earliest pickup date the product's minimum booking notice still
+   * allows -- computed server-side (src/lib/products/leadTime.ts). */
+  minPickupDate: string;
   /** Lets the page's main-column detail panel (photos, description,
    * features) stay in sync with the picker here, without duplicating
    * this form's own selection state. */
@@ -42,6 +39,7 @@ export function CarHireBookingForm({
   prices,
   meetingPoints,
   defaultDiscountCode,
+  minPickupDate,
   onCarTypeChange,
 }: CarHireBookingFormProps) {
   const [carTypeId, setCarTypeId] = useState(carTypes[0]?.id ?? "");
@@ -211,7 +209,7 @@ export function CarHireBookingForm({
       <div className="grid grid-cols-2 gap-3">
         <label className={labelClass}>
           Pickup date
-          <input type="date" name="pickup_date" required min={tomorrow()} defaultValue={tomorrow()} className={inputClass} />
+          <input type="date" name="pickup_date" required min={minPickupDate} defaultValue={minPickupDate} className={inputClass} />
         </label>
         <label className={labelClass}>
           Pickup time

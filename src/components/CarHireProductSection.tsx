@@ -16,6 +16,10 @@ interface CarHireProductSectionProps {
   prices: CarPackagePrice[];
   meetingPoints: MeetingPoint[];
   defaultDiscountCode?: string;
+  /** Earliest pickup date the product's minimum booking notice still
+   * allows -- computed server-side (src/lib/products/leadTime.ts) so
+   * the calendar never offers a date the server would reject. */
+  minPickupDate: string;
   error?: string;
 }
 
@@ -38,6 +42,7 @@ export function CarHireProductSection({
   prices,
   meetingPoints,
   defaultDiscountCode,
+  minPickupDate,
   error,
 }: CarHireProductSectionProps) {
   const [selectedCarType, setSelectedCarType] = useState<CarType | undefined>(carTypes[0]);
@@ -97,6 +102,7 @@ export function CarHireProductSection({
           prices={prices}
           meetingPoints={meetingPoints}
           defaultDiscountCode={defaultDiscountCode}
+          minPickupDate={minPickupDate}
           onCarTypeChange={setSelectedCarType}
         />
       </div>
