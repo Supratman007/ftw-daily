@@ -41,3 +41,34 @@ body {
   color: var(--foreground);
   font-family: var(--font-inter), Arial, Helvetica, sans-serif;
 }
+
+/* Click-a-star rating widget (src/app/review/[token]/page.tsx) --
+   plain radios in reverse DOM order (5..1), flexed row-reverse so
+   they display 1..5 left-to-right; ":checked ~ label" and
+   "label:hover ~ label" both walk *later* DOM siblings, which -- since
+   the order is reversed -- are the visually-earlier (lower) stars, so
+   hovering or picking star N fills stars 1..N. No JS needed. */
+.star-rating {
+  display: flex;
+  flex-direction: row-reverse;
+  justify-content: flex-end;
+  gap: 0.15rem;
+}
+.star-rating input {
+  position: absolute;
+  width: 0;
+  height: 0;
+  opacity: 0;
+}
+.star-rating label {
+  cursor: pointer;
+  font-size: 2rem;
+  line-height: 1;
+  color: var(--color-sand-deep);
+  transition: color 0.15s ease;
+}
+.star-rating label:hover,
+.star-rating label:hover ~ label,
+.star-rating input:checked ~ label {
+  color: var(--color-coral);
+}
