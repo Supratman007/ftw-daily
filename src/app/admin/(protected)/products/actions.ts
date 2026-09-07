@@ -5,6 +5,7 @@ import { requireAdmin } from "@/lib/admin/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { slugify } from "@/lib/products/slugify";
 import { decodeHtmlEntities } from "@/lib/products/decode-html-entities";
+import { DEFAULT_MIN_LEAD_HOURS } from "@/lib/products/leadTime";
 import type { ProductType } from "@/lib/products/types";
 
 const PRODUCT_TYPES: ProductType[] = ["tour", "activity", "car_hire", "transport"];
@@ -27,6 +28,11 @@ type BuildProductRowResult =
 
 function toProductRow(formData: FormData, productType: ProductType, title: string, slug: string) {
   const galleryUrls = formData.getAll("gallery_urls").map(String).filter(Boolean);
+  const minLeadHoursRaw = Number(formData.get("min_lead_hours"));
+  const minLeadHours =
+    Number.isFinite(minLeadHoursRaw) && minLeadHoursRaw >= 0
+      ? Math.round(minLeadHoursRaw)
+      : DEFAULT_MIN_LEAD_HOURS;
   return {
     product_type: productType,
     title,
@@ -40,6 +46,7 @@ function toProductRow(formData: FormData, productType: ProductType, title: strin
     child_price_usd: optionalNumber(formData, "child_price_usd"),
     infant_price_usd: optionalNumber(formData, "infant_price_usd"),
     capacity_per_date: optionalNumber(formData, "capacity_per_date"),
+    min_lead_hours: minLeadHours,
     cover_image_url: galleryUrls[0] ?? null,
     gallery_urls: galleryUrls,
     source_url: optionalText(formData, "source_url"),

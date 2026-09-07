@@ -6,6 +6,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/service";
 import { sendBookingConfirmedEmail, sendPickupTimeChangedStaffEmail } from "@/lib/email/resend";
 import { PICKUP_CHANGE_CUTOFF_HOURS } from "@/lib/bookings/types";
+import { hasEnoughLeadTime, pickupDatetimeInBusinessTimezone } from "@/lib/products/leadTime";
 
 /** Spec §6h booking detail actions, "Upcoming: view confirmation email"
  * -- rather than a separate page that just re-renders the same email
@@ -65,7 +66,7 @@ export async function changePickupTimeAction(bookingId: string, formData: FormDa
 
   const { data: booking } = await supabase
     .from("bookings")
-    .select("id, status, pickup_datetime, booking_code, product_id")
+    .select("id, status, pickup_datetime, booking_code, product_id, products(title, min_lead_hours)")
     .eq("id", bookingId)
     .eq("customer_id", customer.id)
     .maybeSingle();
@@ -87,12 +88,18 @@ export async function changePickupTimeAction(bookingId: string, formData: FormDa
 
   const newDate = String(formData.get("pickup_date") ?? "");
   const newTime = String(formData.get("pickup_time") ?? "");
-  const newPickupDatetime = new Date(`${newDate}T${newTime}:00`);
-  if (!newDate || !newTime || Number.isNaN(newPickupDatetime.getTime())) {
+  if (!newDate || !newTime) {
     fail("Please choose a valid pickup date and time.");
   }
-  if (newPickupDatetime.getTime() < Date.now()) {
-    fail("Pickup time must be in the future.");
+  const newPickupDatetime = pickupDatetimeInBusinessTimezone(newDate, newTime);
+  if (Number.isNaN(newPickupDatetime.getTime())) {
+    fail("Please choose a valid pickup date and time.");
+  }
+  const minLeadHours = booking.products?.[0]?.min_lead_hours ?? PICKUP_CHANGE_CUTOFF_HOURS;
+  if (!hasEnoughLeadTime(newPickupDatetime, minLeadHours)) {
+    fail(
+      `We need at least ${minLeadHours} hours' notice for pickup -- please choose a later time, or contact us directly.`
+    );
   }
 
   const serviceClient = createSupabaseServiceRoleClient();
@@ -116,12 +123,7 @@ export async function changePickupTimeAction(bookingId: string, formData: FormDa
     .select("email")
     .eq("status", "active");
 
-  const { data: product } = await serviceClient
-    .from("products")
-    .select("title")
-    .eq("id", booking.product_id)
-    .maybeSingle();
-  const productTitle = product?.title ?? "Trip";
+  const productTitle = booking.products?.[0]?.title ?? "Trip";
   await Promise.all(
     (staff ?? []).map((admin) =>
       sendPickupTimeChangedStaffEmail({

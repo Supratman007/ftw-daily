@@ -19,6 +19,10 @@ export interface Product {
   gallery_urls: string[];
   source_url: string | null;
   is_bookable: boolean;
+  // How many hours' notice we require before a trip/pickup start
+  // before we still accept a new booking -- admin-editable, see the
+  // 0036 migration and src/lib/products/leadTime.ts.
+  min_lead_hours: number;
   status: ProductStatus;
   created_at: string;
   updated_at: string;

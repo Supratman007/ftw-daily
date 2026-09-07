@@ -10,6 +10,7 @@ import { usdToIdr, USD_TO_IDR_RATE } from "@/lib/currency";
 import { PARK_INSURANCE_FEE_IDR } from "@/lib/bookings/types";
 import { REFERRAL_COOKIE_NAME } from "@/lib/agents/referralCookie";
 import { sendBookingRequestReceivedEmail, sendNewBookingRequestStaffEmail } from "@/lib/email/resend";
+import { hasEnoughLeadTime, tripStartFromDate } from "@/lib/products/leadTime";
 import type { Product } from "@/lib/products/types";
 import type { InsuranceType } from "@/lib/bookings/types";
 
@@ -82,6 +83,11 @@ export async function submitBookingRequestAction(
   }
   if (p.adult_price_usd == null) {
     fail("This trip doesn't have a price set yet — please contact us.");
+  }
+  if (!hasEnoughLeadTime(tripStartFromDate(date), p.min_lead_hours)) {
+    fail(
+      `We need at least ${p.min_lead_hours} hours' notice to review a request for this trip -- please choose a later date, or contact us directly for a last-minute request.`
+    );
   }
 
   // Parse and validate every traveler before touching the database --

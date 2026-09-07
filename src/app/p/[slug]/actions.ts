@@ -10,6 +10,7 @@ import { generateBookingCode } from "@/lib/bookings/booking-code";
 import { idrToUsd, usdToIdr } from "@/lib/currency";
 import { REFERRAL_COOKIE_NAME } from "@/lib/agents/referralCookie";
 import { OTHER_MEETING_POINT_VALUE, type CarPackage, type CarType, type MeetingPoint } from "@/lib/cars/types";
+import { hasEnoughLeadTime, pickupDatetimeInBusinessTimezone, tripStartFromDate } from "@/lib/products/leadTime";
 import type { Product } from "@/lib/products/types";
 
 export async function startCheckoutAction(productId: string, slug: string, formData: FormData) {
@@ -61,6 +62,11 @@ export async function startCheckoutAction(productId: string, slug: string, formD
   }
   if (p.adult_price_usd == null) {
     fail("This trip doesn't have a price set yet — please contact us.");
+  }
+  if (!hasEnoughLeadTime(tripStartFromDate(date), p.min_lead_hours)) {
+    fail(
+      `We need at least ${p.min_lead_hours} hours' notice to book this trip -- please choose a later date, or contact us directly for a last-minute request.`
+    );
   }
 
   // The atomic, race-safe capacity check (spec §13) -- must run before
@@ -258,12 +264,12 @@ export async function startCarHireCheckoutAction(productId: string, slug: string
     fail("Please enter a valid WhatsApp number so your driver can reach you.");
   }
 
-  const pickupDatetime = new Date(`${pickupDate}T${pickupTime}:00`);
-  if (!pickupDate || !pickupTime || Number.isNaN(pickupDatetime.getTime())) {
+  if (!pickupDate || !pickupTime) {
     fail("Please choose a valid pickup date and time.");
   }
-  if (pickupDatetime.getTime() < Date.now()) {
-    fail("Pickup time must be in the future.");
+  const pickupDatetime = pickupDatetimeInBusinessTimezone(pickupDate, pickupTime);
+  if (Number.isNaN(pickupDatetime.getTime())) {
+    fail("Please choose a valid pickup date and time.");
   }
 
   const supabase = await createSupabaseServerClient();
@@ -277,6 +283,11 @@ export async function startCarHireCheckoutAction(productId: string, slug: string
     fail("This car isn't available to book online right now.");
   }
   const p = product as Product;
+  if (!hasEnoughLeadTime(pickupDatetime, p.min_lead_hours)) {
+    fail(
+      `We need at least ${p.min_lead_hours} hours' notice for pickup -- please choose a later time, or contact us directly for a last-minute request.`
+    );
+  }
 
   const { data: carType } = await supabase
     .from("car_types")
@@ -499,12 +510,12 @@ export async function startTransportCheckoutAction(productId: string, slug: stri
     fail("Please enter a valid WhatsApp number so your driver can reach you.");
   }
 
-  const pickupDatetime = new Date(`${pickupDate}T${pickupTime}:00`);
-  if (!pickupDate || !pickupTime || Number.isNaN(pickupDatetime.getTime())) {
+  if (!pickupDate || !pickupTime) {
     fail("Please choose a valid pickup date and time.");
   }
-  if (pickupDatetime.getTime() < Date.now()) {
-    fail("Pickup time must be in the future.");
+  const pickupDatetime = pickupDatetimeInBusinessTimezone(pickupDate, pickupTime);
+  if (Number.isNaN(pickupDatetime.getTime())) {
+    fail("Please choose a valid pickup date and time.");
   }
 
   const supabase = await createSupabaseServerClient();
@@ -518,6 +529,11 @@ export async function startTransportCheckoutAction(productId: string, slug: stri
     fail("This isn't available to book online right now.");
   }
   const p = product as Product;
+  if (!hasEnoughLeadTime(pickupDatetime, p.min_lead_hours)) {
+    fail(
+      `We need at least ${p.min_lead_hours} hours' notice for pickup -- please choose a later time, or contact us directly for a last-minute request.`
+    );
+  }
 
   const { data: vehicleType } = await supabase
     .from("transport_vehicle_types")
