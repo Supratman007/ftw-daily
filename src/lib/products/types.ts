@@ -11,6 +11,12 @@ export interface Product {
   location: string | null;
   category: string | null;
   duration_label: string | null;
+  // Structured trip length in days, alongside the free-text
+  // duration_label above -- used to compute a booking's
+  // service_end_date (src/lib/products/serviceEndDate.ts), which
+  // duration_label can't be parsed reliably for. 1 for a single-day
+  // trip.
+  duration_days: number;
   adult_price_usd: number | null;
   child_price_usd: number | null;
   infant_price_usd: number | null;

@@ -11,7 +11,8 @@ import {
   type Traveler,
 } from "@/lib/bookings/types";
 import { whatsappLink } from "@/lib/contact";
-import { resendConfirmationEmailAction, changePickupTimeAction } from "./actions";
+import { resendConfirmationEmailAction, changePickupTimeAction, writeReviewAction } from "./actions";
+import { lombokDateString } from "@/lib/timezone";
 import { requestGiftVoucherRefundAction } from "@/app/account/bookings/actions";
 import { sendCustomerMessageAction } from "./chat-actions";
 import { customerLogoutAction } from "@/app/actions";
@@ -34,9 +35,9 @@ type BookingWithProduct = Booking & { products: { title: string; slug: string } 
  * manual-confirmation flow's status-specific states (§6b) -- under
  * review, confirmed-with-payment-link-and-deadline, declined (with
  * reason), and the traveler/passport-received list -- the per-booking
- * chat thread (§6b/§6c), and the cancellation/reschedule request flow
- * (§6f) at the bottom. Deliberately not built yet: review submission
- * -- gated behind Phase 3 infrastructure that doesn't exist yet.
+ * chat thread (§6b/§6c), the cancellation/reschedule request flow
+ * (§6f), and the "write a review" entry point (§6d/§6h) once a
+ * completed trip's service_end_date has passed.
  */
 export default async function BookingDetailPage({
   params,
@@ -150,6 +151,17 @@ export default async function BookingDetailPage({
 
   const canRequestCancellation =
     b.status === "paid_confirmed" && latestCancellationRequest?.status !== "pending_review";
+
+  const serviceEnded = Boolean(b.service_end_date && b.service_end_date <= lombokDateString());
+  let review: { rating: number; title: string | null; body: string | null; status: string } | null = null;
+  if (b.status === "paid_confirmed" && serviceEnded) {
+    const { data: reviewRow } = await supabase
+      .from("reviews")
+      .select("rating, title, body, status")
+      .eq("booking_id", b.id)
+      .maybeSingle();
+    review = reviewRow;
+  }
 
   let meetingPointName: string | null = null;
   let dropoffPointName: string | null = null;
@@ -400,6 +412,41 @@ export default async function BookingDetailPage({
             Resend confirmation email
           </button>
         </form>
+      )}
+
+      {b.status === "paid_confirmed" && serviceEnded && (
+        <div className="mt-6 rounded-2xl border border-sand-deep bg-white p-6 text-sm">
+          <p className="font-semibold text-ink">Review</p>
+          {review ? (
+            <>
+              <p className="mt-1 text-[#E1613C]">
+                {"★".repeat(review.rating)}
+                {"☆".repeat(5 - review.rating)}
+              </p>
+              {review.title && <p className="mt-1 font-semibold text-ink">{review.title}</p>}
+              {review.body && <p className="mt-1 text-ink-soft">{review.body}</p>}
+              <p className="mt-2 text-xs text-ink-soft">
+                {review.status === "published"
+                  ? "Live on the product page -- thanks for sharing!"
+                  : review.status === "pending_moderation"
+                    ? "Thanks -- our team is reviewing it before it goes public."
+                    : "Submitted."}
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="mt-1 text-ink-soft">How was this trip? Takes less than a minute.</p>
+              <form action={writeReviewAction.bind(null, b.id)} className="mt-3">
+                <button
+                  type="submit"
+                  className="rounded-lg border border-teal px-4 py-2 text-sm font-semibold text-teal hover:bg-[#E3F2F1]"
+                >
+                  Write a review
+                </button>
+              </form>
+            </>
+          )}
+        </div>
       )}
 
       {(b.status === "pending_payment" || b.status === "confirmed_awaiting_payment") &&

@@ -15,6 +15,7 @@ import { CarHireProductSection } from "@/components/CarHireProductSection";
 import { TransportProductSection } from "@/components/TransportProductSection";
 import { startCheckoutAction, startCarHireCheckoutAction, startTransportCheckoutAction } from "./actions";
 import { earliestBookableDate } from "@/lib/products/leadTime";
+import { ProductReviews, type ProductReviewSummary } from "@/components/ProductReviews";
 
 export default async function ProductPage({
   params,
@@ -119,6 +120,19 @@ export default async function ProductPage({
       transportPrices = (transportPricesData ?? []) as TransportPrice[];
     }
   }
+
+  // Spec §6d: published reviews and the average rating, shown on every
+  // product type -- Car Hire and Transport bookings can be reviewed
+  // too, not just Tours/Activities.
+  const { data: reviewsData } = await supabase
+    .from("reviews")
+    .select("id, rating, title, body, published_at")
+    .eq("product_id", p.id)
+    .eq("status", "published")
+    .order("published_at", { ascending: false });
+  const reviews = (reviewsData ?? []) as ProductReviewSummary[];
+  const averageRating =
+    reviews.length > 0 ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length : null;
 
   return (
     <>
@@ -304,6 +318,8 @@ export default async function ProductPage({
         </div>
       </div>
       )}
+
+      <ProductReviews reviews={reviews} averageRating={averageRating} />
       </main>
     </>
   );

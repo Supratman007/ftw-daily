@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/service";
 import { resolveCommissionTier } from "@/lib/agents/commission";
+import { computeServiceEndDate } from "@/lib/products/serviceEndDate";
 import {
   sendBookingConfirmedEmail,
   sendNewBookingStaffEmail,
@@ -60,9 +61,23 @@ export async function POST(request: NextRequest) {
   }
 
   if (PAID_STATUSES.has(status)) {
+    // Needed before the update below (service_end_date, spec §6d, is
+    // computed off it), so fetched here rather than alongside the
+    // customer-email product lookup further down.
+    const { data: durationProduct } = await supabase
+      .from("products")
+      .select("duration_days")
+      .eq("id", booking.product_id)
+      .maybeSingle();
+    const serviceEndDate = computeServiceEndDate(booking.slot_date, durationProduct?.duration_days ?? 1);
+
     const { error: updateError } = await supabase
       .from("bookings")
-      .update({ status: "paid_confirmed", updated_at: new Date().toISOString() })
+      .update({
+        status: "paid_confirmed",
+        service_end_date: serviceEndDate,
+        updated_at: new Date().toISOString(),
+      })
       .eq("id", booking.id);
 
     if (updateError) {

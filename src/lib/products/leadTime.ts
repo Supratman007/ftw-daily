@@ -1,12 +1,9 @@
+import { BUSINESS_TIMEZONE_OFFSET } from "@/lib/timezone";
+
 /** Booking lead-time cutoff (how soon before a trip/pickup we still
  * accept a new online booking) -- shared by the instant-book checkout,
  * the Rinjani-style request flow, and the self-service pickup-time
- * change, so the three don't quietly drift apart.
- *
- * Lombok/WITA is a fixed UTC+8 offset year-round -- Indonesia doesn't
- * observe daylight saving -- so a plain constant is safe here, unlike
- * most timezones. */
-const BUSINESS_TIMEZONE_OFFSET = "+08:00";
+ * change, so the three don't quietly drift apart. */
 
 /** Default `products.min_lead_hours` for a brand-new product, before
  * an admin sets one deliberately. Matches the value the 0036 migration

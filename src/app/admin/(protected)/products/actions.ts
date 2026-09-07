@@ -33,6 +33,9 @@ function toProductRow(formData: FormData, productType: ProductType, title: strin
     Number.isFinite(minLeadHoursRaw) && minLeadHoursRaw >= 0
       ? Math.round(minLeadHoursRaw)
       : DEFAULT_MIN_LEAD_HOURS;
+  const durationDaysRaw = Number(formData.get("duration_days"));
+  const durationDays =
+    Number.isFinite(durationDaysRaw) && durationDaysRaw >= 1 ? Math.round(durationDaysRaw) : 1;
   return {
     product_type: productType,
     title,
@@ -42,6 +45,7 @@ function toProductRow(formData: FormData, productType: ProductType, title: strin
     location: optionalText(formData, "location"),
     category: optionalText(formData, "category"),
     duration_label: optionalText(formData, "duration_label"),
+    duration_days: durationDays,
     adult_price_usd: optionalNumber(formData, "adult_price_usd"),
     child_price_usd: optionalNumber(formData, "child_price_usd"),
     infant_price_usd: optionalNumber(formData, "infant_price_usd"),

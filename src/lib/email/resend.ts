@@ -1212,6 +1212,86 @@ export async function sendGiftVoucherRefundDeclinedEmail(
   });
 }
 
+interface ReviewRequestEmailParams {
+  toEmail: string;
+  customerName: string;
+  productTitle: string;
+  reviewUrl: string;
+}
+
+/**
+ * Spec §6d/§6g -- sent the day a trip's service_end_date arrives (the
+ * daily cron at /api/cron/review-requests), one clean button and
+ * nothing else competing for the click, per spec's explicit "maximize
+ * completion rate" goal. The link itself proves eligibility -- no
+ * login required.
+ */
+export async function sendReviewRequestEmail(params: ReviewRequestEmailParams): Promise<void> {
+  const html = `
+    <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
+      <h1 style="color: #0F3A3D;">How was your ${escapeHtml(params.productTitle)}?</h1>
+      <p>Hi ${escapeHtml(params.customerName)},</p>
+      <p>We hope you had a great time. Mind sharing a quick review? It genuinely helps other travelers -- and takes less than a minute.</p>
+      <p><a href="${params.reviewUrl}" style="display: inline-block; background: #E1613C; color: #fff; padding: 10px 18px; border-radius: 8px; text-decoration: none;">Write your review</a></p>
+      <p style="color: #4B5854; font-size: 13px;">This link is just for you and expires in 30 days.</p>
+    </div>
+  `;
+
+  await sendEmail({
+    to: params.toEmail,
+    subject: `How was your ${params.productTitle}?`,
+    html,
+  });
+}
+
+interface AdminNewReviewEmailParams {
+  toEmail: string;
+  productTitle: string;
+  customerName: string;
+  rating: number;
+  reviewTitle: string | null;
+  reviewBody: string | null;
+  /** true once it's already live on the product page (4-5 stars,
+   * auto-published); false while it's held for moderation (3 stars or
+   * below) -- changes both the wording and which button/link shows. */
+  published: boolean;
+  reviewUrl: string;
+}
+
+/**
+ * Mirrors the GetYourGuide format spec §6g asks for directly: subject
+ * names the product, the review itself shows inline in the email (not
+ * just "you have a new review, click to see it"), one button. The
+ * held (3-and-below) version is the one that actually needs to
+ * interrupt someone -- worded to make that clear.
+ */
+export async function sendAdminNewReviewEmail(params: AdminNewReviewEmailParams): Promise<void> {
+  const stars = "★".repeat(params.rating) + "☆".repeat(5 - params.rating);
+  const html = `
+    <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
+      <h1 style="color: ${params.published ? "#0F3A3D" : "#B3441E"};">
+        ${params.published ? "New review" : "New review needs a decision"} — ${escapeHtml(params.productTitle)}
+      </h1>
+      <p style="color: #4B5854;">From ${escapeHtml(params.customerName)}</p>
+      <p style="font-size: 20px; letter-spacing: 2px; color: #E1613C;">${stars}</p>
+      ${params.reviewTitle ? `<p style="font-weight: 600;">${escapeHtml(params.reviewTitle)}</p>` : ""}
+      ${params.reviewBody ? `<p style="color: #1A231F;">${escapeHtml(params.reviewBody)}</p>` : ""}
+      ${
+        params.published
+          ? ""
+          : `<p style="color: #B3441E;">3 stars or below holds for review before it goes public.</p>`
+      }
+      <p><a href="${params.reviewUrl}" style="display: inline-block; background: #E1613C; color: #fff; padding: 10px 18px; border-radius: 8px; text-decoration: none;">${params.published ? "View review" : "Review & moderate"}</a></p>
+    </div>
+  `;
+
+  await sendEmail({
+    to: params.toEmail,
+    subject: `${params.published ? "New review" : "New review needs a decision"} — ${params.productTitle}`,
+    html,
+  });
+}
+
 function escapeHtml(input: string): string {
   return input
     .replace(/&/g, "&amp;")

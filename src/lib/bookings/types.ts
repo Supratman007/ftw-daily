@@ -64,6 +64,13 @@ export interface Booking {
   // details for an airport pickup so the driver can track the flight.
   passenger_name: string | null;
   flight_details: string | null;
+  // Reviews (spec §6d) -- set at confirmation time / by the daily
+  // review-request cron job. See src/lib/reviews/types.ts.
+  service_end_date: string | null;
+  review_token: string | null;
+  review_token_expires_at: string | null;
+  review_requested_at: string | null;
+  review_token_used_at: string | null;
   created_at: string;
   updated_at: string;
 }

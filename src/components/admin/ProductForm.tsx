@@ -194,17 +194,37 @@ export function ProductForm({ action, product, error }: ProductFormProps) {
         </div>
       </div>
 
-      <div>
-        <label className={labelClass} htmlFor="duration_label">
-          Duration
-        </label>
-        <input
-          id="duration_label"
-          name="duration_label"
-          defaultValue={product?.duration_label ?? ""}
-          placeholder="e.g. 8 Hours, or 4 Days 3 Nights"
-          className={inputClass}
-        />
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className={labelClass} htmlFor="duration_label">
+            Duration
+          </label>
+          <input
+            id="duration_label"
+            name="duration_label"
+            defaultValue={product?.duration_label ?? ""}
+            placeholder="e.g. 8 Hours, or 4 Days 3 Nights"
+            className={inputClass}
+          />
+        </div>
+        <div>
+          <label className={labelClass} htmlFor="duration_days">
+            Trip length (days)
+          </label>
+          <input
+            id="duration_days"
+            name="duration_days"
+            type="number"
+            min={1}
+            required
+            defaultValue={product?.duration_days ?? 1}
+            className={inputClass}
+          />
+          <p className="mt-1 text-xs text-ink-soft">
+            1 for a day trip. Used to work out when to send the review-request email -- e.g. 3 for
+            a 3-day/2-night trek.
+          </p>
+        </div>
       </div>
 
       <div className="grid grid-cols-3 gap-4">
