@@ -43,3 +43,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# built plugin zip -- source lives in wordpress-plugin/, zip is
+# generated on demand for upload to WordPress, not checked in
+wordpress-plugin/*.zip

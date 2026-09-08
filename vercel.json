@@ -3,6 +3,10 @@
     {
       "path": "/api/cron/review-requests",
       "schedule": "5 16 * * *"
+    },
+    {
+      "path": "/api/cron/retry-review-pushes",
+      "schedule": "0 22 * * *"
     }
   ]
 }

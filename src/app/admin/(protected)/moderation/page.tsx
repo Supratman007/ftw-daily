@@ -1,7 +1,12 @@
 import Link from "next/link";
 import { requireAdmin } from "@/lib/admin/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { REVIEW_STATUS_LABELS, type ReviewStatus } from "@/lib/reviews/types";
+import {
+  REVIEW_PUSH_STATUS_LABELS,
+  REVIEW_STATUS_LABELS,
+  type ReviewPushStatus,
+  type ReviewStatus,
+} from "@/lib/reviews/types";
 import { approveReviewAction, rejectReviewAction } from "./actions";
 
 type ReviewRow = {
@@ -10,6 +15,7 @@ type ReviewRow = {
   title: string | null;
   body: string | null;
   status: ReviewStatus;
+  pushed_to_website: ReviewPushStatus;
   created_at: string;
   bookings: { booking_code: string; products: { title: string } | null; customers: { name: string } | null } | null;
 };
@@ -39,7 +45,9 @@ export default async function AdminModerationPage({
   const supabase = await createSupabaseServerClient();
   let query = supabase
     .from("reviews")
-    .select("id, rating, title, body, status, created_at, bookings(booking_code, products(title), customers(name))")
+    .select(
+      "id, rating, title, body, status, pushed_to_website, created_at, bookings(booking_code, products(title), customers(name))"
+    )
     .order("created_at", { ascending: false });
   if (activeFilter !== "all") {
     query = query.eq("status", activeFilter);
@@ -85,6 +93,16 @@ export default async function AdminModerationPage({
             </div>
             <p className="mt-1 text-xs text-ink-soft">
               {r.bookings?.booking_code} · {new Date(r.created_at).toLocaleDateString()}
+              {r.pushed_to_website !== "not_applicable" && (
+                <>
+                  {" · "}
+                  <span
+                    className={r.pushed_to_website === "failed" ? "text-coral-dark" : undefined}
+                  >
+                    {REVIEW_PUSH_STATUS_LABELS[r.pushed_to_website]}
+                  </span>
+                </>
+              )}
             </p>
             <p className="mt-2 text-[#E1613C]">{"★".repeat(r.rating)}{"☆".repeat(5 - r.rating)}</p>
             {r.title && <p className="mt-2 break-words font-semibold text-ink">{r.title}</p>}
