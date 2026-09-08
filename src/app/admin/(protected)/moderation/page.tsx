@@ -87,8 +87,10 @@ export default async function AdminModerationPage({
               {r.bookings?.booking_code} · {new Date(r.created_at).toLocaleDateString()}
             </p>
             <p className="mt-2 text-[#E1613C]">{"★".repeat(r.rating)}{"☆".repeat(5 - r.rating)}</p>
-            {r.title && <p className="mt-2 font-semibold text-ink">{r.title}</p>}
-            {r.body && <p className="mt-1 text-ink-soft">{r.body}</p>}
+            {r.title && <p className="mt-2 break-words font-semibold text-ink">{r.title}</p>}
+            {r.body && (
+              <p className="mt-1 whitespace-pre-wrap break-words text-ink-soft">{r.body}</p>
+            )}
 
             {r.status === "pending_moderation" && (
               <div className="mt-4 flex gap-2 border-t border-sand-deep pt-4">

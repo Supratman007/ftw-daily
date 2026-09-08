@@ -423,8 +423,12 @@ export default async function BookingDetailPage({
                 {"★".repeat(review.rating)}
                 {"☆".repeat(5 - review.rating)}
               </p>
-              {review.title && <p className="mt-1 font-semibold text-ink">{review.title}</p>}
-              {review.body && <p className="mt-1 text-ink-soft">{review.body}</p>}
+              {review.title && (
+                <p className="mt-1 break-words font-semibold text-ink">{review.title}</p>
+              )}
+              {review.body && (
+                <p className="mt-1 whitespace-pre-wrap break-words text-ink-soft">{review.body}</p>
+              )}
               <p className="mt-2 text-xs text-ink-soft">
                 {review.status === "published"
                   ? "Live on the product page -- thanks for sharing!"

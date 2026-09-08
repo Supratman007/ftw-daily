@@ -39,8 +39,10 @@ export function ProductReviews({
         {reviews.map((r) => (
           <div key={r.id} className="rounded-2xl border border-sand-deep bg-white p-5 text-sm">
             <p className="text-[#E1613C]">{"★".repeat(r.rating)}{"☆".repeat(5 - r.rating)}</p>
-            {r.title && <p className="mt-2 font-semibold text-ink">{r.title}</p>}
-            {r.body && <p className="mt-1 whitespace-pre-wrap text-ink-soft">{r.body}</p>}
+            {r.title && <p className="mt-2 break-words font-semibold text-ink">{r.title}</p>}
+            {r.body && (
+              <p className="mt-1 whitespace-pre-wrap break-words text-ink-soft">{r.body}</p>
+            )}
           </div>
         ))}
       </div>

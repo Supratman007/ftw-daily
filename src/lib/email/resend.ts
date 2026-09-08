@@ -1275,7 +1275,7 @@ export async function sendAdminNewReviewEmail(params: AdminNewReviewEmailParams)
       <p style="color: #4B5854;">From ${escapeHtml(params.customerName)}</p>
       <p style="font-size: 20px; letter-spacing: 2px; color: #E1613C;">${stars}</p>
       ${params.reviewTitle ? `<p style="font-weight: 600;">${escapeHtml(params.reviewTitle)}</p>` : ""}
-      ${params.reviewBody ? `<p style="color: #1A231F;">${escapeHtml(params.reviewBody)}</p>` : ""}
+      ${params.reviewBody ? `<p style="color: #1A231F; word-break: break-word;">${escapeHtml(params.reviewBody)}</p>` : ""}
       ${
         params.published
           ? ""
