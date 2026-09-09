@@ -253,7 +253,10 @@ export async function approveGiftVoucherRefundAction(voucherId: string, formData
 
   if (!voucher) redirect(`${returnTo}${returnTo.includes("?") ? "&" : "?"}error=Voucher+not+found.`);
 
-  await supabase.from("gift_vouchers").update({ status: "expired" }).eq("id", voucherId);
+  await supabase
+    .from("gift_vouchers")
+    .update({ status: "expired", refunded_at: new Date().toISOString() })
+    .eq("id", voucherId);
 
   const serviceClient = createSupabaseServiceRoleClient();
   const giver = await resolveVoucherGiver(serviceClient, voucher);

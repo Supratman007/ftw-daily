@@ -81,6 +81,9 @@ export const requireSuperAdmin = cache(async (): Promise<AdminUser> => {
  * conservative on the rest is safer than guessing.
  *
  * A few judgment calls where the spec doesn't spell out every route:
+ * - Reports (spec §6k's "financial reports" for Accounting) is
+ *   Super Admin + Accounting only -- it's revenue and refund totals,
+ *   not day-to-day operations, so Reservations doesn't need it.
  * - Bookings is Accounting's transaction record -- each row's amount,
  *   status, and Xendit invoice link -- so both Reservations (day-to-day
  *   operations) and Accounting (financial reports) can open it. There's
@@ -104,6 +107,7 @@ export type AdminSection =
   | "moderation"
   | "inbox"
   | "bookings"
+  | "reports"
   | "vouchers"
   | "commissions"
   | "commission_tiers"
@@ -120,6 +124,7 @@ export const ADMIN_SECTION_ROLES: Record<AdminSection, AdminRole[]> = {
   moderation: ["super_admin", "reservations"],
   inbox: ["super_admin", "reservations", "support"],
   bookings: ["super_admin", "reservations", "accounting"],
+  reports: ["super_admin", "accounting"],
   vouchers: ["super_admin", "reservations", "accounting"],
   commissions: ["super_admin", "accounting"],
   commission_tiers: ["super_admin"],

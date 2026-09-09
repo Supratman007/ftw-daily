@@ -8,6 +8,7 @@ const NAV_LINKS: Array<{ href: string; label: string; section: AdminSection }> =
   { href: "/admin/inbox", label: "Inbox", section: "inbox" },
   { href: "/admin/cancellations", label: "Cancellations", section: "cancellations" },
   { href: "/admin/moderation", label: "Moderation", section: "moderation" },
+  { href: "/admin/reports", label: "Reports", section: "reports" },
   { href: "/admin/vouchers", label: "Vouchers", section: "vouchers" },
   { href: "/admin/products", label: "Products", section: "products" },
   { href: "/admin/meeting-points", label: "Meeting points", section: "meeting_points" },

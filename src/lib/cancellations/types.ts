@@ -69,6 +69,11 @@ export interface GiftVoucher {
   // path in this app -- the actual Xendit refund happens manually.
   cancellation_requested_at: string | null;
   cancellation_reason: string | null;
+  // Set the moment a purchaser's refund request is approved -- lets
+  // /admin/reports count refunds within a date range even though the
+  // voucher's status just becomes "expired" (see cancellation_
+  // requested_at above).
+  refunded_at: string | null;
   recipient_name: string;
   recipient_contact: string;
   redemption_code: string;
