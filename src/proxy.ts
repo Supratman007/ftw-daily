@@ -8,14 +8,21 @@ import {
   type Locale,
 } from "@/lib/i18n/locales";
 
-// Bare (English) paths that also have a translated version at
+// Bare (English) path patterns that also have a translated version at
 // /id + the same path -- only these are eligible for the auto-detect
 // redirect below. Redirecting a path with no /id counterpart yet would
 // just 404, so this list is deliberately explicit and grows as more
 // customer pages get an Indonesian version. The admin/agent panels are
 // never in here -- staff stay on English regardless of browser
 // language.
-const LOCALIZED_PATHS = ["/"];
+const LOCALIZED_PATH_PATTERNS: RegExp[] = [
+  /^\/$/, // homepage
+  /^\/p\/[^/]+$/, // /p/[slug] -- the trip/product page
+];
+
+function isLocalizedPath(pathname: string): boolean {
+  return LOCALIZED_PATH_PATTERNS.some((pattern) => pattern.test(pathname));
+}
 
 function parseLocaleCookie(value: string | undefined): Locale | undefined {
   return value === "en" || value === "id" ? value : undefined;
@@ -43,7 +50,7 @@ function parseExplicitLocaleParam(value: string | null): Locale | undefined {
  *    param, no DB round trip -- so it runs on every non-admin request.
  *
  * 2. Indonesian language auto-detect: a first-time visitor on a page
- *    listed in LOCALIZED_PATHS gets redirected straight to its /id
+ *    matching LOCALIZED_PATH_PATTERNS gets redirected straight to its /id
  *    version if their browser's Accept-Language says Indonesian.
  *    Whatever they land on (by detection, by an explicit switcher
  *    click, or by opening an /id link directly) gets remembered in a
@@ -77,7 +84,7 @@ export async function proxy(request: NextRequest) {
     // before -- that's the whole point of it existing.
     const cookieLocale = explicitLocale ?? storedLocale;
 
-    if (!isIdPath && LOCALIZED_PATHS.includes(pathname)) {
+    if (!isIdPath && isLocalizedPath(pathname)) {
       const preferredLocale =
         cookieLocale ?? detectLocaleFromAcceptLanguage(request.headers.get("accept-language"));
       if (preferredLocale === "id") {

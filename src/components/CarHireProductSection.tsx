@@ -21,6 +21,12 @@ interface CarHireProductSectionProps {
    * the calendar never offers a date the server would reject. */
   minPickupDate: string;
   error?: string;
+  /** Defaults to the English copy -- the server-rendered parent page
+   * passes a translated one when it knows the visitor's locale. Kept
+   * optional (rather than plumbing locale/getDictionary into this
+   * "use client" component) since it's the only string this component
+   * owns that needs translating. */
+  priceLabel?: string;
 }
 
 /**
@@ -44,6 +50,7 @@ export function CarHireProductSection({
   defaultDiscountCode,
   minPickupDate,
   error,
+  priceLabel = "Price by car, duration & pickup area — pick your options below",
 }: CarHireProductSectionProps) {
   const [selectedCarType, setSelectedCarType] = useState<CarType | undefined>(carTypes[0]);
 
@@ -83,9 +90,7 @@ export function CarHireProductSection({
       </div>
 
       <div className="h-fit rounded-2xl border border-sand-deep bg-white p-6">
-        <p className="font-serif text-lg font-semibold text-ocean">
-          Price by car, duration &amp; pickup area — pick your options below
-        </p>
+        <p className="font-serif text-lg font-semibold text-ocean">{priceLabel}</p>
         <div className="my-4 h-px bg-sand-deep" />
 
         {error && (

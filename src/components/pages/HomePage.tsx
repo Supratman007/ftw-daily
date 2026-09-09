@@ -126,7 +126,7 @@ export async function HomePage({
             {items.map((p) => (
               <a
                 key={p.id}
-                href={`/p/${p.slug}`}
+                href={locale === "en" ? `/p/${p.slug}` : `/id/p/${p.slug}`}
                 className="flex flex-col overflow-hidden rounded-2xl border border-sand-deep bg-white transition hover:shadow-md"
               >
                 {p.cover_image_url ? (

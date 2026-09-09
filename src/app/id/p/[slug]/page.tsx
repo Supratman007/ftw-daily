@@ -1,7 +1,7 @@
 import { ProductPage } from "@/components/pages/ProductPage";
 
-/** Thin English entrypoint -- see ProductPage for the real
- * implementation, shared with src/app/id/p/[slug]/page.tsx. */
+/** Thin Indonesian entrypoint -- see ProductPage for the real
+ * implementation, shared with src/app/p/[slug]/page.tsx (English). */
 export default async function Page({
   params,
   searchParams,
@@ -16,5 +16,5 @@ export default async function Page({
     error?: string;
   }>;
 }) {
-  return <ProductPage params={params} searchParams={searchParams} locale="en" />;
+  return <ProductPage params={params} searchParams={searchParams} locale="id" />;
 }

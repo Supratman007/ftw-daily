@@ -20,6 +20,10 @@ interface TransportProductSectionProps {
    * the calendar never offers a date the server would reject. */
   minPickupDate: string;
   error?: string;
+  /** Defaults to the English copy -- see CarHireProductSection's
+   * identical priceLabel prop for why this stays a plain string prop
+   * rather than locale/getDictionary plumbing. */
+  priceLabel?: string;
 }
 
 /** Transport's product-page layout -- same reasoning as
@@ -38,6 +42,7 @@ export function TransportProductSection({
   defaultDiscountCode,
   minPickupDate,
   error,
+  priceLabel = "Price by pickup area — pick your options below",
 }: TransportProductSectionProps) {
   const [selectedVehicleType, setSelectedVehicleType] = useState<TransportVehicleType | undefined>(
     vehicleTypes[0]
@@ -79,9 +84,7 @@ export function TransportProductSection({
       </div>
 
       <div className="h-fit rounded-2xl border border-sand-deep bg-white p-6">
-        <p className="font-serif text-lg font-semibold text-ocean">
-          Price by pickup area — pick your options below
-        </p>
+        <p className="font-serif text-lg font-semibold text-ocean">{priceLabel}</p>
         <div className="my-4 h-px bg-sand-deep" />
 
         {error && (

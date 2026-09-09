@@ -36,6 +36,25 @@ export const en = {
     noProductsYet: "No trips published yet — check back soon.",
     noResults: "No trips match those filters — try clearing one and searching again.",
   },
+  product: {
+    perPerson: "/ person",
+    manualConfirmationNotice:
+      "This trip needs manual confirmation before booking -- availability depends on park permit quota we check by hand. Tell us your dates and we'll get back to you, usually within a day or two. Nothing is charged until we confirm.",
+    dateLabel: "Date",
+    travelersLabel: "Travelers",
+    hotelNameLabel: "Hotel name (optional)",
+    hotelNamePlaceholder: "Where should we pick you up?",
+    roomNumberLabel: "Room number (optional)",
+    discountCodeLabel: "Discount code (optional)",
+    discountCodePlaceholder: "e.g. WELCOME10",
+    continueToRequest: "Continue to request",
+    continueToCheckout: "Continue to checkout",
+    giftThisTrip: "🎁 Give this trip as a gift",
+    carHirePriceLabel: "Price by car, duration & pickup area — pick your options below",
+    transportPriceLabel: "Price by pickup area — pick your options below",
+    reviewsHeading: "Reviews",
+    reviewCount: (count: number) => `${count} review${count === 1 ? "" : "s"}`,
+  },
 };
 
 export type Dictionary = typeof en;
