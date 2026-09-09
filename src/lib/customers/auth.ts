@@ -28,7 +28,13 @@ export const requireCustomer = cache(async (returnTo?: string): Promise<Customer
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect(returnTo ? `/login?return_to=${encodeURIComponent(returnTo)}` : "/login");
+    // returnTo already carries an /id prefix when the visitor was
+    // browsing in Indonesian (every locale-aware page builds it that
+    // way) -- send them to the matching login page instead of always
+    // English, so they don't get dropped out of Indonesian right at
+    // the login wall.
+    const loginPath = returnTo === "/id" || returnTo?.startsWith("/id/") ? "/id/login" : "/login";
+    redirect(returnTo ? `${loginPath}?return_to=${encodeURIComponent(returnTo)}` : "/login");
   }
 
   const { data: existing } = await supabase

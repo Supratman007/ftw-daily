@@ -99,6 +99,24 @@ export const en = {
     emailNotice: "A confirmation email is on its way to you. See you on the trip!",
     browseMore: "Browse more trips",
   },
+  login: {
+    createAccountHeading: "Create your account",
+    welcomeBackHeading: "Welcome back",
+    createAccountSubtitle: "Takes less than a minute.",
+    loginSubtitle: "Log in to continue.",
+    matchEmailNotice: "Use this same email address so we can match it to what you already told us.",
+    fullNamePlaceholder: "Full name",
+    phonePlaceholder: "Phone",
+    emailPlaceholder: "Email",
+    passwordPlaceholder: "Password",
+    createAccountButton: "Create account",
+    loginButton: "Log in",
+    forgotPassword: "Forgot password?",
+    haveAccountPrompt: "Already have an account? ",
+    newHerePrompt: "New here? ",
+    loginLink: "Log in",
+    signupLink: "Create an account",
+  },
 };
 
 export type Dictionary = typeof en;

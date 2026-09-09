@@ -1,7 +1,7 @@
 import { LoginPage } from "@/components/pages/LoginPage";
 
-/** Thin English entrypoint -- see LoginPage for the real
- * implementation, shared with src/app/id/login/page.tsx. */
+/** Thin Indonesian entrypoint -- see LoginPage for the real
+ * implementation, shared with src/app/login/page.tsx (English). */
 export default async function Page({
   searchParams,
 }: {
@@ -13,5 +13,5 @@ export default async function Page({
     email?: string;
   }>;
 }) {
-  return <LoginPage searchParams={searchParams} locale="en" />;
+  return <LoginPage searchParams={searchParams} locale="id" />;
 }

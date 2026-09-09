@@ -15,12 +15,23 @@ function safeReturnTo(raw: FormDataEntryValue | null): string {
   return value.startsWith("/") && !value.startsWith("//") ? value : "/";
 }
 
+/** A hidden field on the login form (see LoginPage) carries forward
+ * whichever locale the visitor was already on, same "carry it through
+ * every redirect" approach as checkout -- only matters for the
+ * error/notice redirects back to this same form; the final success
+ * redirect just uses `returnTo`, which already has its own correct
+ * prefix baked in from wherever the customer came from. */
+function loginPathFor(formData: FormData): string {
+  return formData.get("locale") === "id" ? "/id/login" : "/login";
+}
+
 export async function signupAction(formData: FormData) {
   const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
   const fullName = String(formData.get("full_name") ?? "").trim();
   const phone = String(formData.get("phone") ?? "").trim();
   const returnTo = safeReturnTo(formData.get("return_to"));
+  const loginPath = loginPathFor(formData);
 
   const supabase = await createSupabaseServerClient();
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
@@ -38,7 +49,7 @@ export async function signupAction(formData: FormData) {
 
   if (error) {
     redirect(
-      `/login?mode=signup&return_to=${encodeURIComponent(returnTo)}&error=${encodeURIComponent(error.message)}`
+      `${loginPath}?mode=signup&return_to=${encodeURIComponent(returnTo)}&error=${encodeURIComponent(error.message)}`
     );
   }
 
@@ -48,7 +59,7 @@ export async function signupAction(formData: FormData) {
   // in -- say so instead.
   if (!signedUp.session) {
     redirect(
-      `/login?return_to=${encodeURIComponent(returnTo)}&notice=${encodeURIComponent(
+      `${loginPath}?return_to=${encodeURIComponent(returnTo)}&notice=${encodeURIComponent(
         "Almost there! Check your email to confirm your account, then sign in."
       )}`
     );
@@ -61,12 +72,13 @@ export async function loginAction(formData: FormData) {
   const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
   const returnTo = safeReturnTo(formData.get("return_to"));
+  const loginPath = loginPathFor(formData);
 
   const supabase = await createSupabaseServerClient();
   const { error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error) {
-    redirect(`/login?return_to=${encodeURIComponent(returnTo)}&error=${encodeURIComponent(error.message)}`);
+    redirect(`${loginPath}?return_to=${encodeURIComponent(returnTo)}&error=${encodeURIComponent(error.message)}`);
   }
 
   redirect(returnTo);

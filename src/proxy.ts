@@ -20,6 +20,7 @@ const LOCALIZED_PATH_PATTERNS: RegExp[] = [
   /^\/p\/[^/]+$/, // /p/[slug] -- the trip/product page
   /^\/p\/[^/]+\/request$/, // manual-confirmation request form
   /^\/confirmation\/[^/]+$/, // booking confirmation
+  /^\/login$/,
 ];
 
 function isLocalizedPath(pathname: string): boolean {

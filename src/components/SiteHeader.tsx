@@ -11,10 +11,11 @@ import { DEFAULT_LOCALE, type Locale } from "@/lib/i18n/locales";
  * mid-checkout had no way to reach /account.
  *
  * `locale` defaults to English -- only pages with an actual Indonesian
- * version pass "id" explicitly. The links below (redeem, login,
- * account, agent) still point at their English addresses regardless of
- * locale, since those pages don't have /id versions yet; only the
- * *labels* are translated so far.
+ * version pass "id" explicitly. The logo and login links are locale-
+ * aware now that both have /id versions; redeem/account/agent still
+ * point at their English addresses regardless of locale, since those
+ * pages don't have /id versions yet -- only their *labels* translate
+ * so far.
  */
 export async function SiteHeader({ locale = DEFAULT_LOCALE }: { locale?: Locale } = {}) {
   const dict = getDictionary(locale).common;
@@ -47,7 +48,7 @@ export async function SiteHeader({ locale = DEFAULT_LOCALE }: { locale?: Locale 
   return (
     <header className="flex items-center justify-between border-b border-sand-deep bg-white px-6 py-4">
       <Link
-        href="/"
+        href={locale === "en" ? "/" : "/id"}
         className="font-mono text-xs uppercase tracking-widest text-ink-soft hover:text-ink"
       >
         {dict.siteName}
@@ -72,7 +73,7 @@ export async function SiteHeader({ locale = DEFAULT_LOCALE }: { locale?: Locale 
             <Link href="/redeem" className="font-semibold text-teal hover:underline">
               {dict.redeemVoucher}
             </Link>
-            <Link href="/login" className="font-semibold text-teal hover:underline">
+            <Link href={locale === "en" ? "/login" : "/id/login"} className="font-semibold text-teal hover:underline">
               {dict.login}
             </Link>
             <Link href="/agent/register" className="font-semibold text-coral-dark hover:underline">
