@@ -96,8 +96,13 @@ export const requireSuperAdmin = cache(async (): Promise<AdminUser> => {
  *   financial setting, grouped with Accounting rather than the
  *   request queue itself.
  * - Agents, Products, Meeting points, and Discount codes aren't named
- *   under any role in the spec -- kept Super-Admin-only by default;
- *   ask if you want Reservations or Accounting to reach any of these.
+ *   under any role in the spec, so these were confirmed directly:
+ *   Agents stays Super-Admin-only; Products and Discount codes are
+ *   open to all three admin roles (Reservations + Accounting, since
+ *   product/pricing and promo-code changes both affect what
+ *   Reservations quotes customers and what Accounting reports on);
+ *   Meeting points is open to Reservations too, since they already
+ *   own day-to-day pickups.
  */
 export type AdminSection =
   | "dashboard"
@@ -129,9 +134,9 @@ export const ADMIN_SECTION_ROLES: Record<AdminSection, AdminRole[]> = {
   commissions: ["super_admin", "accounting"],
   commission_tiers: ["super_admin"],
   agents: ["super_admin"],
-  products: ["super_admin"],
-  meeting_points: ["super_admin"],
-  discount_codes: ["super_admin"],
+  products: ["super_admin", "reservations", "accounting"],
+  meeting_points: ["super_admin", "reservations"],
+  discount_codes: ["super_admin", "reservations", "accounting"],
 };
 
 export const requireAdminSection = cache(async (section: AdminSection): Promise<AdminUser> => {
