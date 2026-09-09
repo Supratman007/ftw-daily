@@ -1,9 +1,33 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { REFERRAL_COOKIE_NAME, REFERRAL_COOKIE_MAX_AGE_SECONDS } from "@/lib/agents/referralCookie";
+import {
+  DEFAULT_LOCALE,
+  LOCALE_COOKIE_NAME,
+  LOCALE_COOKIE_MAX_AGE_SECONDS,
+  type Locale,
+} from "@/lib/i18n/locales";
+
+// Bare (English) paths that also have a translated version at
+// /id + the same path -- only these are eligible for the auto-detect
+// redirect below. Redirecting a path with no /id counterpart yet would
+// just 404, so this list is deliberately explicit and grows as more
+// customer pages get an Indonesian version. The admin/agent panels are
+// never in here -- staff stay on English regardless of browser
+// language.
+const LOCALIZED_PATHS = ["/"];
+
+function parseLocaleCookie(value: string | undefined): Locale | undefined {
+  return value === "en" || value === "id" ? value : undefined;
+}
+
+function detectLocaleFromAcceptLanguage(header: string | null): Locale {
+  if (header && header.toLowerCase().includes("id")) return "id";
+  return DEFAULT_LOCALE;
+}
 
 /**
- * Runs before every request (except static assets/api). Two unrelated
+ * Runs before every request (except static assets/api). Three unrelated
  * jobs share this file since Next.js only allows one:
  *
  * 1. Referral attribution: an agent's link/QR code points at
@@ -14,7 +38,15 @@ import { REFERRAL_COOKIE_NAME, REFERRAL_COOKIE_MAX_AGE_SECONDS } from "@/lib/age
  *    up and decides whether it's real). Cheap -- just reading a query
  *    param, no DB round trip -- so it runs on every non-admin request.
  *
- * 2. The *fast* "is someone logged in at all" check for /admin routes,
+ * 2. Indonesian language auto-detect: a first-time visitor on a page
+ *    listed in LOCALIZED_PATHS gets redirected straight to its /id
+ *    version if their browser's Accept-Language says Indonesian.
+ *    Whatever they land on (by detection, by an explicit switcher
+ *    click, or by opening an /id link directly) gets remembered in a
+ *    1-year cookie, so a later visit to the bare English path respects
+ *    their actual preference instead of re-detecting every time.
+ *
+ * 3. The *fast* "is someone logged in at all" check for /admin routes,
  *    using Supabase's own session cookie. It deliberately does NOT
  *    check the admin_users table (a database round trip, which Next.js's
  *    own guidance says to avoid here since this runs on every
@@ -26,12 +58,55 @@ import { REFERRAL_COOKIE_NAME, REFERRAL_COOKIE_MAX_AGE_SECONDS } from "@/lib/age
  */
 export async function proxy(request: NextRequest) {
   const refCode = request.nextUrl.searchParams.get("ref");
+  const pathname = request.nextUrl.pathname;
 
-  if (!request.nextUrl.pathname.startsWith("/admin")) {
+  if (!pathname.startsWith("/admin")) {
+    const isIdPath = pathname === "/id" || pathname.startsWith("/id/");
+    const cookieLocale = parseLocaleCookie(request.cookies.get(LOCALE_COOKIE_NAME)?.value);
+
+    if (!isIdPath && LOCALIZED_PATHS.includes(pathname)) {
+      const preferredLocale =
+        cookieLocale ?? detectLocaleFromAcceptLanguage(request.headers.get("accept-language"));
+      if (preferredLocale === "id") {
+        const url = request.nextUrl.clone();
+        url.pathname = `/id${pathname === "/" ? "" : pathname}`;
+        const response = NextResponse.redirect(url);
+        response.cookies.set(LOCALE_COOKIE_NAME, "id", {
+          maxAge: LOCALE_COOKIE_MAX_AGE_SECONDS,
+          path: "/",
+          sameSite: "lax",
+        });
+        if (refCode) {
+          response.cookies.set(REFERRAL_COOKIE_NAME, refCode, {
+            maxAge: REFERRAL_COOKIE_MAX_AGE_SECONDS,
+            path: "/",
+            sameSite: "lax",
+          });
+        }
+        return response;
+      }
+    }
+
     const response = NextResponse.next();
     if (refCode) {
       response.cookies.set(REFERRAL_COOKIE_NAME, refCode, {
         maxAge: REFERRAL_COOKIE_MAX_AGE_SECONDS,
+        path: "/",
+        sameSite: "lax",
+      });
+    }
+    // Record whichever locale this request actually landed on, so the
+    // next visit to a bare (unprefixed) path skips detection and just
+    // honors the remembered choice.
+    if (isIdPath && cookieLocale !== "id") {
+      response.cookies.set(LOCALE_COOKIE_NAME, "id", {
+        maxAge: LOCALE_COOKIE_MAX_AGE_SECONDS,
+        path: "/",
+        sameSite: "lax",
+      });
+    } else if (!isIdPath && !cookieLocale) {
+      response.cookies.set(LOCALE_COOKIE_NAME, "en", {
+        maxAge: LOCALE_COOKIE_MAX_AGE_SECONDS,
         path: "/",
         sameSite: "lax",
       });
