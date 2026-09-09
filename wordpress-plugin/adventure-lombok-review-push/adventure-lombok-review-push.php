@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Adventure Lombok - Review Push
  * Description: Receives reviews pushed from the Adventure Lombok booking app (booking.adventure-lombok.com) and posts them as comments on the matching tour/trip page, so reviews collected in the booking app also show up here. Spec §6n.
- * Version: 1.0.1
+ * Version: 1.0.2
  * Author: Adventure Lombok Tour
  */
 
@@ -29,6 +29,50 @@ add_action('init', function () {
     echo "Site URL: " . site_url() . "\n";
     echo "Ping route: " . rest_url('alr-reviews/v1/ping') . "\n";
     echo "Push route: " . rest_url('alr-reviews/v1/push') . "\n";
+    exit;
+}, 1);
+
+/**
+ * Diagnostic only -- visit https://yoursite.com/?alr_debug_comments=1
+ * while logged in as an admin to see the last 10 comments on the site
+ * and every bit of comment-meta stored against each one. Compares a
+ * review the theme already displays correctly (with stars) against
+ * one this plugin posted, to find the actual meta key the theme's
+ * review widget reads the star rating from -- "rating" (this plugin's
+ * current guess) clearly isn't it, since the pushed review shows "Not
+ * Rated". Pass ?alr_debug_comments=<comment ID> to look at one
+ * specific comment instead of the last 10.
+ */
+add_action('init', function () {
+    if (!isset($_GET['alr_debug_comments'])) {
+        return;
+    }
+    if (!current_user_can('manage_options')) {
+        wp_die('Log into WordPress admin first, then reload this link.');
+    }
+    header('Content-Type: text/plain');
+
+    $id = intval($_GET['alr_debug_comments']);
+    $comments = $id > 0 ? array_filter([get_comment($id)]) : get_comments(['number' => 10, 'orderby' => 'comment_date_gmt', 'order' => 'DESC']);
+
+    if (empty($comments)) {
+        echo "No comments found.\n";
+        exit;
+    }
+
+    foreach ($comments as $c) {
+        echo "Comment #{$c->comment_ID} on post {$c->comment_post_ID} -- by \"{$c->comment_author}\" -- {$c->comment_date}\n";
+        echo "Content: " . mb_substr($c->comment_content, 0, 60) . "...\n";
+        $meta = get_comment_meta($c->comment_ID);
+        if (empty($meta)) {
+            echo "  (no comment-meta at all)\n";
+        } else {
+            foreach ($meta as $key => $values) {
+                echo "  meta key \"$key\" = " . implode(', ', $values) . "\n";
+            }
+        }
+        echo "\n";
+    }
     exit;
 }, 1);
 
