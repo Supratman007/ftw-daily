@@ -117,6 +117,84 @@ export const en = {
     loginLink: "Log in",
     signupLink: "Create an account",
   },
+  gift: {
+    heading: "Give this trip as a gift",
+    intro:
+      "Pay now, and we'll send you a voucher code to pass along. The recipient picks their own date later -- no rush, no date to lock in today.",
+    recipientNameLabel: "Recipient's name",
+    recipientNamePlaceholder: "Who's this for?",
+    recipientContactLabel: "Recipient's email or phone",
+    recipientContactPlaceholder: "How we'd reach them if needed -- we won't contact them unprompted",
+    travelersLabel: "Number of travelers",
+    discountCodeLabel: "Discount code (optional)",
+    discountCodePlaceholder: "e.g. WELCOME10",
+    totalLabel: "Total",
+    continueToPayment: "Continue to payment",
+  },
+  redeem: {
+    heading: "Redeem a gift voucher",
+    intro: "Enter the voucher code from your email to get started.",
+    codeLabel: "Voucher code",
+    codePlaceholder: "e.g. GIFT-CQPEBR",
+    lookupButton: "Look up voucher",
+    notFoundHeading: "Voucher not found",
+    notFoundBody: (code: string) =>
+      `We couldn't find a voucher with code "${code}". Double-check it against your email, or email us at`,
+    notFoundBodyEnd: "and we'll help.",
+    voucherHeading: "Gift voucher",
+    tripLabel: "Trip",
+    forLabel: "For",
+    valueLabel: "Value",
+    expiresLabel: "Expires",
+    requestSentHeading: "Request sent!",
+    requestSentBody:
+      "We've received your redemption request and emailed you a confirmation. We'll be in touch shortly to confirm your date.",
+    alreadyRedeemedHeading: "Already redeemed",
+    alreadyRedeemedBody: "This voucher has already been redeemed. If that's unexpected, email us at",
+    expiredHeading: "This voucher has expired",
+    expiredBody: "Reach out to us at",
+    expiredBodyEnd: "-- we may still be able to help.",
+    pendingRequestHeading: "Request already submitted",
+    pendingRequestPrefix: (date: string | null, pax: number | null) => {
+      let s = "We already have a redemption request on file for this voucher";
+      if (date) s += ` for ${date}`;
+      if (pax) s += ` (${pax} traveler${pax === 1 ? "" : "s"})`;
+      return s;
+    },
+    pendingRequestSuffix: "-- we'll be in touch soon. Need to change something? Email",
+    readyHeading: "Ready to book?",
+    readyBody: "Tell us who you are and when you'd like to go -- we'll confirm your date and take it from there.",
+    yourNameLabel: "Your name",
+    yourEmailLabel: "Your email",
+    yourPhoneLabel: "Your phone (optional)",
+    preferredDateLabel: "Preferred date",
+    travelersLabel: "Number of travelers",
+    messageLabel: "Anything else we should know? (optional)",
+    submit: "Submit request",
+    questionsNotice: "Questions about this voucher?",
+    backToSite: "← Back to Adventure Lombok Booking",
+  },
+  giftConfirmation: {
+    wrongAccountTitle: "Wrong account",
+    wrongAccountHeading: (email: string) => `This voucher isn't linked to ${email}`,
+    wrongAccountBody: (email: string) =>
+      `You're currently signed in as ${email}, but this voucher was purchased under a different account. Log out and sign back in with the email you used to buy it.`,
+    logout: "Log out",
+    label: "Gift voucher",
+    confirmingHeading: "Confirming your payment…",
+    confirmingBody: "This usually takes just a few seconds. This page will update on its own -- no need to refresh.",
+    failedHeading: "Payment didn't go through",
+    failedBody: "This gift voucher wasn't completed, so nothing was charged. You can try again from the trip page.",
+    backToTrip: "Back to trip",
+    purchasedLabel: "Gift voucher purchased",
+    voucherCodeLabel: "Voucher code",
+    forLabel: "For",
+    expiresLabel: "Expires",
+    totalPaidLabel: "Total paid",
+    emailNotice: (recipientName: string) =>
+      `A receipt with sharing instructions is on its way to your email. Pass the code along to ${recipientName} whenever you're ready.`,
+    browseMore: "Browse more trips",
+  },
 };
 
 export type Dictionary = typeof en;

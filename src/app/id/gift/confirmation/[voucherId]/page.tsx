@@ -1,12 +1,12 @@
 import { GiftConfirmationPage } from "@/components/pages/GiftConfirmationPage";
 
-/** Thin English entrypoint -- see GiftConfirmationPage for the real
+/** Thin Indonesian entrypoint -- see GiftConfirmationPage for the real
  * implementation, shared with
- * src/app/id/gift/confirmation/[voucherId]/page.tsx. */
+ * src/app/gift/confirmation/[voucherId]/page.tsx (English). */
 export default async function Page({
   params,
 }: {
   params: Promise<{ voucherId: string }>;
 }) {
-  return <GiftConfirmationPage params={params} locale="en" />;
+  return <GiftConfirmationPage params={params} locale="id" />;
 }

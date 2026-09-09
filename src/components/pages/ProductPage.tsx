@@ -155,10 +155,7 @@ export async function ProductPage({
     reviews.length > 0 ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length : null;
 
   const requestHref = locale === "en" ? `/p/${p.slug}/request` : `/id/p/${p.slug}/request`;
-  // /gift deliberately NOT locale-prefixed yet -- it doesn't have an
-  // Indonesian version of its own so far (planned next), and linking
-  // to an /id path that doesn't exist would just 404.
-  const giftHref = `/p/${p.slug}/gift`;
+  const giftHref = locale === "en" ? `/p/${p.slug}/gift` : `/id/p/${p.slug}/gift`;
 
   return (
     <>

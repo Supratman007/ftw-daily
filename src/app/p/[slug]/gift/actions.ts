@@ -24,13 +24,17 @@ export async function startGiftCheckoutAction(productId: string, slug: string, f
   const paxRaw = Number(formData.get("pax") ?? "0");
   const pax = Number.isInteger(paxRaw) ? paxRaw : 0;
   const discountCodeInput = String(formData.get("discount_code") ?? "").trim();
+  // Same hidden-field, carry-the-visitor's-locale-through-every-redirect
+  // approach as startCheckoutAction -- see that action's comment.
+  const locale = formData.get("locale") === "id" ? "id" : "en";
+  const pathPrefix = locale === "id" ? "/id" : "";
 
   // Same automatic, nothing-for-the-customer-to-see cookie as normal
   // checkout -- set by proxy.ts from a ?ref=CODE link.
   const cookieStore = await cookies();
   const referralCodeInput = cookieStore.get(REFERRAL_COOKIE_NAME)?.value?.trim() ?? "";
 
-  const returnTo = `/p/${slug}/gift`;
+  const returnTo = `${pathPrefix}/p/${slug}/gift`;
   const customer = await requireCustomer(returnTo);
 
   function fail(message: string): never {
@@ -120,8 +124,8 @@ export async function startGiftCheckoutAction(productId: string, slug: string, f
       amountIdr: totalIdr,
       payerEmail: customer.email,
       description: `Gift voucher: ${p.title}`,
-      successRedirectUrl: `${siteUrl}/gift/confirmation/${voucherId}`,
-      failureRedirectUrl: `${siteUrl}/p/${slug}/gift`,
+      successRedirectUrl: `${siteUrl}${pathPrefix}/gift/confirmation/${voucherId}`,
+      failureRedirectUrl: `${siteUrl}${pathPrefix}/p/${slug}/gift`,
     });
   } catch (err) {
     await releaseReservations();

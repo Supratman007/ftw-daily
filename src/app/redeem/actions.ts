@@ -15,8 +15,12 @@ import {
  * trusting anything from the form beyond the code in the URL.
  */
 export async function submitRedemptionRequestAction(voucherCode: string, formData: FormData) {
+  // Same hidden-field, carry-the-visitor's-locale-through-every-redirect
+  // approach as startCheckoutAction -- see that action's comment.
+  const redeemPath = formData.get("locale") === "id" ? "/id/redeem" : "/redeem";
+
   function fail(message: string): never {
-    redirect(`/redeem?code=${encodeURIComponent(voucherCode)}&error=${encodeURIComponent(message)}`);
+    redirect(`${redeemPath}?code=${encodeURIComponent(voucherCode)}&error=${encodeURIComponent(message)}`);
   }
 
   const name = String(formData.get("name") ?? "").trim();
@@ -101,5 +105,5 @@ export async function submitRedemptionRequestAction(voucherCode: string, formDat
     ),
   ]);
 
-  redirect(`/redeem?code=${encodeURIComponent(voucherCode)}&submitted=1`);
+  redirect(`${redeemPath}?code=${encodeURIComponent(voucherCode)}&submitted=1`);
 }

@@ -11,11 +11,11 @@ import { DEFAULT_LOCALE, type Locale } from "@/lib/i18n/locales";
  * mid-checkout had no way to reach /account.
  *
  * `locale` defaults to English -- only pages with an actual Indonesian
- * version pass "id" explicitly. The logo and login links are locale-
- * aware now that both have /id versions; redeem/account/agent still
- * point at their English addresses regardless of locale, since those
- * pages don't have /id versions yet -- only their *labels* translate
- * so far.
+ * version pass "id" explicitly. The logo, login, and redeem links are
+ * locale-aware now that all three have /id versions; account/agent
+ * still point at their English addresses regardless of locale, since
+ * those pages don't have /id versions yet -- only their *labels*
+ * translate so far.
  */
 export async function SiteHeader({ locale = DEFAULT_LOCALE }: { locale?: Locale } = {}) {
   const dict = getDictionary(locale).common;
@@ -56,7 +56,7 @@ export async function SiteHeader({ locale = DEFAULT_LOCALE }: { locale?: Locale 
       <div className="text-sm">
         {user ? (
           <div className="flex items-center gap-3 text-ink-soft">
-            <Link href="/redeem" className="font-semibold text-teal hover:underline">
+            <Link href={locale === "en" ? "/redeem" : "/id/redeem"} className="font-semibold text-teal hover:underline">
               {dict.redeemVoucher}
             </Link>
             <Link href={dashboardHref} className="font-semibold text-teal hover:underline">
@@ -70,7 +70,7 @@ export async function SiteHeader({ locale = DEFAULT_LOCALE }: { locale?: Locale 
           </div>
         ) : (
           <div className="flex items-center gap-3 text-ink-soft">
-            <Link href="/redeem" className="font-semibold text-teal hover:underline">
+            <Link href={locale === "en" ? "/redeem" : "/id/redeem"} className="font-semibold text-teal hover:underline">
               {dict.redeemVoucher}
             </Link>
             <Link href={locale === "en" ? "/login" : "/id/login"} className="font-semibold text-teal hover:underline">

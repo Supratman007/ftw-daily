@@ -1,7 +1,7 @@
 import { GiftPurchasePage } from "@/components/pages/GiftPurchasePage";
 
-/** Thin English entrypoint -- see GiftPurchasePage for the real
- * implementation, shared with src/app/id/p/[slug]/gift/page.tsx. */
+/** Thin Indonesian entrypoint -- see GiftPurchasePage for the real
+ * implementation, shared with src/app/p/[slug]/gift/page.tsx (English). */
 export default async function Page({
   params,
   searchParams,
@@ -15,5 +15,5 @@ export default async function Page({
     error?: string;
   }>;
 }) {
-  return <GiftPurchasePage params={params} searchParams={searchParams} locale="en" />;
+  return <GiftPurchasePage params={params} searchParams={searchParams} locale="id" />;
 }
