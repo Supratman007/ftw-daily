@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Adventure Lombok - Review Push
  * Description: Receives reviews pushed from the Adventure Lombok booking app (booking.adventure-lombok.com) and posts them as comments on the matching tour/trip page, so reviews collected in the booking app also show up here. Spec §6n.
- * Version: 1.0.2
+ * Version: 1.0.3
  * Author: Adventure Lombok Tour
  */
 
@@ -40,8 +40,9 @@ add_action('init', function () {
  * one this plugin posted, to find the actual meta key the theme's
  * review widget reads the star rating from -- "rating" (this plugin's
  * current guess) clearly isn't it, since the pushed review shows "Not
- * Rated". Pass ?alr_debug_comments=<comment ID> to look at one
- * specific comment instead of the last 10.
+ * Rated". Add &id=<comment ID> (a separate parameter, not the value
+ * of alr_debug_comments itself) to look at one specific comment
+ * instead of the last 10.
  */
 add_action('init', function () {
     if (!isset($_GET['alr_debug_comments'])) {
@@ -52,7 +53,7 @@ add_action('init', function () {
     }
     header('Content-Type: text/plain');
 
-    $id = intval($_GET['alr_debug_comments']);
+    $id = isset($_GET['id']) ? intval($_GET['id']) : 0;
     $comments = $id > 0 ? array_filter([get_comment($id)]) : get_comments(['number' => 10, 'orderby' => 'comment_date_gmt', 'order' => 'DESC']);
 
     if (empty($comments)) {
