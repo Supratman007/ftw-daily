@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Adventure Lombok - Review Push
  * Description: Receives reviews pushed from the Adventure Lombok booking app (booking.adventure-lombok.com) and posts them as comments on the matching tour/trip page, so reviews collected in the booking app also show up here. Spec §6n.
- * Version: 1.0.4
+ * Version: 1.0.5
  * Author: Adventure Lombok Tour
  */
 
@@ -152,7 +152,7 @@ add_action('rest_api_init', function () {
     register_rest_route('alr-reviews/v1', '/ping', [
         'methods' => 'GET',
         'callback' => function () {
-            return new WP_REST_Response(['ok' => true, 'plugin' => 'alr-review-push', 'version' => '1.0.4'], 200);
+            return new WP_REST_Response(['ok' => true, 'plugin' => 'alr-review-push', 'version' => '1.0.5'], 200);
         },
         'permission_callback' => '__return_true',
     ]);
@@ -233,6 +233,33 @@ function alr_review_push_handle(WP_REST_Request $request) {
     // this replaces an earlier guess ("rating", the WooCommerce
     // convention) that turned out to be wrong for this theme.
     update_comment_meta($comment_id, 'comment_rate', $rating);
+
+    // The theme's summary box (the "X/5" average + Excellent/Very
+    // Good/.../Terrible bars, as opposed to the star rating on the
+    // review itself) turns out to be driven by a *category* breakdown
+    // ("Transport", "Service", "Guide", ...), which the booking app
+    // has no equivalent of -- it only ever collects one overall star
+    // rating. Best-effort fix: apply that one rating to every category
+    // uniformly, covering both category sets seen on the live site
+    // (different tours use slightly different category names).
+    $categories = [
+        'Transport' => 'transport',
+        'Vehicles Cleanliness' => 'vehicles-cleanliness',
+        'Service' => 'service',
+        'Guide' => 'guide',
+        'Boat' => 'boat',
+        'Boat Cleanliness' => 'boat-cleanliness',
+        'Tourism Object' => 'tourism-object',
+    ];
+    foreach ($categories as $meta_suffix) {
+        update_comment_meta($comment_id, 'st_stat_' . $meta_suffix, $rating);
+    }
+    update_comment_meta(
+        $comment_id,
+        'st_review_stats',
+        array_fill_keys(array_keys($categories), $rating)
+    );
+
     if ($title !== '') {
         update_comment_meta($comment_id, 'comment_title', $title);
     }
