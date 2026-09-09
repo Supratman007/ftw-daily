@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Adventure Lombok - Review Push
  * Description: Receives reviews pushed from the Adventure Lombok booking app (booking.adventure-lombok.com) and posts them as comments on the matching tour/trip page, so reviews collected in the booking app also show up here. Spec §6n.
- * Version: 1.0.3
+ * Version: 1.0.4
  * Author: Adventure Lombok Tour
  */
 
@@ -152,7 +152,7 @@ add_action('rest_api_init', function () {
     register_rest_route('alr-reviews/v1', '/ping', [
         'methods' => 'GET',
         'callback' => function () {
-            return new WP_REST_Response(['ok' => true, 'plugin' => 'alr-review-push', 'version' => '1.0.1'], 200);
+            return new WP_REST_Response(['ok' => true, 'plugin' => 'alr-review-push', 'version' => '1.0.4'], 200);
         },
         'permission_callback' => '__return_true',
     ]);
@@ -206,7 +206,14 @@ function alr_review_push_handle(WP_REST_Request $request) {
         }
     }
 
-    $comment_content = $title !== '' ? ($title . "\n\n" . $review_text) : $review_text;
+    // comment_content holds only the body -- the Traveler theme keeps
+    // the title in its own "comment_title" meta (confirmed by
+    // inspecting the theme's own existing reviews), not folded into
+    // the comment text like a generic WordPress comment would be.
+    // Falls back to the title as the body text on the rare review
+    // that's rating-only with no written comment, since comment_content
+    // can't be left empty.
+    $comment_content = $review_text !== '' ? $review_text : $title;
 
     $comment_id = wp_insert_comment([
         'comment_post_ID' => $post_id,
@@ -220,12 +227,15 @@ function alr_review_push_handle(WP_REST_Request $request) {
         return new WP_REST_Response(['error' => 'insert_failed'], 500);
     }
 
-    // "rating" is the same comment-meta key WooCommerce product
-    // reviews use for their star rating -- a reasonable default bet
-    // that your theme's existing review display already looks for it.
-    // If reviews land as plain comments with no stars showing, this is
-    // the key to point your theme (or a small template tweak) at.
-    update_comment_meta($comment_id, 'rating', $rating);
+    // "comment_rate" is the exact meta key the Traveler theme's own
+    // review widget reads the star rating from (confirmed against a
+    // genuine, correctly-displaying review already on the site) --
+    // this replaces an earlier guess ("rating", the WooCommerce
+    // convention) that turned out to be wrong for this theme.
+    update_comment_meta($comment_id, 'comment_rate', $rating);
+    if ($title !== '') {
+        update_comment_meta($comment_id, 'comment_title', $title);
+    }
     if ($external_id) {
         update_comment_meta($comment_id, 'alr_review_id', $external_id);
     }
