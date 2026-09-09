@@ -26,6 +26,10 @@ function detectLocaleFromAcceptLanguage(header: string | null): Locale {
   return DEFAULT_LOCALE;
 }
 
+function parseExplicitLocaleParam(value: string | null): Locale | undefined {
+  return value === "en" || value === "id" ? value : undefined;
+}
+
 /**
  * Runs before every request (except static assets/api). Three unrelated
  * jobs share this file since Next.js only allows one:
@@ -45,6 +49,11 @@ function detectLocaleFromAcceptLanguage(header: string | null): Locale {
  *    click, or by opening an /id link directly) gets remembered in a
  *    1-year cookie, so a later visit to the bare English path respects
  *    their actual preference instead of re-detecting every time.
+ *    LocaleSwitcher's links carry a `?lang=en`/`?lang=id` override so
+ *    switching *to* English actually works -- without it, a visitor
+ *    whose cookie already says "id" clicking "English" would land back
+ *    on "/", see the stored "id" preference, and get bounced straight
+ *    back to /id before the English page ever rendered.
  *
  * 3. The *fast* "is someone logged in at all" check for /admin routes,
  *    using Supabase's own session cookie. It deliberately does NOT
@@ -62,7 +71,11 @@ export async function proxy(request: NextRequest) {
 
   if (!pathname.startsWith("/admin")) {
     const isIdPath = pathname === "/id" || pathname.startsWith("/id/");
-    const cookieLocale = parseLocaleCookie(request.cookies.get(LOCALE_COOKIE_NAME)?.value);
+    const storedLocale = parseLocaleCookie(request.cookies.get(LOCALE_COOKIE_NAME)?.value);
+    const explicitLocale = parseExplicitLocaleParam(request.nextUrl.searchParams.get("lang"));
+    // An explicit switcher click always wins over whatever was stored
+    // before -- that's the whole point of it existing.
+    const cookieLocale = explicitLocale ?? storedLocale;
 
     if (!isIdPath && LOCALIZED_PATHS.includes(pathname)) {
       const preferredLocale =
@@ -97,15 +110,12 @@ export async function proxy(request: NextRequest) {
     }
     // Record whichever locale this request actually landed on, so the
     // next visit to a bare (unprefixed) path skips detection and just
-    // honors the remembered choice.
-    if (isIdPath && cookieLocale !== "id") {
-      response.cookies.set(LOCALE_COOKIE_NAME, "id", {
-        maxAge: LOCALE_COOKIE_MAX_AGE_SECONDS,
-        path: "/",
-        sameSite: "lax",
-      });
-    } else if (!isIdPath && !cookieLocale) {
-      response.cookies.set(LOCALE_COOKIE_NAME, "en", {
+    // honors the remembered choice. An explicit switcher click always
+    // gets persisted, even if it matches where the URL already put the
+    // visitor (e.g. clicking "English" while already on "/").
+    const localeToPersist = explicitLocale ?? (isIdPath ? "id" : !storedLocale ? "en" : undefined);
+    if (localeToPersist && localeToPersist !== storedLocale) {
+      response.cookies.set(LOCALE_COOKIE_NAME, localeToPersist, {
         maxAge: LOCALE_COOKIE_MAX_AGE_SECONDS,
         path: "/",
         sameSite: "lax",

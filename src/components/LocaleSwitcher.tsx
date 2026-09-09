@@ -2,7 +2,14 @@ import Link from "next/link";
 import { LOCALES, LOCALE_LABELS, type Locale } from "@/lib/i18n/locales";
 
 function hrefFor(locale: Locale, basePath: string): string {
-  if (locale === "en") return basePath;
+  if (locale === "en") {
+    // ?lang=en overrides a previously-stored "id" cookie -- without
+    // it, landing back on the bare path with that cookie still set
+    // would just bounce straight back to /id (see proxy.ts). Visiting
+    // /id directly doesn't have the equivalent problem (it's never a
+    // redirect target itself), so only this direction needs it.
+    return `${basePath}${basePath.includes("?") ? "&" : "?"}lang=en`;
+  }
   return basePath === "/" ? "/id" : `/id${basePath}`;
 }
 
