@@ -2,13 +2,35 @@
 /**
  * Plugin Name: Adventure Lombok - Review Push
  * Description: Receives reviews pushed from the Adventure Lombok booking app (booking.adventure-lombok.com) and posts them as comments on the matching tour/trip page, so reviews collected in the booking app also show up here. Spec §6n.
- * Version: 1.0.0
+ * Version: 1.0.1
  * Author: Adventure Lombok Tour
  */
 
 if (!defined('ABSPATH')) {
     exit;
 }
+
+/**
+ * Diagnostic only -- visit https://yoursite.com/?alr_debug=1 to confirm
+ * this plugin's code is actually running at all, independent of the
+ * REST API. If this doesn't print anything, the plugin file itself
+ * isn't executing (a hosting/caching issue) rather than anything
+ * REST-specific. Safe to remove once the "no route found" issue is
+ * sorted out -- it doesn't expose anything sensitive.
+ */
+add_action('init', function () {
+    if (!isset($_GET['alr_debug'])) {
+        return;
+    }
+    header('Content-Type: text/plain');
+    echo "Adventure Lombok Review Push plugin is loaded and running.\n";
+    echo "Plugin version: 1.0.1\n";
+    echo "PHP version: " . phpversion() . "\n";
+    echo "Site URL: " . site_url() . "\n";
+    echo "Ping route: " . rest_url('alr-reviews/v1/ping') . "\n";
+    echo "Push route: " . rest_url('alr-reviews/v1/push') . "\n";
+    exit;
+}, 1);
 
 /**
  * Settings screen: one field, a shared secret. This must be pasted
@@ -79,6 +101,17 @@ function alr_review_push_settings_page() {
  * other concept of the booking app's product records.
  */
 add_action('rest_api_init', function () {
+    // A trivial GET route with no auth at all -- if this also 404s as
+    // "no route found" while /push does too, the problem is REST route
+    // registration itself, not anything specific to /push's logic.
+    register_rest_route('alr-reviews/v1', '/ping', [
+        'methods' => 'GET',
+        'callback' => function () {
+            return new WP_REST_Response(['ok' => true, 'plugin' => 'alr-review-push', 'version' => '1.0.1'], 200);
+        },
+        'permission_callback' => '__return_true',
+    ]);
+
     register_rest_route('alr-reviews/v1', '/push', [
         'methods' => 'POST',
         'callback' => 'alr_review_push_handle',
