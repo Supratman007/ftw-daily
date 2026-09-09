@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { requireAdmin } from "@/lib/admin/auth";
+import { requireAdminSection } from "@/lib/admin/auth";
 import { CarPackageForm } from "@/components/admin/CarPackageForm";
 import { createCarPackageAction } from "../../../../actions";
 
@@ -10,7 +10,7 @@ export default async function NewCarPackagePage({
   params: Promise<{ id: string; carTypeId: string }>;
   searchParams: Promise<{ error?: string }>;
 }) {
-  await requireAdmin();
+  await requireAdminSection("products");
   const { id: productId, carTypeId } = await params;
   const { error } = await searchParams;
 

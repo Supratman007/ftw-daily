@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { requireAdmin } from "@/lib/admin/auth";
+import { requireAdminSection } from "@/lib/admin/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/service";
 import { AGENT_STATUS_LABELS, AGENT_TYPE_LABELS, type SalesAgent } from "@/lib/agents/types";
@@ -20,7 +20,7 @@ export default async function AdminAgentDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  await requireAdmin();
+  await requireAdminSection("agents");
   const { id } = await params;
 
   const supabase = await createSupabaseServerClient();

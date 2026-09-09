@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { requireAdmin } from "@/lib/admin/auth";
+import { requireAdminSection } from "@/lib/admin/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { CancellationPolicyTierForm } from "@/components/admin/CancellationPolicyTierForm";
 import { updateCancellationPolicyTierAction } from "../../actions";
@@ -12,7 +12,7 @@ export default async function EditCancellationPolicyTierPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ error?: string }>;
 }) {
-  await requireAdmin();
+  await requireAdminSection("cancellation_policy");
   const { id } = await params;
   const { error } = await searchParams;
 

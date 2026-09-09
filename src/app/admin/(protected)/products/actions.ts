@@ -1,7 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { requireAdmin } from "@/lib/admin/auth";
+import { requireAdminSection } from "@/lib/admin/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { slugify } from "@/lib/products/slugify";
 import { decodeHtmlEntities } from "@/lib/products/decode-html-entities";
@@ -91,7 +91,7 @@ function buildProductRow(formData: FormData): BuildProductRowResult {
 }
 
 export async function createProductAction(formData: FormData) {
-  await requireAdmin();
+  await requireAdminSection("products");
   const result = buildProductRow(formData);
   if (!result.ok) {
     redirect(`/admin/products/new?error=${encodeURIComponent(result.error)}`);
@@ -107,7 +107,7 @@ export async function createProductAction(formData: FormData) {
 }
 
 export async function updateProductAction(productId: string, formData: FormData) {
-  await requireAdmin();
+  await requireAdminSection("products");
   const result = buildProductRow(formData);
   if (!result.ok) {
     redirect(`/admin/products/${productId}/edit?error=${encodeURIComponent(result.error)}`);

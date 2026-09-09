@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { requireAdmin } from "@/lib/admin/auth";
+import { requireAdminSection } from "@/lib/admin/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { formatIdr, formatUsd } from "@/lib/currency";
 import { formatCommissionAmount } from "@/lib/agents/commission";
@@ -23,7 +23,7 @@ export default async function AdminBookingDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  await requireAdmin();
+  await requireAdminSection("bookings");
   const { id } = await params;
 
   const supabase = await createSupabaseServerClient();

@@ -1,4 +1,4 @@
-import { requireAdmin } from "@/lib/admin/auth";
+import { requireAdminSection } from "@/lib/admin/auth";
 import { CommissionTierForm } from "@/components/admin/CommissionTierForm";
 import { createCommissionTierAction } from "../actions";
 
@@ -7,7 +7,7 @@ export default async function NewCommissionTierPage({
 }: {
   searchParams: Promise<{ error?: string }>;
 }) {
-  await requireAdmin();
+  await requireAdminSection("commission_tiers");
   const { error } = await searchParams;
 
   return (

@@ -1,7 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { requireAdmin } from "@/lib/admin/auth";
+import { requireAdminSection } from "@/lib/admin/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { sendNewStaffReplyEmail } from "@/lib/email/resend";
 import {
@@ -17,21 +17,21 @@ import {
  * already goes through -- 0018 is what actually makes this work,
  * adding the admin INSERT policy on conversations that was missing. */
 export async function startCustomerConversationAction(bookingId: string) {
-  await requireAdmin();
+  await requireAdminSection("inbox");
   const supabase = await createSupabaseServerClient();
   const { conversation } = await getOrCreateBookingConversation(supabase, bookingId);
   redirect(`/admin/inbox/${conversation.id}`);
 }
 
 export async function startAgentConversationAction(agentId: string) {
-  await requireAdmin();
+  await requireAdminSection("inbox");
   const supabase = await createSupabaseServerClient();
   const { conversation } = await getOrCreateAgentSupportConversation(supabase, agentId);
   redirect(`/admin/inbox/${conversation.id}`);
 }
 
 export async function sendStaffMessageAction(conversationId: string, formData: FormData) {
-  const admin = await requireAdmin();
+  const admin = await requireAdminSection("inbox");
   const body = String(formData.get("body") ?? "").trim();
 
   if (!body) {
@@ -96,14 +96,14 @@ export async function sendStaffMessageAction(conversationId: string, formData: F
  * trigger, 0017, only ever reopens on a non-staff message); this is
  * the explicit "I've handled this" action for once a thread's done. */
 export async function resolveConversationAction(conversationId: string) {
-  await requireAdmin();
+  await requireAdminSection("inbox");
   const supabase = await createSupabaseServerClient();
   await supabase.from("conversations").update({ status: "resolved" }).eq("id", conversationId);
   redirect(`/admin/inbox/${conversationId}?resolved=1`);
 }
 
 export async function reopenConversationAction(conversationId: string) {
-  await requireAdmin();
+  await requireAdminSection("inbox");
   const supabase = await createSupabaseServerClient();
   await supabase.from("conversations").update({ status: "open" }).eq("id", conversationId);
   redirect(`/admin/inbox/${conversationId}`);

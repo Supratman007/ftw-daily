@@ -1,4 +1,4 @@
-import { requireAdmin } from "@/lib/admin/auth";
+import { requireAdminSection } from "@/lib/admin/auth";
 import { CancellationPolicyTierForm } from "@/components/admin/CancellationPolicyTierForm";
 import { createCancellationPolicyTierAction } from "../actions";
 
@@ -7,7 +7,7 @@ export default async function NewCancellationPolicyTierPage({
 }: {
   searchParams: Promise<{ error?: string }>;
 }) {
-  await requireAdmin();
+  await requireAdminSection("cancellation_policy");
   const { error } = await searchParams;
 
   return (

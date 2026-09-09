@@ -1,7 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { requireAdmin } from "@/lib/admin/auth";
+import { requireAdminSection } from "@/lib/admin/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { sendAgentApprovedEmail } from "@/lib/email/resend";
 import type { AgentStatus } from "@/lib/agents/types";
@@ -12,7 +12,7 @@ const STATUSES: AgentStatus[] = ["pending", "active", "suspended"];
  * management -- any active admin can do it, unlike Team management
  * which requireSuperAdmin() gates. */
 export async function updateAgentStatusAction(agentId: string, formData: FormData) {
-  await requireAdmin();
+  await requireAdminSection("agents");
 
   const status = String(formData.get("status") ?? "");
 

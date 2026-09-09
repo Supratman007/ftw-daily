@@ -1,7 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { requireAdmin } from "@/lib/admin/auth";
+import { requireAdminSection } from "@/lib/admin/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 function toVehicleTypeRow(formData: FormData, productId: string) {
@@ -27,7 +27,7 @@ function toVehicleTypeRow(formData: FormData, productId: string) {
 }
 
 export async function createTransportVehicleTypeAction(productId: string, formData: FormData) {
-  await requireAdmin();
+  await requireAdminSection("products");
   const row = toVehicleTypeRow(formData, productId);
   const newPath = `/admin/products/${productId}/transport-pricing/vehicle-types/new`;
   if (!row.name) {
@@ -48,7 +48,7 @@ export async function updateTransportVehicleTypeAction(
   vehicleTypeId: string,
   formData: FormData
 ) {
-  await requireAdmin();
+  await requireAdminSection("products");
   const row = toVehicleTypeRow(formData, productId);
   const editPath = `/admin/products/${productId}/transport-pricing/vehicle-types/${vehicleTypeId}/edit`;
   if (!row.name) {
@@ -70,7 +70,7 @@ export async function updateTransportVehicleTypeAction(
  * "price__<vehicleTypeId>__<fromId>__<toId>". An emptied cell deletes
  * that route (meaning "we don't run this route on this vehicle"). */
 export async function saveTransportPricesAction(productId: string, formData: FormData) {
-  await requireAdmin();
+  await requireAdminSection("products");
   const supabase = await createSupabaseServerClient();
 
   const upserts: {

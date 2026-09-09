@@ -1,6 +1,20 @@
 import Link from "next/link";
-import { requireAdmin } from "@/lib/admin/auth";
+import { ADMIN_SECTION_ROLES, requireAdmin, type AdminSection } from "@/lib/admin/auth";
 import { logoutAction } from "./actions";
+
+const NAV_LINKS: Array<{ href: string; label: string; section: AdminSection }> = [
+  { href: "/admin/bookings", label: "Bookings", section: "bookings" },
+  { href: "/admin/requests", label: "Requests", section: "requests" },
+  { href: "/admin/inbox", label: "Inbox", section: "inbox" },
+  { href: "/admin/cancellations", label: "Cancellations", section: "cancellations" },
+  { href: "/admin/moderation", label: "Moderation", section: "moderation" },
+  { href: "/admin/vouchers", label: "Vouchers", section: "vouchers" },
+  { href: "/admin/products", label: "Products", section: "products" },
+  { href: "/admin/meeting-points", label: "Meeting points", section: "meeting_points" },
+  { href: "/admin/discount-codes", label: "Discount codes", section: "discount_codes" },
+  { href: "/admin/agents", label: "Sales Agents", section: "agents" },
+  { href: "/admin/commissions", label: "Commissions", section: "commissions" },
+];
 
 export default async function ProtectedAdminLayout({
   children,
@@ -16,19 +30,15 @@ export default async function ProtectedAdminLayout({
           <p className="font-mono text-xs uppercase tracking-widest text-ink-soft">
             Adventure Lombok Booking — Admin
           </p>
-          <nav className="mt-1 flex gap-4 font-serif text-sm font-semibold text-ocean">
+          <nav className="mt-1 flex flex-wrap gap-4 font-serif text-sm font-semibold text-ocean">
             <Link href="/admin">Overview</Link>
-            <Link href="/admin/bookings">Bookings</Link>
-            <Link href="/admin/requests">Requests</Link>
-            <Link href="/admin/inbox">Inbox</Link>
-            <Link href="/admin/cancellations">Cancellations</Link>
-            <Link href="/admin/moderation">Moderation</Link>
-            <Link href="/admin/vouchers">Vouchers</Link>
-            <Link href="/admin/products">Products</Link>
-            <Link href="/admin/meeting-points">Meeting points</Link>
-            <Link href="/admin/discount-codes">Discount codes</Link>
-            <Link href="/admin/agents">Sales Agents</Link>
-            <Link href="/admin/commissions">Commissions</Link>
+            {NAV_LINKS.filter((link) => ADMIN_SECTION_ROLES[link.section].includes(admin.role)).map(
+              (link) => (
+                <Link key={link.href} href={link.href}>
+                  {link.label}
+                </Link>
+              )
+            )}
             {admin.role === "super_admin" && <Link href="/admin/team">Team</Link>}
           </nav>
         </div>

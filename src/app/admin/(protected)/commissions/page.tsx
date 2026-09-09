@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { requireAdmin } from "@/lib/admin/auth";
+import { requireAdminSection } from "@/lib/admin/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { formatCommissionAmount } from "@/lib/agents/commission";
 import { setCommissionStatusAction, markAgentCommissionsPaidAction } from "./actions";
@@ -55,7 +55,7 @@ export default async function AdminCommissionsPage({
 }: {
   searchParams: Promise<{ error?: string; updated?: string }>;
 }) {
-  await requireAdmin();
+  await requireAdminSection("commissions");
   const { error, updated } = await searchParams;
 
   const supabase = await createSupabaseServerClient();

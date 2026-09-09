@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { requireAdmin } from "@/lib/admin/auth";
+import { requireAdminSection } from "@/lib/admin/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { deleteCommissionTierAction } from "./actions";
 import type { CommissionTier } from "@/lib/agents/types";
@@ -16,7 +16,7 @@ export default async function AdminCommissionTiersPage({
 }: {
   searchParams: Promise<{ error?: string; saved?: string; deleted?: string }>;
 }) {
-  await requireAdmin();
+  await requireAdminSection("commission_tiers");
   const { error, saved, deleted } = await searchParams;
 
   const supabase = await createSupabaseServerClient();

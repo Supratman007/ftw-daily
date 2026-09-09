@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { requireAdmin } from "@/lib/admin/auth";
+import { requireAdminSection } from "@/lib/admin/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { DISCOUNT_TYPE_LABELS, type DiscountCode } from "@/lib/discounts/types";
 
@@ -8,7 +8,7 @@ function formatValue(code: DiscountCode): string {
 }
 
 export default async function AdminDiscountCodesPage() {
-  await requireAdmin();
+  await requireAdminSection("discount_codes");
 
   const supabase = await createSupabaseServerClient();
   const { data: codes, error } = await supabase

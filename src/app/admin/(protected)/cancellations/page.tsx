@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { requireAdmin } from "@/lib/admin/auth";
+import { requireAdminSection } from "@/lib/admin/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import {
   CANCELLATION_PATH_LABELS,
@@ -30,7 +30,7 @@ export default async function AdminCancellationsPage({
 }: {
   searchParams: Promise<{ status?: string }>;
 }) {
-  await requireAdmin();
+  await requireAdminSection("cancellations");
   const { status } = await searchParams;
   const activeFilter = status ?? "pending_review";
 

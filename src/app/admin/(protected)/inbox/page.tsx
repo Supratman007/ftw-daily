@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { requireAdmin } from "@/lib/admin/auth";
+import { requireAdminSection } from "@/lib/admin/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 type InboxRow = {
@@ -29,7 +29,7 @@ export default async function AdminInboxPage({
 }: {
   searchParams: Promise<{ status?: string }>;
 }) {
-  await requireAdmin();
+  await requireAdminSection("inbox");
   const { status } = await searchParams;
   const activeFilter = status ?? "open";
 

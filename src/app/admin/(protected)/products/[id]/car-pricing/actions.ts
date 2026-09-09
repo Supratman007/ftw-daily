@@ -1,7 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { requireAdmin } from "@/lib/admin/auth";
+import { requireAdminSection } from "@/lib/admin/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 function toCarTypeRow(formData: FormData, productId: string) {
@@ -29,7 +29,7 @@ function toCarTypeRow(formData: FormData, productId: string) {
 }
 
 export async function createCarTypeAction(productId: string, formData: FormData) {
-  await requireAdmin();
+  await requireAdminSection("products");
   const row = toCarTypeRow(formData, productId);
   const newPath = `/admin/products/${productId}/car-pricing/car-types/new`;
   if (!row.name) {
@@ -55,7 +55,7 @@ export async function updateCarTypeAction(
   carTypeId: string,
   formData: FormData
 ) {
-  await requireAdmin();
+  await requireAdminSection("products");
   const row = toCarTypeRow(formData, productId);
   const editPath = `/admin/products/${productId}/car-pricing/car-types/${carTypeId}/edit`;
   if (!row.name) {
@@ -91,7 +91,7 @@ export async function createCarPackageAction(
   carTypeId: string,
   formData: FormData
 ) {
-  await requireAdmin();
+  await requireAdminSection("products");
   const row = toCarPackageRow(formData, carTypeId);
   const newPath = `/admin/products/${productId}/car-pricing/car-types/${carTypeId}/packages/new`;
   if (row.duration_hours < 1) {
@@ -116,7 +116,7 @@ export async function updateCarPackageAction(
   packageId: string,
   formData: FormData
 ) {
-  await requireAdmin();
+  await requireAdminSection("products");
   const row = toCarPackageRow(formData, carTypeId);
   const editPath = `/admin/products/${productId}/car-pricing/car-types/${carTypeId}/packages/${packageId}/edit`;
   if (row.duration_hours < 1) {
@@ -141,7 +141,7 @@ export async function updateCarPackageAction(
  * one action saves the whole grid in a single submit. An emptied cell
  * deletes that price (meaning "not offered at this location"). */
 export async function saveCarPricesAction(productId: string, formData: FormData) {
-  await requireAdmin();
+  await requireAdminSection("products");
   const supabase = await createSupabaseServerClient();
 
   const upserts: { car_package_id: string; meeting_point_id: string; price_idr: number }[] = [];

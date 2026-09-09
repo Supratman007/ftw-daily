@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { requireAdmin } from "@/lib/admin/auth";
+import { requireAdminSection } from "@/lib/admin/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { formatIdr } from "@/lib/currency";
 import {
@@ -42,7 +42,7 @@ export default async function AdminVouchersPage({
 }: {
   searchParams: Promise<{ status?: string; notice?: string; error?: string }>;
 }) {
-  await requireAdmin();
+  await requireAdminSection("vouchers");
   const { status, notice, error: actionError } = await searchParams;
   const activeFilter = status ?? "pending";
   const nowIso = new Date().toISOString();

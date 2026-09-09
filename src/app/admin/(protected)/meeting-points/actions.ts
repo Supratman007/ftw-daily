@@ -1,7 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { requireAdmin } from "@/lib/admin/auth";
+import { requireAdminSection } from "@/lib/admin/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 function toMeetingPointRow(formData: FormData) {
@@ -13,7 +13,7 @@ function toMeetingPointRow(formData: FormData) {
 }
 
 export async function createMeetingPointAction(formData: FormData) {
-  await requireAdmin();
+  await requireAdminSection("meeting_points");
   const row = toMeetingPointRow(formData);
   if (!row.name) {
     redirect(`/admin/meeting-points/new?error=${encodeURIComponent("Name is required.")}`);
@@ -29,7 +29,7 @@ export async function createMeetingPointAction(formData: FormData) {
 }
 
 export async function updateMeetingPointAction(meetingPointId: string, formData: FormData) {
-  await requireAdmin();
+  await requireAdminSection("meeting_points");
   const row = toMeetingPointRow(formData);
   if (!row.name) {
     redirect(

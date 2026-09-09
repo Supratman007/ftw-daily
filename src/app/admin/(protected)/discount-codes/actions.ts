@@ -1,7 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { requireAdmin } from "@/lib/admin/auth";
+import { requireAdminSection } from "@/lib/admin/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { DiscountType } from "@/lib/discounts/types";
 
@@ -54,7 +54,7 @@ function buildDiscountCodeRow(formData: FormData): BuildDiscountCodeRowResult {
 }
 
 export async function createDiscountCodeAction(formData: FormData) {
-  await requireAdmin();
+  await requireAdminSection("discount_codes");
   const result = buildDiscountCodeRow(formData);
   if (!result.ok) {
     redirect(`/admin/discount-codes/new?error=${encodeURIComponent(result.error)}`);
@@ -71,7 +71,7 @@ export async function createDiscountCodeAction(formData: FormData) {
 }
 
 export async function updateDiscountCodeAction(discountCodeId: string, formData: FormData) {
-  await requireAdmin();
+  await requireAdminSection("discount_codes");
   const result = buildDiscountCodeRow(formData);
   if (!result.ok) {
     redirect(`/admin/discount-codes/${discountCodeId}/edit?error=${encodeURIComponent(result.error)}`);

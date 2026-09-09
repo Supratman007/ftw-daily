@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { requireAdmin } from "@/lib/admin/auth";
+import { ADMIN_SECTION_ROLES, requireAdminSection } from "@/lib/admin/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { formatIdr } from "@/lib/currency";
 import { BOOKING_STATUS_LABELS, type Booking } from "@/lib/bookings/types";
@@ -24,7 +24,19 @@ export default async function AdminOverviewPage({
 }: {
   searchParams: Promise<{ error?: string; password_set?: string }>;
 }) {
-  await requireAdmin();
+  const admin = await requireAdminSection("dashboard");
+  // Support (and any future low-trust role) shouldn't see revenue or
+  // cards linking to sections their role can't actually open -- same
+  // access list the nav itself hides links by (src/app/admin/
+  // (protected)/layout.tsx), applied here too so the dashboard doesn't
+  // show a card that just bounces them with an error on click.
+  const canSeeFinancials = admin.role === "super_admin" || admin.role === "accounting";
+  const canSeeBookings = ADMIN_SECTION_ROLES.bookings.includes(admin.role);
+  const canSeeAgents = ADMIN_SECTION_ROLES.agents.includes(admin.role);
+  const canSeeRequests = ADMIN_SECTION_ROLES.requests.includes(admin.role);
+  const canSeeInbox = ADMIN_SECTION_ROLES.inbox.includes(admin.role);
+  const canSeeCancellations = ADMIN_SECTION_ROLES.cancellations.includes(admin.role);
+  const canSeeVouchers = ADMIN_SECTION_ROLES.vouchers.includes(admin.role);
   const { error, password_set } = await searchParams;
   const supabase = await createSupabaseServerClient();
 
@@ -98,125 +110,147 @@ export default async function AdminOverviewPage({
       )}
 
       <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <div className={cardClass}>
-          <p className="font-mono text-xs uppercase tracking-widest text-ink-soft">
-            Confirmed bookings
-          </p>
-          <p className="mt-1 font-serif text-2xl font-semibold text-ink">
-            {confirmedCount.count ?? 0}
-          </p>
-        </div>
-        <div className={cardClass}>
-          <p className="font-mono text-xs uppercase tracking-widest text-ink-soft">
-            Pending payment
-          </p>
-          <p className="mt-1 font-serif text-2xl font-semibold text-ink">
-            {pendingCount.count ?? 0}
-          </p>
-        </div>
-        <div className={cardClass}>
-          <p className="font-mono text-xs uppercase tracking-widest text-ink-soft">
-            Total confirmed revenue
-          </p>
-          <p className="mt-1 font-serif text-2xl font-semibold text-ink">
-            {formatIdr(totalRevenueIdr)}
-          </p>
-        </div>
-        <Link
-          href="/admin/agents"
-          className={pendingAgents > 0 ? pendingAgentCardClass : cardClass}
-        >
-          <p className="font-mono text-xs uppercase tracking-widest text-ink-soft">
-            Sales Agent applications
-          </p>
-          <p
-            className={`mt-1 font-serif text-2xl font-semibold ${pendingAgents > 0 ? "text-coral-dark" : "text-ink"}`}
+        {canSeeBookings && (
+          <div className={cardClass}>
+            <p className="font-mono text-xs uppercase tracking-widest text-ink-soft">
+              Confirmed bookings
+            </p>
+            <p className="mt-1 font-serif text-2xl font-semibold text-ink">
+              {confirmedCount.count ?? 0}
+            </p>
+          </div>
+        )}
+        {canSeeBookings && (
+          <div className={cardClass}>
+            <p className="font-mono text-xs uppercase tracking-widest text-ink-soft">
+              Pending payment
+            </p>
+            <p className="mt-1 font-serif text-2xl font-semibold text-ink">
+              {pendingCount.count ?? 0}
+            </p>
+          </div>
+        )}
+        {canSeeFinancials && (
+          <div className={cardClass}>
+            <p className="font-mono text-xs uppercase tracking-widest text-ink-soft">
+              Total confirmed revenue
+            </p>
+            <p className="mt-1 font-serif text-2xl font-semibold text-ink">
+              {formatIdr(totalRevenueIdr)}
+            </p>
+          </div>
+        )}
+        {canSeeAgents && (
+          <Link
+            href="/admin/agents"
+            className={pendingAgents > 0 ? pendingAgentCardClass : cardClass}
           >
-            {pendingAgents} pending
-          </p>
-        </Link>
-        <Link
-          href="/admin/requests"
-          className={pendingRequests > 0 ? pendingAgentCardClass : cardClass}
-        >
-          <p className="font-mono text-xs uppercase tracking-widest text-ink-soft">
-            Booking requests
-          </p>
-          <p
-            className={`mt-1 font-serif text-2xl font-semibold ${pendingRequests > 0 ? "text-coral-dark" : "text-ink"}`}
-          >
-            {pendingRequests} awaiting review
-          </p>
-        </Link>
-        <Link
-          href="/admin/inbox"
-          className={openConversations > 0 ? pendingAgentCardClass : cardClass}
-        >
-          <p className="font-mono text-xs uppercase tracking-widest text-ink-soft">Inbox</p>
-          <p
-            className={`mt-1 font-serif text-2xl font-semibold ${openConversations > 0 ? "text-coral-dark" : "text-ink"}`}
-          >
-            {openConversations} open
-          </p>
-        </Link>
-        <Link
-          href="/admin/cancellations"
-          className={pendingCancellations > 0 ? pendingAgentCardClass : cardClass}
-        >
-          <p className="font-mono text-xs uppercase tracking-widest text-ink-soft">
-            Cancellations
-          </p>
-          <p
-            className={`mt-1 font-serif text-2xl font-semibold ${pendingCancellations > 0 ? "text-coral-dark" : "text-ink"}`}
-          >
-            {pendingCancellations} awaiting review
-          </p>
-        </Link>
-        <Link
-          href="/admin/vouchers"
-          className={pendingVouchers > 0 ? pendingAgentCardClass : cardClass}
-        >
-          <p className="font-mono text-xs uppercase tracking-widest text-ink-soft">
-            Gift vouchers
-          </p>
-          <p
-            className={`mt-1 font-serif text-2xl font-semibold ${pendingVouchers > 0 ? "text-coral-dark" : "text-ink"}`}
-          >
-            {pendingVouchers} to redeem
-          </p>
-          <p className="mt-1 text-xs text-ink-soft">
-            {formatIdr(outstandingVoucherLiabilityIdr)} outstanding, unredeemed
-          </p>
-        </Link>
-      </div>
-
-      <div className="mt-8 flex items-center justify-between">
-        <h2 className="font-serif text-lg font-semibold text-ink">Recent bookings</h2>
-        <Link href="/admin/bookings" className="text-sm font-semibold text-teal hover:underline">
-          View all →
-        </Link>
-      </div>
-
-      <div className="mt-2 overflow-hidden rounded-lg border border-sand-deep bg-white">
-        {recentBookings.length === 0 ? (
-          <p className="px-4 py-6 text-sm text-ink-soft">No bookings yet.</p>
-        ) : (
-          recentBookings.map((b) => (
-            <div
-              key={b.id}
-              className="flex items-center justify-between border-t border-sand-deep px-4 py-3 text-sm first:border-t-0"
+            <p className="font-mono text-xs uppercase tracking-widest text-ink-soft">
+              Sales Agent applications
+            </p>
+            <p
+              className={`mt-1 font-serif text-2xl font-semibold ${pendingAgents > 0 ? "text-coral-dark" : "text-ink"}`}
             >
-              <div>
-                <p className="font-semibold text-ink">{b.products?.title ?? "Trip"}</p>
-                <p className="text-ink-soft">
-                  {b.booking_code} · {b.slot_date} · {BOOKING_STATUS_LABELS[b.status]}
-                </p>
-              </div>
-              <span className="text-ink-soft">{formatIdr(b.total_idr)}</span>
-            </div>
-          ))
+              {pendingAgents} pending
+            </p>
+          </Link>
+        )}
+        {canSeeRequests && (
+          <Link
+            href="/admin/requests"
+            className={pendingRequests > 0 ? pendingAgentCardClass : cardClass}
+          >
+            <p className="font-mono text-xs uppercase tracking-widest text-ink-soft">
+              Booking requests
+            </p>
+            <p
+              className={`mt-1 font-serif text-2xl font-semibold ${pendingRequests > 0 ? "text-coral-dark" : "text-ink"}`}
+            >
+              {pendingRequests} awaiting review
+            </p>
+          </Link>
+        )}
+        {canSeeInbox && (
+          <Link
+            href="/admin/inbox"
+            className={openConversations > 0 ? pendingAgentCardClass : cardClass}
+          >
+            <p className="font-mono text-xs uppercase tracking-widest text-ink-soft">Inbox</p>
+            <p
+              className={`mt-1 font-serif text-2xl font-semibold ${openConversations > 0 ? "text-coral-dark" : "text-ink"}`}
+            >
+              {openConversations} open
+            </p>
+          </Link>
+        )}
+        {canSeeCancellations && (
+          <Link
+            href="/admin/cancellations"
+            className={pendingCancellations > 0 ? pendingAgentCardClass : cardClass}
+          >
+            <p className="font-mono text-xs uppercase tracking-widest text-ink-soft">
+              Cancellations
+            </p>
+            <p
+              className={`mt-1 font-serif text-2xl font-semibold ${pendingCancellations > 0 ? "text-coral-dark" : "text-ink"}`}
+            >
+              {pendingCancellations} awaiting review
+            </p>
+          </Link>
+        )}
+        {canSeeVouchers && (
+          <Link
+            href="/admin/vouchers"
+            className={pendingVouchers > 0 ? pendingAgentCardClass : cardClass}
+          >
+            <p className="font-mono text-xs uppercase tracking-widest text-ink-soft">
+              Gift vouchers
+            </p>
+            <p
+              className={`mt-1 font-serif text-2xl font-semibold ${pendingVouchers > 0 ? "text-coral-dark" : "text-ink"}`}
+            >
+              {pendingVouchers} to redeem
+            </p>
+            {canSeeFinancials && (
+              <p className="mt-1 text-xs text-ink-soft">
+                {formatIdr(outstandingVoucherLiabilityIdr)} outstanding, unredeemed
+              </p>
+            )}
+          </Link>
         )}
       </div>
+
+      {canSeeBookings && (
+        <>
+          <div className="mt-8 flex items-center justify-between">
+            <h2 className="font-serif text-lg font-semibold text-ink">Recent bookings</h2>
+            <Link href="/admin/bookings" className="text-sm font-semibold text-teal hover:underline">
+              View all →
+            </Link>
+          </div>
+
+          <div className="mt-2 overflow-hidden rounded-lg border border-sand-deep bg-white">
+            {recentBookings.length === 0 ? (
+              <p className="px-4 py-6 text-sm text-ink-soft">No bookings yet.</p>
+            ) : (
+              recentBookings.map((b) => (
+                <div
+                  key={b.id}
+                  className="flex items-center justify-between border-t border-sand-deep px-4 py-3 text-sm first:border-t-0"
+                >
+                  <div>
+                    <p className="font-semibold text-ink">{b.products?.title ?? "Trip"}</p>
+                    <p className="text-ink-soft">
+                      {b.booking_code} · {b.slot_date} · {BOOKING_STATUS_LABELS[b.status]}
+                    </p>
+                  </div>
+                  <span className="text-ink-soft">{formatIdr(b.total_idr)}</span>
+                </div>
+              ))
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 }

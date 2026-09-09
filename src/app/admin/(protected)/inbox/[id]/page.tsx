@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { requireAdmin } from "@/lib/admin/auth";
+import { requireAdminSection } from "@/lib/admin/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { sendStaffMessageAction, resolveConversationAction, reopenConversationAction } from "../actions";
 import { ChatThread } from "@/components/chat/ChatThread";
@@ -25,7 +25,7 @@ export default async function AdminInboxThreadPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ error?: string; resolved?: string }>;
 }) {
-  await requireAdmin();
+  await requireAdminSection("inbox");
   const { id } = await params;
   const { error, resolved } = await searchParams;
 

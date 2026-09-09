@@ -1,7 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { requireAdmin } from "@/lib/admin/auth";
+import { requireAdminSection } from "@/lib/admin/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 type BuildTierRowResult =
@@ -48,7 +48,7 @@ function buildTierRow(formData: FormData): BuildTierRowResult {
 }
 
 export async function createCommissionTierAction(formData: FormData) {
-  await requireAdmin();
+  await requireAdminSection("commission_tiers");
   const result = buildTierRow(formData);
   if (!result.ok) {
     redirect(`/admin/commissions/tiers/new?error=${encodeURIComponent(result.error)}`);
@@ -64,7 +64,7 @@ export async function createCommissionTierAction(formData: FormData) {
 }
 
 export async function updateCommissionTierAction(tierId: string, formData: FormData) {
-  await requireAdmin();
+  await requireAdminSection("commission_tiers");
   const result = buildTierRow(formData);
   if (!result.ok) {
     redirect(`/admin/commissions/tiers/${tierId}/edit?error=${encodeURIComponent(result.error)}`);
@@ -80,7 +80,7 @@ export async function updateCommissionTierAction(tierId: string, formData: FormD
 }
 
 export async function deleteCommissionTierAction(tierId: string) {
-  await requireAdmin();
+  await requireAdminSection("commission_tiers");
   const supabase = await createSupabaseServerClient();
   const { error } = await supabase.from("commission_tiers").delete().eq("id", tierId);
   if (error) {

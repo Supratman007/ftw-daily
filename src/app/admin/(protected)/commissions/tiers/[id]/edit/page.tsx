@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { requireAdmin } from "@/lib/admin/auth";
+import { requireAdminSection } from "@/lib/admin/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { CommissionTierForm } from "@/components/admin/CommissionTierForm";
 import { updateCommissionTierAction } from "../../actions";
@@ -12,7 +12,7 @@ export default async function EditCommissionTierPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ error?: string }>;
 }) {
-  await requireAdmin();
+  await requireAdminSection("commission_tiers");
   const { id } = await params;
   const { error } = await searchParams;
 

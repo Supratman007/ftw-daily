@@ -69,3 +69,65 @@ export const requireSuperAdmin = cache(async (): Promise<AdminUser> => {
   }
   return admin;
 });
+
+/**
+ * Spec §6k's narrower roles, finally enforced (previously every admin
+ * page just called requireAdmin(), so any active admin -- regardless
+ * of role -- could reach everything; fine for a solo Super Admin, not
+ * once a second admin account exists). One section per admin route
+ * group; every section not explicitly granted below defaults to
+ * super_admin-only, since the spec only ever names a handful of
+ * sections for Reservations/Accounting/Support and staying
+ * conservative on the rest is safer than guessing.
+ *
+ * A few judgment calls where the spec doesn't spell out every route:
+ * - Vouchers mixes an operational side (confirming redemptions) and a
+ *   financial one (approving refunds) in one screen -- granted to both
+ *   Reservations and Accounting rather than splitting the page.
+ * - Cancellation *policy* (the refund-percentage schedule) is a
+ *   financial setting, grouped with Accounting rather than the
+ *   request queue itself.
+ * - Agents, Products, Meeting points, and Discount codes aren't named
+ *   under any role in the spec -- kept Super-Admin-only by default;
+ *   ask if you want Reservations or Accounting to reach any of these.
+ */
+export type AdminSection =
+  | "dashboard"
+  | "requests"
+  | "cancellations"
+  | "cancellation_policy"
+  | "moderation"
+  | "inbox"
+  | "bookings"
+  | "vouchers"
+  | "commissions"
+  | "commission_tiers"
+  | "agents"
+  | "products"
+  | "meeting_points"
+  | "discount_codes";
+
+export const ADMIN_SECTION_ROLES: Record<AdminSection, AdminRole[]> = {
+  dashboard: ["super_admin", "reservations", "accounting", "support"],
+  requests: ["super_admin", "reservations"],
+  cancellations: ["super_admin", "reservations"],
+  cancellation_policy: ["super_admin", "accounting"],
+  moderation: ["super_admin", "reservations"],
+  inbox: ["super_admin", "reservations", "support"],
+  bookings: ["super_admin", "reservations"],
+  vouchers: ["super_admin", "reservations", "accounting"],
+  commissions: ["super_admin", "accounting"],
+  commission_tiers: ["super_admin"],
+  agents: ["super_admin"],
+  products: ["super_admin"],
+  meeting_points: ["super_admin"],
+  discount_codes: ["super_admin"],
+};
+
+export const requireAdminSection = cache(async (section: AdminSection): Promise<AdminUser> => {
+  const admin = await requireAdmin();
+  if (!ADMIN_SECTION_ROLES[section].includes(admin.role)) {
+    redirect(`/admin?error=${encodeURIComponent("Your role doesn't have access to that section.")}`);
+  }
+  return admin;
+});

@@ -1,7 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { requireAdmin } from "@/lib/admin/auth";
+import { requireAdminSection } from "@/lib/admin/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 type BuildTierRowResult =
@@ -25,7 +25,7 @@ function buildTierRow(formData: FormData): BuildTierRowResult {
 }
 
 export async function createCancellationPolicyTierAction(formData: FormData) {
-  await requireAdmin();
+  await requireAdminSection("cancellation_policy");
   const result = buildTierRow(formData);
   if (!result.ok) {
     redirect(`/admin/cancellations/policy/new?error=${encodeURIComponent(result.error)}`);
@@ -41,7 +41,7 @@ export async function createCancellationPolicyTierAction(formData: FormData) {
 }
 
 export async function updateCancellationPolicyTierAction(tierId: string, formData: FormData) {
-  await requireAdmin();
+  await requireAdminSection("cancellation_policy");
   const result = buildTierRow(formData);
   if (!result.ok) {
     redirect(`/admin/cancellations/policy/${tierId}/edit?error=${encodeURIComponent(result.error)}`);
@@ -60,7 +60,7 @@ export async function updateCancellationPolicyTierAction(tierId: string, formDat
 }
 
 export async function deleteCancellationPolicyTierAction(tierId: string) {
-  await requireAdmin();
+  await requireAdminSection("cancellation_policy");
   const supabase = await createSupabaseServerClient();
   const { error } = await supabase.from("cancellation_policy_tiers").delete().eq("id", tierId);
   if (error) {

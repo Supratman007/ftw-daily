@@ -1,11 +1,11 @@
 import Link from "next/link";
-import { requireAdmin } from "@/lib/admin/auth";
+import { requireAdminSection } from "@/lib/admin/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { formatIdr, formatUsd, usdToIdr } from "@/lib/currency";
 import { PRODUCT_TYPE_LABELS, type Product } from "@/lib/products/types";
 
 export default async function AdminProductsPage() {
-  await requireAdmin();
+  await requireAdminSection("products");
 
   const supabase = await createSupabaseServerClient();
   const { data: products, error } = await supabase

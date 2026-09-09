@@ -1,7 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { requireAdmin } from "@/lib/admin/auth";
+import { requireAdminSection } from "@/lib/admin/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/service";
 import { generateBookingCode } from "@/lib/bookings/booking-code";
@@ -58,7 +58,7 @@ async function resolveVoucherGiver(
  * issued so it can be tried again.
  */
 export async function confirmVoucherRedemptionAction(voucherId: string, formData: FormData) {
-  await requireAdmin();
+  await requireAdminSection("vouchers");
   const returnTo = String(formData.get("return_to") ?? "/admin/vouchers");
   const slotDateOverride = String(formData.get("slot_date") ?? "").trim();
   const paxCountOverrideRaw = String(formData.get("pax_count") ?? "").trim();
@@ -223,7 +223,7 @@ export async function confirmVoucherRedemptionAction(voucherId: string, formData
 }
 
 export async function markVoucherExpiredAction(voucherId: string, formData: FormData) {
-  await requireAdmin();
+  await requireAdminSection("vouchers");
   const returnTo = String(formData.get("return_to") ?? "/admin/vouchers");
 
   const supabase = await createSupabaseServerClient();
@@ -239,7 +239,7 @@ export async function markVoucherExpiredAction(voucherId: string, formData: Form
  * Xendit dashboard or via bank transfer, same as cancellation refunds
  * and commission payouts. */
 export async function approveGiftVoucherRefundAction(voucherId: string, formData: FormData) {
-  await requireAdmin();
+  await requireAdminSection("vouchers");
   const returnTo = String(formData.get("return_to") ?? "/admin/vouchers");
 
   const supabase = await createSupabaseServerClient();
@@ -276,7 +276,7 @@ export async function approveGiftVoucherRefundAction(voucherId: string, formData
  * voucher goes back to being a normal, still-valid, still-redeemable
  * one (rather than staying stuck showing "refund requested" forever). */
 export async function declineGiftVoucherRefundAction(voucherId: string, formData: FormData) {
-  await requireAdmin();
+  await requireAdminSection("vouchers");
   const returnTo = String(formData.get("return_to") ?? "/admin/vouchers");
   const adminNotes = String(formData.get("admin_notes") ?? "").trim();
 

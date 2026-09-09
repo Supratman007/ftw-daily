@@ -1,7 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { requireAdmin } from "@/lib/admin/auth";
+import { requireAdminSection } from "@/lib/admin/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/service";
 import { generateVoucherCode } from "@/lib/cancellations/voucherCode";
@@ -59,7 +59,7 @@ function redeemUrlFor(voucherCode: string): string {
  * commission payouts; approving here means you'll process the refund
  * via Xendit's own dashboard or bank transfer, same as always. */
 export async function approveRefundAction(requestId: string, formData: FormData) {
-  const admin = await requireAdmin();
+  const admin = await requireAdminSection("cancellations");
   const adminNotes = String(formData.get("admin_notes") ?? "").trim();
 
   function fail(message: string): never {
@@ -122,7 +122,7 @@ export async function approveRefundAction(requestId: string, formData: FormData)
  * holding no reservation at all if the reserve step failed after the
  * release. */
 export async function approveRescheduleAction(requestId: string, formData: FormData) {
-  const admin = await requireAdmin();
+  const admin = await requireAdminSection("cancellations");
   const newSlotDate = String(formData.get("new_slot_date") ?? "").trim();
   const adminNotes = String(formData.get("admin_notes") ?? "").trim();
 
@@ -217,7 +217,7 @@ export async function approveRescheduleAction(requestId: string, formData: FormD
  * contacts you with the code) -- no self-serve checkout redemption
  * flow in this pass. */
 export async function approveGiftVoucherAction(requestId: string, formData: FormData) {
-  const admin = await requireAdmin();
+  const admin = await requireAdminSection("cancellations");
   const recipientName = String(formData.get("recipient_name") ?? "").trim();
   const recipientContact = String(formData.get("recipient_contact") ?? "").trim();
   const adminNotes = String(formData.get("admin_notes") ?? "").trim();
@@ -326,7 +326,7 @@ export async function approveGiftVoucherAction(requestId: string, formData: Form
 }
 
 export async function rejectCancellationRequestAction(requestId: string, formData: FormData) {
-  const admin = await requireAdmin();
+  const admin = await requireAdminSection("cancellations");
   const adminNotes = String(formData.get("admin_notes") ?? "").trim();
 
   function fail(message: string): never {

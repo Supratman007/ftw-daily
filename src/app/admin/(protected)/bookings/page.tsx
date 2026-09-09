@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { requireAdmin } from "@/lib/admin/auth";
+import { requireAdminSection } from "@/lib/admin/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { formatIdr } from "@/lib/currency";
 import { BOOKING_STATUS_LABELS, type Booking, type BookingStatus } from "@/lib/bookings/types";
@@ -31,7 +31,7 @@ export default async function AdminBookingsPage({
 }: {
   searchParams: Promise<{ status?: string }>;
 }) {
-  await requireAdmin();
+  await requireAdminSection("bookings");
   const { status } = await searchParams;
 
   const supabase = await createSupabaseServerClient();

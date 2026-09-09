@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { requireAdmin } from "@/lib/admin/auth";
+import { requireAdminSection } from "@/lib/admin/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/service";
 import { formatIdr } from "@/lib/currency";
@@ -37,7 +37,7 @@ export default async function AdminCancellationDetailPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ error?: string; approved?: string; rejected?: string }>;
 }) {
-  await requireAdmin();
+  await requireAdminSection("cancellations");
   const { id } = await params;
   const { error, approved, rejected } = await searchParams;
 

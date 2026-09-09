@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { requireAdmin } from "@/lib/admin/auth";
+import { requireAdminSection } from "@/lib/admin/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { MeetingPoint } from "@/lib/cars/types";
 
@@ -9,7 +9,7 @@ import type { MeetingPoint } from "@/lib/cars/types";
  * of the meeting-point picker (the other half is a free-text "Other").
  */
 export default async function AdminMeetingPointsPage() {
-  await requireAdmin();
+  await requireAdminSection("meeting_points");
 
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase

@@ -1,4 +1,4 @@
-import { requireAdmin } from "@/lib/admin/auth";
+import { requireAdminSection } from "@/lib/admin/auth";
 import { MeetingPointForm } from "@/components/admin/MeetingPointForm";
 import { createMeetingPointAction } from "../actions";
 
@@ -7,7 +7,7 @@ export default async function NewMeetingPointPage({
 }: {
   searchParams: Promise<{ error?: string }>;
 }) {
-  await requireAdmin();
+  await requireAdminSection("meeting_points");
   const { error } = await searchParams;
 
   return (

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { requireAdmin } from "@/lib/admin/auth";
+import { requireAdminSection } from "@/lib/admin/auth";
 import { TransportVehicleTypeForm } from "@/components/admin/TransportVehicleTypeForm";
 import { createTransportVehicleTypeAction } from "../../actions";
 
@@ -10,7 +10,7 @@ export default async function NewTransportVehicleTypePage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ error?: string }>;
 }) {
-  await requireAdmin();
+  await requireAdminSection("products");
   const { id: productId } = await params;
   const { error } = await searchParams;
 

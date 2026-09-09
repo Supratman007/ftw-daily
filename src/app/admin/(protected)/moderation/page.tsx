@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { requireAdmin } from "@/lib/admin/auth";
+import { requireAdminSection } from "@/lib/admin/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import {
   REVIEW_PUSH_STATUS_LABELS,
@@ -38,7 +38,7 @@ export default async function AdminModerationPage({
 }: {
   searchParams: Promise<{ status?: string }>;
 }) {
-  await requireAdmin();
+  await requireAdminSection("moderation");
   const { status } = await searchParams;
   const activeFilter = status ?? "pending_moderation";
 

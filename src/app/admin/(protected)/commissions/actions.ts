@@ -1,7 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { requireAdmin } from "@/lib/admin/auth";
+import { requireAdminSection } from "@/lib/admin/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { CommissionStatus } from "@/lib/agents/types";
 
@@ -21,7 +21,7 @@ export async function setCommissionStatusAction(
   source: "booking" | "gift_voucher",
   status: CommissionStatus
 ) {
-  await requireAdmin();
+  await requireAdminSection("commissions");
   const supabase = await createSupabaseServerClient();
   const { error } = await supabase
     .from(TABLE_BY_SOURCE[source])
@@ -40,7 +40,7 @@ export async function setCommissionStatusAction(
  * payout is one bank transfer covering everything owed, not
  * row-by-row. */
 export async function markAgentCommissionsPaidAction(agentId: string) {
-  await requireAdmin();
+  await requireAdminSection("commissions");
   const supabase = await createSupabaseServerClient();
 
   const [{ error: bookingError }, { error: voucherError }] = await Promise.all([

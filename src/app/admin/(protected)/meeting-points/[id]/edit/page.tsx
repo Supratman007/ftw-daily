@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { requireAdmin } from "@/lib/admin/auth";
+import { requireAdminSection } from "@/lib/admin/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { MeetingPointForm } from "@/components/admin/MeetingPointForm";
 import { updateMeetingPointAction } from "../../actions";
@@ -12,7 +12,7 @@ export default async function EditMeetingPointPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ error?: string }>;
 }) {
-  await requireAdmin();
+  await requireAdminSection("meeting_points");
   const { id } = await params;
   const { error } = await searchParams;
 

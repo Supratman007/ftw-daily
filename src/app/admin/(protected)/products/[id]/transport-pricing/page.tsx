@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { requireAdmin } from "@/lib/admin/auth";
+import { requireAdminSection } from "@/lib/admin/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { saveTransportPricesAction } from "./actions";
 import type { MeetingPoint, TransportPrice, TransportVehicleType } from "@/lib/cars/types";
@@ -13,7 +13,7 @@ export default async function TransportPricingPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ error?: string; saved?: string }>;
 }) {
-  await requireAdmin();
+  await requireAdminSection("products");
   const { id: productId } = await params;
   const { error, saved } = await searchParams;
 

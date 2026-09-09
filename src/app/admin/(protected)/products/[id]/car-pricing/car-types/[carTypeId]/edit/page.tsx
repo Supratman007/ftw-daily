@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { requireAdmin } from "@/lib/admin/auth";
+import { requireAdminSection } from "@/lib/admin/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { CarTypeForm } from "@/components/admin/CarTypeForm";
 import { updateCarTypeAction } from "../../../actions";
@@ -13,7 +13,7 @@ export default async function EditCarTypePage({
   params: Promise<{ id: string; carTypeId: string }>;
   searchParams: Promise<{ error?: string }>;
 }) {
-  await requireAdmin();
+  await requireAdminSection("products");
   const { id: productId, carTypeId } = await params;
   const { error } = await searchParams;
 

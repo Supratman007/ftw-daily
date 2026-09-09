@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { requireAdmin } from "@/lib/admin/auth";
+import { requireAdminSection } from "@/lib/admin/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { AGENT_STATUS_LABELS, AGENT_TYPE_LABELS, type SalesAgent } from "@/lib/agents/types";
 import { updateAgentStatusAction } from "./actions";
@@ -16,7 +16,7 @@ export default async function AdminAgentsPage({
 }: {
   searchParams: Promise<{ error?: string; updated?: string }>;
 }) {
-  await requireAdmin();
+  await requireAdminSection("agents");
   const { error, updated } = await searchParams;
 
   const supabase = await createSupabaseServerClient();

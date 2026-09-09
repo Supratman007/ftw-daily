@@ -1,7 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { requireAdmin } from "@/lib/admin/auth";
+import { requireAdminSection } from "@/lib/admin/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/service";
 import { createXenditInvoice } from "@/lib/xendit/client";
@@ -20,7 +20,7 @@ const CONFIRMATION_WINDOW_SECONDS = 24 * 60 * 60;
  * cron job polling confirmation_deadline.
  */
 export async function confirmRequestAction(bookingId: string) {
-  await requireAdmin();
+  await requireAdminSection("requests");
 
   function fail(message: string): never {
     redirect(`/admin/requests/${bookingId}?error=${encodeURIComponent(message)}`);
@@ -102,7 +102,7 @@ export async function confirmRequestAction(bookingId: string) {
  * hold and tells the customer why, per spec §6b's decline_reason
  * being customer-visible. */
 export async function declineRequestAction(bookingId: string, formData: FormData) {
-  await requireAdmin();
+  await requireAdminSection("requests");
   const reason = String(formData.get("decline_reason") ?? "").trim();
 
   function fail(message: string): never {
@@ -165,7 +165,7 @@ export async function declineRequestAction(bookingId: string, formData: FormData
 }
 
 export async function saveAdminNotesAction(bookingId: string, formData: FormData) {
-  await requireAdmin();
+  await requireAdminSection("requests");
   const notes = String(formData.get("admin_notes") ?? "").trim();
 
   const supabase = await createSupabaseServerClient();

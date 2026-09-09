@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { requireAdmin } from "@/lib/admin/auth";
+import { requireAdminSection } from "@/lib/admin/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/service";
 import { formatIdr } from "@/lib/currency";
@@ -26,7 +26,7 @@ export default async function AdminRequestDetailPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ error?: string; confirmed?: string; declined?: string; notes_saved?: string }>;
 }) {
-  await requireAdmin();
+  await requireAdminSection("requests");
   const { id } = await params;
   const { error, confirmed, declined, notes_saved: notesSaved } = await searchParams;
 

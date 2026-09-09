@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { requireAdmin } from "@/lib/admin/auth";
+import { requireAdminSection } from "@/lib/admin/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { DiscountCodeForm } from "@/components/admin/DiscountCodeForm";
 import { updateDiscountCodeAction } from "../../actions";
@@ -12,7 +12,7 @@ export default async function EditDiscountCodePage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ error?: string }>;
 }) {
-  await requireAdmin();
+  await requireAdminSection("discount_codes");
   const { id } = await params;
   const { error } = await searchParams;
 

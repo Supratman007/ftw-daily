@@ -1,4 +1,4 @@
-import { requireAdmin } from "@/lib/admin/auth";
+import { requireAdminSection } from "@/lib/admin/auth";
 import { ProductForm } from "@/components/admin/ProductForm";
 import { createProductAction } from "../actions";
 
@@ -7,7 +7,7 @@ export default async function NewProductPage({
 }: {
   searchParams: Promise<{ error?: string }>;
 }) {
-  await requireAdmin();
+  await requireAdminSection("products");
   const { error } = await searchParams;
 
   return (
