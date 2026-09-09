@@ -81,6 +81,11 @@ export const requireSuperAdmin = cache(async (): Promise<AdminUser> => {
  * conservative on the rest is safer than guessing.
  *
  * A few judgment calls where the spec doesn't spell out every route:
+ * - Bookings is Accounting's transaction record -- each row's amount,
+ *   status, and Xendit invoice link -- so both Reservations (day-to-day
+ *   operations) and Accounting (financial reports) can open it. There's
+ *   no separate "reports" page yet; this list plus the dashboard's
+ *   revenue total are the reporting Accounting has today.
  * - Vouchers mixes an operational side (confirming redemptions) and a
  *   financial one (approving refunds) in one screen -- granted to both
  *   Reservations and Accounting rather than splitting the page.
@@ -114,7 +119,7 @@ export const ADMIN_SECTION_ROLES: Record<AdminSection, AdminRole[]> = {
   cancellation_policy: ["super_admin", "accounting"],
   moderation: ["super_admin", "reservations"],
   inbox: ["super_admin", "reservations", "support"],
-  bookings: ["super_admin", "reservations"],
+  bookings: ["super_admin", "reservations", "accounting"],
   vouchers: ["super_admin", "reservations", "accounting"],
   commissions: ["super_admin", "accounting"],
   commission_tiers: ["super_admin"],
