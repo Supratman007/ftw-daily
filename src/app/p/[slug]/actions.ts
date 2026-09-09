@@ -20,6 +20,14 @@ export async function startCheckoutAction(productId: string, slug: string, formD
   const discountCodeInput = String(formData.get("discount_code") ?? "").trim();
   const hotelName = String(formData.get("hotel_name") ?? "").trim();
   const roomNumber = String(formData.get("room_number") ?? "").trim();
+  // A hidden field on the checkout form (see ProductPage.tsx) rather
+  // than anything the customer picks here -- just carries forward
+  // whichever locale they were already browsing in, so every redirect
+  // from this action (back to the trip page on error, to Xendit and
+  // then back to the confirmation page) keeps them in that language
+  // instead of dropping them back to English mid-checkout.
+  const locale = formData.get("locale") === "id" ? "id" : "en";
+  const pathPrefix = locale === "id" ? "/id" : "";
 
   // No visible/editable field for this -- it's entirely automatic, off
   // the 30-day cookie proxy.ts sets from ?ref=CODE, same as any other
@@ -27,7 +35,7 @@ export async function startCheckoutAction(productId: string, slug: string, formD
   const cookieStore = await cookies();
   const referralCodeInput = cookieStore.get(REFERRAL_COOKIE_NAME)?.value?.trim() ?? "";
 
-  const returnTo = `/p/${slug}?date=${encodeURIComponent(date)}&pax=${pax}`;
+  const returnTo = `${pathPrefix}/p/${slug}?date=${encodeURIComponent(date)}&pax=${pax}`;
   const customer = await requireCustomer(returnTo);
 
   function fail(message: string): never {
@@ -35,7 +43,7 @@ export async function startCheckoutAction(productId: string, slug: string, formD
     if (discountCodeInput) params.set("discount_code", discountCodeInput);
     if (hotelName) params.set("hotel_name", hotelName);
     if (roomNumber) params.set("room_number", roomNumber);
-    redirect(`/p/${slug}?${params.toString()}`);
+    redirect(`${pathPrefix}/p/${slug}?${params.toString()}`);
   }
 
   if (!date || Number.isNaN(Date.parse(date))) {
@@ -172,8 +180,8 @@ export async function startCheckoutAction(productId: string, slug: string, formD
       amountIdr: totalIdr,
       payerEmail: customer.email,
       description: p.title,
-      successRedirectUrl: `${siteUrl}/confirmation/${bookingId}`,
-      failureRedirectUrl: `${siteUrl}/p/${slug}`,
+      successRedirectUrl: `${siteUrl}${pathPrefix}/confirmation/${bookingId}`,
+      failureRedirectUrl: `${siteUrl}${pathPrefix}/p/${slug}`,
     });
   } catch (err) {
     await releaseReservations();

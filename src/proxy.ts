@@ -18,6 +18,8 @@ import {
 const LOCALIZED_PATH_PATTERNS: RegExp[] = [
   /^\/$/, // homepage
   /^\/p\/[^/]+$/, // /p/[slug] -- the trip/product page
+  /^\/p\/[^/]+\/request$/, // manual-confirmation request form
+  /^\/confirmation\/[^/]+$/, // booking confirmation
 ];
 
 function isLocalizedPath(pathname: string): boolean {

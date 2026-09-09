@@ -46,8 +46,13 @@ export async function submitBookingRequestAction(
 ) {
   const cookieStore = await cookies();
   const referralCodeInput = cookieStore.get(REFERRAL_COOKIE_NAME)?.value?.trim() ?? "";
+  // Same hidden-field, "carry forward whichever locale they were
+  // already on" approach as startCheckoutAction -- see that action's
+  // comment for why.
+  const locale = formData.get("locale") === "id" ? "id" : "en";
+  const pathPrefix = locale === "id" ? "/id" : "";
 
-  const returnTo = `/p/${slug}/request?date=${encodeURIComponent(date)}&pax=${pax}`;
+  const returnTo = `${pathPrefix}/p/${slug}/request?date=${encodeURIComponent(date)}&pax=${pax}`;
   const customer = await requireCustomer(returnTo);
 
   const hotelName = String(formData.get("hotel_name") ?? "").trim();
@@ -55,7 +60,7 @@ export async function submitBookingRequestAction(
 
   function fail(message: string): never {
     redirect(
-      `/p/${slug}/request?date=${encodeURIComponent(date)}&pax=${pax}&error=${encodeURIComponent(message)}`
+      `${pathPrefix}/p/${slug}/request?date=${encodeURIComponent(date)}&pax=${pax}&error=${encodeURIComponent(message)}`
     );
   }
 

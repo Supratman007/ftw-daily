@@ -154,11 +154,10 @@ export async function ProductPage({
   const averageRating =
     reviews.length > 0 ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length : null;
 
-  // Deliberately NOT locale-prefixed yet -- /request and /gift don't
-  // have Indonesian versions of their own so far (planned next), and
-  // linking to an /id path that doesn't exist would just 404. Update
-  // these once those pages get translated.
-  const requestHref = `/p/${p.slug}/request`;
+  const requestHref = locale === "en" ? `/p/${p.slug}/request` : `/id/p/${p.slug}/request`;
+  // /gift deliberately NOT locale-prefixed yet -- it doesn't have an
+  // Indonesian version of its own so far (planned next), and linking
+  // to an /id path that doesn't exist would just 404.
   const giftHref = `/p/${p.slug}/gift`;
 
   return (
@@ -274,6 +273,7 @@ export async function ProductPage({
             </>
           ) : (
             <form action={startCheckoutAction.bind(null, p.id, p.slug)} className="flex flex-col gap-3">
+              <input type="hidden" name="locale" value={locale} />
               <label className="text-xs font-semibold uppercase tracking-wide text-ink-soft">
                 {dict.dateLabel}
                 <input
