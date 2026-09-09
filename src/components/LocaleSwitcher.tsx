@@ -19,15 +19,25 @@ function hrefFor(locale: Locale, basePath: string): string {
  * no locale prefix (e.g. "/" for the homepage) -- only render this on
  * a page that actually has both versions; linking to an /id page that
  * doesn't exist yet would just 404.
+ *
+ * Styled as a bordered pill group (own background, own border) rather
+ * than plain text -- sitting right above a photo banner, plain text in
+ * the page's ink color nearly disappeared against a busy image. A
+ * solid-background pill stays legible over any photo, same reasoning
+ * as the status-filter pills elsewhere in the admin.
  */
 export function LocaleSwitcher({ locale, basePath }: { locale: Locale; basePath: string }) {
   return (
-    <div className="flex items-center gap-2 text-xs font-semibold">
+    <div className="inline-flex items-center gap-1 rounded-full border border-sand-deep bg-white p-1 text-xs font-semibold shadow-sm">
       {LOCALES.map((l) => (
         <Link
           key={l}
           href={hrefFor(l, basePath)}
-          className={l === locale ? "text-ink underline" : "text-ink-soft hover:text-ink"}
+          className={
+            l === locale
+              ? "rounded-full bg-teal px-3 py-1 text-white"
+              : "rounded-full px-3 py-1 text-ink-soft hover:bg-sand hover:text-ink"
+          }
         >
           {LOCALE_LABELS[l]}
         </Link>

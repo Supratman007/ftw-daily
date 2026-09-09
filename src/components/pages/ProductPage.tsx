@@ -161,7 +161,7 @@ export async function ProductPage({
     <>
       <SiteHeader locale={locale} />
       <main className="mx-auto max-w-4xl px-6 py-10">
-      <div className="flex justify-end">
+      <div className="mb-4 flex justify-end">
         <LocaleSwitcher locale={locale} basePath={`/p/${p.slug}`} />
       </div>
       {p.cover_image_url && (
