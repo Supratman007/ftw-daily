@@ -30,6 +30,18 @@ export interface Product {
   // 0036 migration and src/lib/products/leadTime.ts.
   min_lead_hours: number;
   status: ProductStatus;
+  // Indonesian machine translation (spec-adjacent, confirmed directly
+  // -- see migration 0040). Generated automatically whenever the
+  // English fields below change, but only ever shown to customers once
+  // translation_status is "approved" -- a "draft" sits unreviewed on
+  // the edit page until an admin approves it.
+  title_id: string | null;
+  excerpt_id: string | null;
+  description_id: string | null;
+  translation_status: "none" | "draft" | "approved";
+  translated_from_title: string | null;
+  translated_from_excerpt: string | null;
+  translated_from_description: string | null;
   created_at: string;
   updated_at: string;
 }

@@ -53,7 +53,11 @@ export async function HomePage({
     if (type && type !== "all" && p.product_type !== type) return false;
     if (location && location !== "all" && p.location !== location) return false;
     if (query) {
-      const haystack = `${p.title} ${p.location ?? ""} ${p.category ?? ""}`.toLowerCase();
+      // Matches on the Indonesian title too (when approved) so a
+      // customer searching in Indonesian on /id still finds trips
+      // whose English title doesn't contain the words they typed.
+      const translatedTitle = locale === "id" && p.translation_status === "approved" ? p.title_id : null;
+      const haystack = `${p.title} ${translatedTitle ?? ""} ${p.location ?? ""} ${p.category ?? ""}`.toLowerCase();
       if (!haystack.includes(query)) return false;
     }
     return true;
@@ -140,7 +144,11 @@ export async function HomePage({
                     {PRODUCT_TYPE_LABELS[p.product_type]}
                     {p.location ? ` · ${p.location}` : ""}
                   </p>
-                  <h2 className="font-serif text-lg font-semibold text-ink">{p.title}</h2>
+                  <h2 className="font-serif text-lg font-semibold text-ink">
+                    {locale === "id" && p.translation_status === "approved" && p.title_id
+                      ? p.title_id
+                      : p.title}
+                  </h2>
                   {p.adult_price_usd != null && (
                     <p className="mt-auto pt-2 text-sm font-semibold text-ocean">
                       {formatUsd(p.adult_price_usd)}{" "}

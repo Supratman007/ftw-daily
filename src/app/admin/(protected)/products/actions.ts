@@ -7,6 +7,8 @@ import { slugify } from "@/lib/products/slugify";
 import { decodeHtmlEntities } from "@/lib/products/decode-html-entities";
 import { DEFAULT_MIN_LEAD_HOURS } from "@/lib/products/leadTime";
 import type { ProductType } from "@/lib/products/types";
+import { maybeRetranslateProduct } from "@/lib/i18n/translateProduct";
+import { translateToIndonesian } from "@/lib/i18n/googleTranslate";
 
 const PRODUCT_TYPES: ProductType[] = ["tour", "activity", "car_hire", "transport"];
 
@@ -97,8 +99,16 @@ export async function createProductAction(formData: FormData) {
     redirect(`/admin/products/new?error=${encodeURIComponent(result.error)}`);
   }
 
+  // A brand-new product has no prior translation to compare against,
+  // so this always generates a first Indonesian draft (still unshown
+  // to customers until approved on the edit page).
+  const translationFields = await maybeRetranslateProduct(
+    { title: result.row.title, excerpt: result.row.excerpt, description: result.row.description },
+    null
+  );
+
   const supabase = await createSupabaseServerClient();
-  const { error } = await supabase.from("products").insert(result.row);
+  const { error } = await supabase.from("products").insert({ ...result.row, ...translationFields });
   if (error) {
     redirect(`/admin/products/new?error=${encodeURIComponent(error.message)}`);
   }
@@ -114,13 +124,110 @@ export async function updateProductAction(productId: string, formData: FormData)
   }
 
   const supabase = await createSupabaseServerClient();
+
+  // Only regenerates the Indonesian draft if the English content
+  // actually changed since the last translation -- see
+  // maybeRetranslateProduct for the comparison.
+  const { data: existing } = await supabase
+    .from("products")
+    .select("translated_from_title, translated_from_excerpt, translated_from_description")
+    .eq("id", productId)
+    .maybeSingle();
+  const translationFields = await maybeRetranslateProduct(
+    { title: result.row.title, excerpt: result.row.excerpt, description: result.row.description },
+    existing
+  );
+
   const { error } = await supabase
     .from("products")
-    .update({ ...result.row, updated_at: new Date().toISOString() })
+    .update({ ...result.row, ...translationFields, updated_at: new Date().toISOString() })
     .eq("id", productId);
   if (error) {
     redirect(`/admin/products/${productId}/edit?error=${encodeURIComponent(error.message)}`);
   }
 
   redirect("/admin/products");
+}
+
+/** Publishes an admin's (possibly hand-edited) Indonesian text --
+ * nothing reaches the /id product page until this runs, regardless of
+ * how many machine-translated drafts have been generated in the
+ * meantime. */
+export async function approveProductTranslationAction(productId: string, formData: FormData) {
+  await requireAdminSection("products");
+  const titleId = optionalText(formData, "title_id");
+  const excerptId = optionalText(formData, "excerpt_id");
+  const descriptionId = optionalText(formData, "description_id");
+
+  if (!titleId) {
+    redirect(
+      `/admin/products/${productId}/edit?error=${encodeURIComponent("The Indonesian title can't be empty.")}`
+    );
+  }
+
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase
+    .from("products")
+    .update({
+      title_id: titleId,
+      excerpt_id: excerptId,
+      description_id: descriptionId,
+      translation_status: "approved",
+    })
+    .eq("id", productId);
+
+  if (error) {
+    redirect(`/admin/products/${productId}/edit?error=${encodeURIComponent(error.message)}`);
+  }
+
+  redirect(`/admin/products/${productId}/edit?translation_saved=1`);
+}
+
+/** Re-runs machine translation from the product's current English
+ * content, ignoring whatever draft is already there -- for when the
+ * first attempt read oddly, or a previous attempt failed outright
+ * (missing/invalid API key, Google Translate briefly down). Still
+ * lands as a "draft" -- this never publishes anything by itself. */
+export async function retranslateProductAction(productId: string) {
+  await requireAdminSection("products");
+
+  const supabase = await createSupabaseServerClient();
+  const { data: product } = await supabase
+    .from("products")
+    .select("title, excerpt, description")
+    .eq("id", productId)
+    .maybeSingle();
+
+  if (!product) {
+    redirect(`/admin/products/${productId}/edit?error=${encodeURIComponent("Product not found.")}`);
+  }
+
+  try {
+    const [titleId, excerptId, descriptionId] = await translateToIndonesian([
+      product.title,
+      product.excerpt ?? "",
+      product.description ?? "",
+    ]);
+    const { error } = await supabase
+      .from("products")
+      .update({
+        title_id: titleId || null,
+        excerpt_id: excerptId || null,
+        description_id: descriptionId || null,
+        translation_status: "draft",
+        translated_from_title: product.title,
+        translated_from_excerpt: product.excerpt,
+        translated_from_description: product.description,
+      })
+      .eq("id", productId);
+    if (error) {
+      redirect(`/admin/products/${productId}/edit?error=${encodeURIComponent(error.message)}`);
+    }
+  } catch (err) {
+    redirect(
+      `/admin/products/${productId}/edit?error=${encodeURIComponent(`Translation failed: ${(err as Error).message}`)}`
+    );
+  }
+
+  redirect(`/admin/products/${productId}/edit?retranslated=1`);
 }

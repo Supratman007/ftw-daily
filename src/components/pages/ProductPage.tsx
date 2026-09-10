@@ -77,6 +77,14 @@ export async function ProductPage({
   const adultPriceUsd = p.adult_price_usd ?? 0;
   const isCarHire = p.product_type === "car_hire";
   const isTransport = p.product_type === "transport";
+  // Falls back to English until the Indonesian translation is
+  // approved (src/components/admin/ProductTranslationReview.tsx) --
+  // covers all three layout branches below, including Car Hire/
+  // Transport, whose booking *forms* stay English but whose title/
+  // description here are just display text.
+  const displayTitle = locale === "id" && p.translation_status === "approved" && p.title_id ? p.title_id : p.title;
+  const displayDescription =
+    locale === "id" && p.translation_status === "approved" && p.description_id ? p.description_id : p.description;
   // Keeps the date picker itself from ever offering a date the server
   // would reject -- see src/lib/products/leadTime.ts.
   const minDate = earliestBookableDate(p.min_lead_hours);
@@ -175,10 +183,10 @@ export async function ProductPage({
 
       {isCarHire ? (
         <CarHireProductSection
-          title={p.title}
+          title={displayTitle}
           location={p.location}
           durationLabel={p.duration_label}
-          description={p.description}
+          description={displayDescription}
           action={startCarHireCheckoutAction.bind(null, p.id, p.slug)}
           carTypes={carTypes}
           packages={carPackages}
@@ -191,10 +199,10 @@ export async function ProductPage({
         />
       ) : isTransport ? (
         <TransportProductSection
-          title={p.title}
+          title={displayTitle}
           location={p.location}
           durationLabel={p.duration_label}
-          description={p.description}
+          description={displayDescription}
           action={startTransportCheckoutAction.bind(null, p.id, p.slug)}
           vehicleTypes={transportVehicleTypes}
           prices={transportPrices}
@@ -210,10 +218,10 @@ export async function ProductPage({
           <p className="font-mono text-xs uppercase tracking-widest text-ink-soft">
             {p.location} {p.duration_label ? `· ${p.duration_label}` : ""}
           </p>
-          <h1 className="mt-1 font-serif text-3xl font-semibold text-ink">{p.title}</h1>
-          {p.description && (
+          <h1 className="mt-1 font-serif text-3xl font-semibold text-ink">{displayTitle}</h1>
+          {displayDescription && (
             <p className="mt-4 whitespace-pre-wrap text-sm leading-relaxed text-ink-soft">
-              {p.description}
+              {displayDescription}
             </p>
           )}
         </div>
