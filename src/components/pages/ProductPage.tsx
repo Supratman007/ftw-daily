@@ -604,15 +604,22 @@ export async function ProductPage({
       </main>
 
       {!isCarHire && !isTransport && (
+        // min-w-0 on the price side is the actual fix, not decoration:
+        // a flex child's default min-width is "auto" (its content's
+        // natural width), which on a narrow phone (this bar was
+        // overflowing the viewport on a 375px-wide iPhone 6s) can add
+        // up to wider than the screen with nothing to shrink -- min-w-0
+        // lets it truncate instead of forcing the whole bar, and with
+        // it the whole page, wider than the viewport.
         <div className="fixed inset-x-0 bottom-0 z-30 border-t border-sand-deep bg-white p-3 shadow-[0_-4px_12px_rgba(0,0,0,0.08)] md:hidden">
-          <div className="mx-auto flex max-w-4xl items-center justify-between gap-3 px-3">
-            <div className="font-serif text-lg font-bold text-ocean">
+          <div className="mx-auto flex max-w-4xl items-center justify-between gap-2 px-1">
+            <div className="min-w-0 truncate font-serif text-base font-bold text-ocean sm:text-lg">
               {formatUsd(adultPriceUsd)}{" "}
               <span className="text-xs font-normal text-ink-soft">{dict.perPerson}</span>
             </div>
             <a
               href="#booking"
-              className="rounded-lg bg-coral px-5 py-2.5 text-sm font-semibold text-white"
+              className="flex-shrink-0 whitespace-nowrap rounded-lg bg-coral px-4 py-2.5 text-sm font-semibold text-white"
             >
               {dict.mobileBookingCta}
             </a>

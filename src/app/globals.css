@@ -36,6 +36,18 @@
   --color-ink-soft: var(--color-ink-soft);
 }
 
+/* Belt-and-suspenders against the phone-width horizontal-scroll bug
+   (found live on an iPhone 6s at 375px wide -- a flex row that doesn't
+   fit pushes the whole page wider than the viewport, and every
+   ancestor's overflow is visible/scrollable by default). Every actual
+   overflow that caused this was fixed at its source too; this just
+   means a future one clips instead of becoming a sideways-scrolling
+   page, on any screen size. */
+html, body {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
