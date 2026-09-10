@@ -252,6 +252,16 @@ export const id = {
     forAQuote: "untuk mendapatkan penawaran.",
     continueToCheckout: "Lanjutkan ke pembayaran",
   },
+  footer: {
+    privacyPolicy: "Kebijakan Privasi",
+    termsOfService: "Syarat & Ketentuan",
+  },
+  cookieNotice: {
+    message:
+      "Kami menggunakan beberapa cookie penting untuk mengingat bahasa Anda dan menjaga Anda tetap masuk, serta penghitung pengunjung anonim agar kami tahu halaman mana yang benar-benar digunakan orang.",
+    learnMore: "Pelajari lebih lanjut",
+    accept: "Mengerti",
+  },
   checkoutErrors: {
     invalidDate: "Silakan pilih tanggal yang valid.",
     travelersRange: "Silakan pilih antara 1 hingga 20 wisatawan.",

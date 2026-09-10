@@ -1,6 +1,8 @@
 import { Fragment } from "react";
 import Link from "next/link";
 import { SiteHeader } from "@/components/SiteHeader";
+import { SiteFooter } from "@/components/SiteFooter";
+import { SiteCookieNotice } from "@/components/SiteCookieNotice";
 import { PageViewTracker } from "@/components/PageViewTracker";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/service";
 import { submitReviewAction } from "./actions";
@@ -137,6 +139,8 @@ export default async function ReviewPage({
           ← Back to home
         </Link>
       </main>
+      <SiteFooter />
+      <SiteCookieNotice />
     </>
   );
 }

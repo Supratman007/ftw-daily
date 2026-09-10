@@ -4,6 +4,8 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { formatIdr, formatUsd, usdToIdr } from "@/lib/currency";
 import type { Product } from "@/lib/products/types";
 import { SiteHeader } from "@/components/SiteHeader";
+import { SiteFooter } from "@/components/SiteFooter";
+import { SiteCookieNotice } from "@/components/SiteCookieNotice";
 import { PageViewTracker } from "@/components/PageViewTracker";
 import { startGiftCheckoutAction } from "@/app/p/[slug]/gift/actions";
 import { getDictionary } from "@/lib/i18n/getDictionary";
@@ -156,6 +158,8 @@ export async function GiftPurchasePage({
           </button>
         </form>
       </main>
+      <SiteFooter locale={locale} />
+      <SiteCookieNotice locale={locale} />
     </>
   );
 }

@@ -22,6 +22,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const entries: MetadataRoute.Sitemap = [
     { url: `${siteUrl}/`, changeFrequency: "weekly", priority: 1 },
     { url: `${siteUrl}/id`, changeFrequency: "weekly", priority: 1 },
+    { url: `${siteUrl}/privacy`, changeFrequency: "yearly", priority: 0.2 },
+    { url: `${siteUrl}/id/privacy`, changeFrequency: "yearly", priority: 0.2 },
+    { url: `${siteUrl}/terms`, changeFrequency: "yearly", priority: 0.2 },
+    { url: `${siteUrl}/id/terms`, changeFrequency: "yearly", priority: 0.2 },
   ];
 
   for (const p of products ?? []) {

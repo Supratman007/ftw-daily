@@ -271,6 +271,16 @@ export const en = {
     forAQuote: "for a quote.",
     continueToCheckout: "Continue to checkout",
   },
+  footer: {
+    privacyPolicy: "Privacy Policy",
+    termsOfService: "Terms of Service",
+  },
+  cookieNotice: {
+    message:
+      "We use a few essential cookies to remember your language and keep you signed in, plus an anonymous visitor counter so we know which pages people actually use.",
+    learnMore: "Learn more",
+    accept: "Got it",
+  },
   // Server-side validation messages for the three checkout Server
   // Actions (startCheckoutAction, startCarHireCheckoutAction,
   // startTransportCheckoutAction in src/app/p/[slug]/actions.ts) --

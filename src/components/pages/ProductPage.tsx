@@ -11,6 +11,8 @@ import type {
   TransportVehicleType,
 } from "@/lib/cars/types";
 import { SiteHeader } from "@/components/SiteHeader";
+import { SiteFooter } from "@/components/SiteFooter";
+import { SiteCookieNotice } from "@/components/SiteCookieNotice";
 import { PageViewTracker } from "@/components/PageViewTracker";
 import { CarHireProductSection } from "@/components/CarHireProductSection";
 import { TransportProductSection } from "@/components/TransportProductSection";
@@ -360,6 +362,8 @@ export async function ProductPage({
 
       <ProductReviews reviews={reviews} averageRating={averageRating} locale={locale} />
       </main>
+      <SiteFooter locale={locale} />
+      <SiteCookieNotice locale={locale} />
     </>
   );
 }

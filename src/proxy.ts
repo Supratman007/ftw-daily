@@ -23,6 +23,8 @@ const LOCALIZED_PATH_PATTERNS: RegExp[] = [
   /^\/login$/,
   /^\/forgot-password$/,
   /^\/reset-password$/,
+  /^\/privacy$/,
+  /^\/terms$/,
   /^\/p\/[^/]+\/gift$/, // buy a trip as a gift
   /^\/redeem$/, // redeem a gift voucher
   /^\/gift\/confirmation\/[^/]+$/, // gift voucher purchase confirmation

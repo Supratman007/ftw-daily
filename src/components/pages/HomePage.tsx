@@ -4,6 +4,8 @@ import { formatUsd, formatIdr, usdToIdr } from "@/lib/currency";
 import { PRODUCT_TYPE_LABELS } from "@/lib/products/types";
 import type { Product } from "@/lib/products/types";
 import { SiteHeader } from "@/components/SiteHeader";
+import { SiteFooter } from "@/components/SiteFooter";
+import { SiteCookieNotice } from "@/components/SiteCookieNotice";
 import { LocaleSwitcher } from "@/components/LocaleSwitcher";
 import { PageViewTracker } from "@/components/PageViewTracker";
 import { getDictionary } from "@/lib/i18n/getDictionary";
@@ -165,6 +167,8 @@ export async function HomePage({
           </div>
         )}
       </main>
+      <SiteFooter locale={locale} />
+      <SiteCookieNotice locale={locale} />
     </>
   );
 }

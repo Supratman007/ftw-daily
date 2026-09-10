@@ -5,6 +5,8 @@ import { formatIdr, formatUsd, usdToIdr } from "@/lib/currency";
 import { PARK_INSURANCE_FEE_IDR } from "@/lib/bookings/types";
 import type { Product } from "@/lib/products/types";
 import { SiteHeader } from "@/components/SiteHeader";
+import { SiteFooter } from "@/components/SiteFooter";
+import { SiteCookieNotice } from "@/components/SiteCookieNotice";
 import { PageViewTracker } from "@/components/PageViewTracker";
 import { submitBookingRequestAction } from "@/app/p/[slug]/request/actions";
 import { getDictionary } from "@/lib/i18n/getDictionary";
@@ -173,6 +175,8 @@ export async function RequestPage({
           <p className="text-xs text-ink-soft">{dict.notice}</p>
         </form>
       </main>
+      <SiteFooter locale={locale} />
+      <SiteCookieNotice locale={locale} />
     </>
   );
 }

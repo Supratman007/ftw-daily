@@ -3,6 +3,8 @@ import { createSupabaseServiceRoleClient } from "@/lib/supabase/service";
 import { formatIdr } from "@/lib/currency";
 import { SUPPORT_EMAIL } from "@/lib/contact";
 import { SiteHeader } from "@/components/SiteHeader";
+import { SiteFooter } from "@/components/SiteFooter";
+import { SiteCookieNotice } from "@/components/SiteCookieNotice";
 import { PageViewTracker } from "@/components/PageViewTracker";
 import { submitRedemptionRequestAction } from "@/app/redeem/actions";
 import { getDictionary } from "@/lib/i18n/getDictionary";
@@ -74,6 +76,8 @@ export async function RedeemPage({
             </button>
           </form>
         </main>
+        <SiteFooter locale={locale} />
+        <SiteCookieNotice locale={locale} />
       </>
     );
   }
@@ -103,6 +107,8 @@ export async function RedeemPage({
             {dict.notFoundBodyEnd}
           </p>
         </main>
+        <SiteFooter locale={locale} />
+        <SiteCookieNotice locale={locale} />
       </>
     );
   }
@@ -282,6 +288,8 @@ export async function RedeemPage({
           {dict.backToSite}
         </Link>
       </main>
+      <SiteFooter locale={locale} />
+      <SiteCookieNotice locale={locale} />
     </>
   );
 }
