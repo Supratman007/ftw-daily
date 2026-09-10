@@ -77,13 +77,20 @@ function parseExplicitLocaleParam(value: string | null): Locale | undefined {
  *    src/lib/admin/auth.ts's requireAdmin(), called from the protected
  *    layout and every admin Server Action. This is a fast door, not the
  *    lock.
+ *
+ * Also stamps an `x-locale` request header (en/id) on every request --
+ * the root layout (src/app/layout.tsx) reads it via next/headers to set
+ * <html lang>, since a Server Component has no other way to know which
+ * side of the /id split the current request is on (there's no [lang]
+ * route segment; see src/lib/i18n/locales.ts for why).
  */
 export async function proxy(request: NextRequest) {
   const refCode = request.nextUrl.searchParams.get("ref");
   const pathname = request.nextUrl.pathname;
+  const isIdPath = pathname === "/id" || pathname.startsWith("/id/");
+  request.headers.set("x-locale", isIdPath ? "id" : "en");
 
   if (!pathname.startsWith("/admin")) {
-    const isIdPath = pathname === "/id" || pathname.startsWith("/id/");
     const storedLocale = parseLocaleCookie(request.cookies.get(LOCALE_COOKIE_NAME)?.value);
     const explicitLocale = parseExplicitLocaleParam(request.nextUrl.searchParams.get("lang"));
     // An explicit switcher click always wins over whatever was stored
@@ -113,7 +120,7 @@ export async function proxy(request: NextRequest) {
       }
     }
 
-    const response = NextResponse.next();
+    const response = NextResponse.next({ request });
     if (refCode) {
       response.cookies.set(REFERRAL_COOKIE_NAME, refCode, {
         maxAge: REFERRAL_COOKIE_MAX_AGE_SECONDS,

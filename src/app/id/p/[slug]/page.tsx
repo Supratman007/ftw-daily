@@ -1,4 +1,15 @@
+import type { Metadata } from "next";
 import { ProductPage } from "@/components/pages/ProductPage";
+import { localizedAlternates } from "@/lib/i18n/metadata";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  return { alternates: localizedAlternates(`/p/${slug}`, `/id/p/${slug}`) };
+}
 
 /** Thin Indonesian entrypoint -- see ProductPage for the real
  * implementation, shared with src/app/p/[slug]/page.tsx (English). */

@@ -1,4 +1,10 @@
+import type { Metadata } from "next";
 import { HomePage } from "@/components/pages/HomePage";
+import { localizedAlternates } from "@/lib/i18n/metadata";
+
+export function generateMetadata(): Metadata {
+  return { alternates: localizedAlternates("/", "/id") };
+}
 
 /** Thin English entrypoint -- see HomePage for the real implementation,
  * shared with src/app/id/page.tsx. */
