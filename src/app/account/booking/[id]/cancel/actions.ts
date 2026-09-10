@@ -195,6 +195,7 @@ export async function submitCancellationRequestAction(bookingId: string, locale:
       path,
       calculatedRefundIdr: calculatedRefundAmountIdr,
       bookingUrl,
+      locale: customer.preferred_locale,
     }),
   ]);
 

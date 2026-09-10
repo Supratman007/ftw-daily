@@ -27,6 +27,9 @@ interface TransportProductSectionProps {
   /** Same "optional, defaults to English inside the form itself" story
    * as priceLabel -- passed straight through to TransportBookingForm. */
   formDict?: TransportFormDict;
+  /** Passed straight through to TransportBookingForm's hidden locale
+   * field. */
+  locale?: "en" | "id";
 }
 
 /** Transport's product-page layout -- same reasoning as
@@ -47,6 +50,7 @@ export function TransportProductSection({
   error,
   priceLabel = "Price by pickup area — pick your options below",
   formDict,
+  locale,
 }: TransportProductSectionProps) {
   const [selectedVehicleType, setSelectedVehicleType] = useState<TransportVehicleType | undefined>(
     vehicleTypes[0]
@@ -107,6 +111,7 @@ export function TransportProductSection({
           minPickupDate={minPickupDate}
           onVehicleTypeChange={setSelectedVehicleType}
           dict={formDict}
+          locale={locale}
         />
       </div>
     </div>

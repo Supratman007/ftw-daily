@@ -299,6 +299,7 @@ export async function submitBookingRequestAction(
       productTitle: p.title,
       slotDate: date,
       bookingCode,
+      locale,
     }),
   ]);
 

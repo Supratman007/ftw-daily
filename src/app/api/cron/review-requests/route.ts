@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
 
   const { data: bookings, error } = await supabase
     .from("bookings")
-    .select("id, customers(name, email), products(title)")
+    .select("id, customers(name, email, preferred_locale), products(title)")
     .eq("status", "paid_confirmed")
     .eq("service_end_date", today)
     .is("review_requested_at", null);
@@ -42,7 +42,11 @@ export async function GET(request: NextRequest) {
   let sent = 0;
 
   for (const booking of bookings ?? []) {
-    const customer = booking.customers as unknown as { name: string; email: string } | null;
+    const customer = booking.customers as unknown as {
+      name: string;
+      email: string;
+      preferred_locale: "en" | "id";
+    } | null;
     const product = booking.products as unknown as { title: string } | null;
     if (!customer || !product) continue;
 
@@ -62,6 +66,7 @@ export async function GET(request: NextRequest) {
       customerName: customer.name,
       productTitle: product.title,
       reviewUrl: `${siteUrl}/review/${token}`,
+      locale: customer.preferred_locale,
     });
     sent++;
   }

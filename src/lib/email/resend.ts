@@ -1,6 +1,63 @@
 import "server-only";
 import { formatIdr, formatUsd } from "@/lib/currency";
 import { SUPPORT_EMAIL, WHATSAPP_NUMBER, whatsappLink } from "@/lib/contact";
+import type { Locale } from "@/lib/i18n/locales";
+
+/**
+ * Every send*Email function below whose recipient is a customer takes
+ * a `locale` param and builds its own small `t = locale === "id" ? {...}
+ * : {...}` translation object right where it's needed -- same "plain
+ * object, not the shared UI dictionary" reasoning as CarHireFormDict
+ * (src/components/CarHireBookingForm.tsx): these are HTML email bodies
+ * with embedded conditional rows, not page-rendered dictionary-shaped
+ * text, so they don't fit getDictionary()'s shape well. `ROW_LABELS`
+ * just below covers the handful of one-word table labels (Booking
+ * code, Date, ...) repeated across many of these emails.
+ *
+ * Staff-facing emails (sendNew*StaffEmail, sendPickupTimeChangedStaffEmail,
+ * sendAdminNewReviewEmail) and Sales Agent emails (sendAgentApprovedEmail,
+ * sendAgentBankChangeConfirmEmail, sendNewAgentStaffEmail) are
+ * deliberately NOT translated -- staff and agents use the English-only
+ * admin/agent panels regardless of a customer's language, same
+ * intentional scope as those panels.
+ */
+const ROW_LABELS: Record<Locale, {
+  bookingCode: string;
+  date: string;
+  travelers: string;
+  totalPaid: string;
+  total: string;
+  discount: (code: string) => string;
+  pickup: string;
+  voucherCode: string;
+  value: string;
+  expires: string;
+}> = {
+  en: {
+    bookingCode: "Booking code",
+    date: "Date",
+    travelers: "Travelers",
+    totalPaid: "Total paid",
+    total: "Total",
+    discount: (code) => `Discount (${code})`,
+    pickup: "Pickup",
+    voucherCode: "Voucher code",
+    value: "Value",
+    expires: "Expires",
+  },
+  id: {
+    bookingCode: "Kode pemesanan",
+    date: "Tanggal",
+    travelers: "Wisatawan",
+    totalPaid: "Total dibayar",
+    total: "Total",
+    discount: (code) => `Diskon (${code})`,
+    pickup: "Penjemputan",
+    voucherCode: "Kode voucher",
+    value: "Nilai",
+    expires: "Kedaluwarsa",
+  },
+};
 
 /**
  * Shared send -- both templates below go through this. Sends from
@@ -61,38 +118,57 @@ interface BookingConfirmedEmailParams {
    * §6a/§6e) -- e.g. "Sep 5, 2026, 8:00 AM from Senggigi (Toyota
    * Avanza, 8h)". Omitted entirely for every other product type. */
   pickupNote?: string | null;
+  locale: Locale;
 }
 
 /** Sends the "booking confirmed" email (spec §6g) to the customer. */
 export async function sendBookingConfirmedEmail(params: BookingConfirmedEmailParams): Promise<void> {
+  const l = ROW_LABELS[params.locale];
+  const t =
+    params.locale === "id"
+      ? {
+          heading: "Pemesanan dikonfirmasi",
+          greeting: (name: string) => `Hai ${name},`,
+          body: (title: string) => `Pemesanan Anda untuk <strong>${title}</strong> telah dikonfirmasi.`,
+          viewBooking: "Lihat pemesanan Anda",
+          subject: (title: string) => `Pemesanan dikonfirmasi — ${title}`,
+        }
+      : {
+          heading: "Booking confirmed",
+          greeting: (name: string) => `Hi ${name},`,
+          body: (title: string) => `Your booking for <strong>${title}</strong> is confirmed.`,
+          viewBooking: "View your booking",
+          subject: (title: string) => `Booking confirmed — ${title}`,
+        };
+
   const discountRow =
     params.discountCode && params.discountAmountUsd
-      ? `<tr><td style="padding: 6px 0; color: #4B5854;">Discount (${escapeHtml(params.discountCode)})</td><td style="padding: 6px 0; text-align: right;">-${formatUsd(params.discountAmountUsd)}</td></tr>`
+      ? `<tr><td style="padding: 6px 0; color: #4B5854;">${l.discount(escapeHtml(params.discountCode))}</td><td style="padding: 6px 0; text-align: right;">-${formatUsd(params.discountAmountUsd)}</td></tr>`
       : "";
   const pickupRow = params.pickupNote
-    ? `<tr><td style="padding: 6px 0; color: #4B5854;">Pickup</td><td style="padding: 6px 0; text-align: right;">${escapeHtml(params.pickupNote)}</td></tr>`
+    ? `<tr><td style="padding: 6px 0; color: #4B5854;">${l.pickup}</td><td style="padding: 6px 0; text-align: right;">${escapeHtml(params.pickupNote)}</td></tr>`
     : "";
 
   const html = `
     <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
-      <h1 style="color: #0F3A3D;">Booking confirmed</h1>
-      <p>Hi ${escapeHtml(params.customerName)},</p>
-      <p>Your booking for <strong>${escapeHtml(params.productTitle)}</strong> is confirmed.</p>
+      <h1 style="color: #0F3A3D;">${t.heading}</h1>
+      <p>${t.greeting(escapeHtml(params.customerName))}</p>
+      <p>${t.body(escapeHtml(params.productTitle))}</p>
       <table style="width: 100%; border-collapse: collapse; margin: 16px 0;">
-        <tr><td style="padding: 6px 0; color: #4B5854;">Booking code</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">${escapeHtml(params.bookingCode)}</td></tr>
-        <tr><td style="padding: 6px 0; color: #4B5854;">Date</td><td style="padding: 6px 0; text-align: right;">${escapeHtml(params.slotDate)}</td></tr>
-        <tr><td style="padding: 6px 0; color: #4B5854;">Travelers</td><td style="padding: 6px 0; text-align: right;">${params.paxCount}</td></tr>
+        <tr><td style="padding: 6px 0; color: #4B5854;">${l.bookingCode}</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">${escapeHtml(params.bookingCode)}</td></tr>
+        <tr><td style="padding: 6px 0; color: #4B5854;">${l.date}</td><td style="padding: 6px 0; text-align: right;">${escapeHtml(params.slotDate)}</td></tr>
+        <tr><td style="padding: 6px 0; color: #4B5854;">${l.travelers}</td><td style="padding: 6px 0; text-align: right;">${params.paxCount}</td></tr>
         ${pickupRow}
         ${discountRow}
-        <tr><td style="padding: 6px 0; color: #4B5854;">Total paid</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">${escapeHtml(formatIdr(params.totalIdr))}</td></tr>
+        <tr><td style="padding: 6px 0; color: #4B5854;">${l.totalPaid}</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">${escapeHtml(formatIdr(params.totalIdr))}</td></tr>
       </table>
-      <p><a href="${params.bookingUrl}" style="display: inline-block; background: #E1613C; color: #fff; padding: 10px 18px; border-radius: 8px; text-decoration: none;">View your booking</a></p>
+      <p><a href="${params.bookingUrl}" style="display: inline-block; background: #E1613C; color: #fff; padding: 10px 18px; border-radius: 8px; text-decoration: none;">${t.viewBooking}</a></p>
     </div>
   `;
 
   await sendEmail({
     to: params.toEmail,
-    subject: `Booking confirmed — ${params.productTitle}`,
+    subject: t.subject(params.productTitle),
     html,
   });
 }
@@ -104,6 +180,7 @@ interface PaymentFailedEmailParams {
   slotDate: string;
   bookingCode: string;
   productUrl: string;
+  locale: Locale;
 }
 
 /**
@@ -116,23 +193,40 @@ interface PaymentFailedEmailParams {
  * was charged, and the spot was released.
  */
 export async function sendPaymentFailedEmail(params: PaymentFailedEmailParams): Promise<void> {
+  const t =
+    params.locale === "id"
+      ? {
+          heading: "Pembayaran tidak berhasil",
+          greeting: (name: string) => `Hai ${name},`,
+          body: (title: string, date: string, code: string) =>
+            `Percobaan pemesanan Anda untuk <strong>${title}</strong> pada ${date} (${code}) tidak selesai, jadi tidak ada biaya yang dikenakan.`,
+          tryAgain: "Jika Anda masih ingin memesan, silakan coba lagi.",
+          button: "Coba pesan lagi",
+          subject: (title: string) => `Pembayaran tidak berhasil — ${title}`,
+        }
+      : {
+          heading: "Payment didn&rsquo;t go through",
+          greeting: (name: string) => `Hi ${name},`,
+          body: (title: string, date: string, code: string) =>
+            `Your booking attempt for <strong>${title}</strong> on ${date} (${code}) wasn&rsquo;t completed, so nothing was charged.`,
+          tryAgain: "If you&rsquo;d still like to book, you&rsquo;re welcome to try again.",
+          button: "Try booking again",
+          subject: (title: string) => `Payment didn't go through — ${title}`,
+        };
+
   const html = `
     <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
-      <h1 style="color: #B3441E;">Payment didn&rsquo;t go through</h1>
-      <p>Hi ${escapeHtml(params.customerName)},</p>
-      <p>
-        Your booking attempt for <strong>${escapeHtml(params.productTitle)}</strong> on
-        ${escapeHtml(params.slotDate)} (${escapeHtml(params.bookingCode)}) wasn&rsquo;t completed,
-        so nothing was charged.
-      </p>
-      <p>If you&rsquo;d still like to book, you&rsquo;re welcome to try again.</p>
-      <p><a href="${params.productUrl}" style="display: inline-block; background: #E1613C; color: #fff; padding: 10px 18px; border-radius: 8px; text-decoration: none;">Try booking again</a></p>
+      <h1 style="color: #B3441E;">${t.heading}</h1>
+      <p>${t.greeting(escapeHtml(params.customerName))}</p>
+      <p>${t.body(escapeHtml(params.productTitle), escapeHtml(params.slotDate), escapeHtml(params.bookingCode))}</p>
+      <p>${t.tryAgain}</p>
+      <p><a href="${params.productUrl}" style="display: inline-block; background: #E1613C; color: #fff; padding: 10px 18px; border-radius: 8px; text-decoration: none;">${t.button}</a></p>
     </div>
   `;
 
   await sendEmail({
     to: params.toEmail,
-    subject: `Payment didn't go through — ${params.productTitle}`,
+    subject: t.subject(params.productTitle),
     html,
   });
 }
@@ -370,6 +464,7 @@ interface BookingRequestReceivedEmailParams {
   productTitle: string;
   slotDate: string;
   bookingCode: string;
+  locale: Locale;
 }
 
 /**
@@ -381,20 +476,40 @@ interface BookingRequestReceivedEmailParams {
 export async function sendBookingRequestReceivedEmail(
   params: BookingRequestReceivedEmailParams
 ): Promise<void> {
+  const l = ROW_LABELS[params.locale];
+  const t =
+    params.locale === "id"
+      ? {
+          heading: "Permintaan diterima",
+          body: (name: string, title: string, date: string) =>
+            `Hai ${name}, kami telah menerima permintaan pemesanan Anda untuk <strong>${title}</strong> pada ${date}.`,
+          notice:
+            "Belum ada biaya yang dikenakan. Perjalanan ini memerlukan pemeriksaan manual ketersediaan izin taman sebelum kami dapat mengonfirmasi — kami akan mengirim email segera setelah kami tahu, biasanya dalam satu atau dua hari.",
+          subject: (title: string) => `Permintaan diterima — ${title}`,
+        }
+      : {
+          heading: "Request received",
+          body: (name: string, title: string, date: string) =>
+            `Hi ${name}, we've received your booking request for <strong>${title}</strong> on ${date}.`,
+          notice:
+            "Nothing has been charged yet. This trip needs us to manually check park permit availability before we can confirm -- we'll email you as soon as we know, usually within a day or two.",
+          subject: (title: string) => `Request received — ${title}`,
+        };
+
   const html = `
     <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
-      <h1 style="color: #0F3A3D;">Request received</h1>
-      <p>Hi ${escapeHtml(params.customerName)}, we've received your booking request for <strong>${escapeHtml(params.productTitle)}</strong> on ${escapeHtml(params.slotDate)}.</p>
-      <p>Nothing has been charged yet. This trip needs us to manually check park permit availability before we can confirm -- we'll email you as soon as we know, usually within a day or two.</p>
+      <h1 style="color: #0F3A3D;">${t.heading}</h1>
+      <p>${t.body(escapeHtml(params.customerName), escapeHtml(params.productTitle), escapeHtml(params.slotDate))}</p>
+      <p>${t.notice}</p>
       <table style="width: 100%; border-collapse: collapse; margin: 16px 0;">
-        <tr><td style="padding: 6px 0; color: #4B5854;">Booking code</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">${escapeHtml(params.bookingCode)}</td></tr>
+        <tr><td style="padding: 6px 0; color: #4B5854;">${l.bookingCode}</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">${escapeHtml(params.bookingCode)}</td></tr>
       </table>
     </div>
   `;
 
   await sendEmail({
     to: params.toEmail,
-    subject: `Request received — ${params.productTitle}`,
+    subject: t.subject(params.productTitle),
     html,
   });
 }
@@ -450,6 +565,7 @@ interface BookingRequestConfirmedEmailParams {
   bookingCode: string;
   totalIdr: number;
   paymentUrl: string;
+  locale: Locale;
 }
 
 /**
@@ -461,22 +577,44 @@ interface BookingRequestConfirmedEmailParams {
 export async function sendBookingRequestConfirmedEmail(
   params: BookingRequestConfirmedEmailParams
 ): Promise<void> {
+  const l = ROW_LABELS[params.locale];
+  const t =
+    params.locale === "id"
+      ? {
+          heading: "Anda dikonfirmasi — selesaikan pembayaran untuk mengamankan tempat Anda",
+          body: (name: string, title: string, date: string) =>
+            `Hai ${name}, kabar baik: izin taman tersedia untuk <strong>${title}</strong> pada ${date}.`,
+          notice:
+            "Selesaikan pembayaran dalam <strong>24 jam</strong> untuk mengunci tempat Anda — setelah itu, tempat akan dilepas kembali ke ketersediaan umum.",
+          button: "Selesaikan pembayaran",
+          subject: (title: string) => `Dikonfirmasi — selesaikan pembayaran untuk ${title}`,
+        }
+      : {
+          heading: "You're confirmed — complete payment to secure your spot",
+          body: (name: string, title: string, date: string) =>
+            `Hi ${name}, good news: park permits are available for <strong>${title}</strong> on ${date}.`,
+          notice:
+            "Complete payment within <strong>24 hours</strong> to lock in your spot -- after that, it's released back to general availability.",
+          button: "Complete payment",
+          subject: (title: string) => `Confirmed — complete payment for ${title}`,
+        };
+
   const html = `
     <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
-      <h1 style="color: #0F3A3D;">You're confirmed — complete payment to secure your spot</h1>
-      <p>Hi ${escapeHtml(params.customerName)}, good news: park permits are available for <strong>${escapeHtml(params.productTitle)}</strong> on ${escapeHtml(params.slotDate)}.</p>
-      <p>Complete payment within <strong>24 hours</strong> to lock in your spot -- after that, it's released back to general availability.</p>
+      <h1 style="color: #0F3A3D;">${t.heading}</h1>
+      <p>${t.body(escapeHtml(params.customerName), escapeHtml(params.productTitle), escapeHtml(params.slotDate))}</p>
+      <p>${t.notice}</p>
       <table style="width: 100%; border-collapse: collapse; margin: 16px 0;">
-        <tr><td style="padding: 6px 0; color: #4B5854;">Booking code</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">${escapeHtml(params.bookingCode)}</td></tr>
-        <tr><td style="padding: 6px 0; color: #4B5854;">Total</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">${escapeHtml(formatIdr(params.totalIdr))}</td></tr>
+        <tr><td style="padding: 6px 0; color: #4B5854;">${l.bookingCode}</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">${escapeHtml(params.bookingCode)}</td></tr>
+        <tr><td style="padding: 6px 0; color: #4B5854;">${l.total}</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">${escapeHtml(formatIdr(params.totalIdr))}</td></tr>
       </table>
-      <p><a href="${params.paymentUrl}" style="display: inline-block; background: #E1613C; color: #fff; padding: 10px 18px; border-radius: 8px; text-decoration: none;">Complete payment</a></p>
+      <p><a href="${params.paymentUrl}" style="display: inline-block; background: #E1613C; color: #fff; padding: 10px 18px; border-radius: 8px; text-decoration: none;">${t.button}</a></p>
     </div>
   `;
 
   await sendEmail({
     to: params.toEmail,
-    subject: `Confirmed — complete payment for ${params.productTitle}`,
+    subject: t.subject(params.productTitle),
     html,
   });
 }
@@ -489,6 +627,7 @@ interface BookingRequestDeclinedEmailParams {
   bookingCode: string;
   declineReason: string;
   productUrl: string;
+  locale: Locale;
 }
 
 /** Sent when park quota isn't available -- nothing was ever charged
@@ -498,19 +637,38 @@ interface BookingRequestDeclinedEmailParams {
 export async function sendBookingRequestDeclinedEmail(
   params: BookingRequestDeclinedEmailParams
 ): Promise<void> {
+  const t =
+    params.locale === "id"
+      ? {
+          heading: "Kami tidak dapat mengonfirmasi permintaan ini",
+          body: (name: string, title: string, date: string, code: string) =>
+            `Hai ${name}, sayangnya kami tidak dapat mengonfirmasi <strong>${title}</strong> pada ${date} (${code}).`,
+          notice: "Tidak ada biaya yang dikenakan. Anda dipersilakan untuk mengajukan tanggal lain.",
+          button: "Coba tanggal lain",
+          subject: (title: string) => `Tidak dapat dikonfirmasi — ${title}`,
+        }
+      : {
+          heading: "We couldn't confirm this request",
+          body: (name: string, title: string, date: string, code: string) =>
+            `Hi ${name}, unfortunately we couldn't confirm <strong>${title}</strong> on ${date} (${code}).`,
+          notice: "Nothing was charged. You're welcome to request a different date.",
+          button: "Try another date",
+          subject: (title: string) => `Couldn't confirm — ${title}`,
+        };
+
   const html = `
     <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
-      <h1 style="color: #B3441E;">We couldn't confirm this request</h1>
-      <p>Hi ${escapeHtml(params.customerName)}, unfortunately we couldn't confirm <strong>${escapeHtml(params.productTitle)}</strong> on ${escapeHtml(params.slotDate)} (${escapeHtml(params.bookingCode)}).</p>
+      <h1 style="color: #B3441E;">${t.heading}</h1>
+      <p>${t.body(escapeHtml(params.customerName), escapeHtml(params.productTitle), escapeHtml(params.slotDate), escapeHtml(params.bookingCode))}</p>
       <p style="color: #4B5854;">${escapeHtml(params.declineReason)}</p>
-      <p>Nothing was charged. You're welcome to request a different date.</p>
-      <p><a href="${params.productUrl}" style="display: inline-block; background: #E1613C; color: #fff; padding: 10px 18px; border-radius: 8px; text-decoration: none;">Try another date</a></p>
+      <p>${t.notice}</p>
+      <p><a href="${params.productUrl}" style="display: inline-block; background: #E1613C; color: #fff; padding: 10px 18px; border-radius: 8px; text-decoration: none;">${t.button}</a></p>
     </div>
   `;
 
   await sendEmail({
     to: params.toEmail,
-    subject: `Couldn't confirm — ${params.productTitle}`,
+    subject: t.subject(params.productTitle),
     html,
   });
 }
@@ -521,6 +679,12 @@ interface NewStaffReplyEmailParams {
   contextLabel: string;
   messageBody: string;
   threadUrl: string;
+  /** Despite the function name (named for who triggered it -- staff --
+   * not who receives it), the recipient here is whoever's on the other
+   * side of the thread: a customer or a Sales Agent. Callers pass the
+   * customer's preferred_locale, or "en" for an agent recipient (the
+   * agent panel stays English-only). */
+  locale: Locale;
 }
 
 /**
@@ -535,18 +699,33 @@ interface NewStaffReplyEmailParams {
  * inbox.
  */
 export async function sendNewStaffReplyEmail(params: NewStaffReplyEmailParams): Promise<void> {
+  const t =
+    params.locale === "id"
+      ? {
+          heading: "Balasan baru",
+          body: (name: string, context: string) => `Hai ${name}, Anda memiliki pesan baru tentang ${context}:`,
+          button: "Balas",
+          subject: (context: string) => `Balasan baru — ${context}`,
+        }
+      : {
+          heading: "New reply",
+          body: (name: string, context: string) => `Hi ${name}, you have a new message about ${context}:`,
+          button: "Reply",
+          subject: (context: string) => `New reply — ${context}`,
+        };
+
   const html = `
     <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
-      <h1 style="color: #0F3A3D;">New reply</h1>
-      <p>Hi ${escapeHtml(params.recipientName)}, you have a new message about ${escapeHtml(params.contextLabel)}:</p>
+      <h1 style="color: #0F3A3D;">${t.heading}</h1>
+      <p>${t.body(escapeHtml(params.recipientName), escapeHtml(params.contextLabel))}</p>
       <p style="border-left: 3px solid #E1613C; padding-left: 12px; color: #182421;">${escapeHtml(params.messageBody)}</p>
-      <p><a href="${params.threadUrl}" style="display: inline-block; background: #E1613C; color: #fff; padding: 10px 18px; border-radius: 8px; text-decoration: none;">Reply</a></p>
+      <p><a href="${params.threadUrl}" style="display: inline-block; background: #E1613C; color: #fff; padding: 10px 18px; border-radius: 8px; text-decoration: none;">${t.button}</a></p>
     </div>
   `;
 
   await sendEmail({
     to: params.toEmail,
-    subject: `New reply — ${params.contextLabel}`,
+    subject: t.subject(params.contextLabel),
     html,
   });
 }
@@ -595,6 +774,7 @@ interface CancellationRequestReceivedEmailParams {
   path: "standard" | "force_majeure";
   calculatedRefundIdr: number | null;
   bookingUrl: string;
+  locale: Locale;
 }
 
 /** Sent the moment a cancellation/reschedule request (spec §6f) is
@@ -608,24 +788,47 @@ interface CancellationRequestReceivedEmailParams {
 export async function sendCancellationRequestReceivedEmail(
   params: CancellationRequestReceivedEmailParams
 ): Promise<void> {
+  const isId = params.locale === "id";
+  const t = isId
+    ? {
+        heading: "Permintaan diterima",
+        body: (name: string, kind: string, title: string, code: string) =>
+          `Hai ${name}, kami telah menerima permintaan ${kind} Anda untuk <strong>${title}</strong> (${code}).`,
+        pathLabel: params.path === "force_majeure" ? "force majeure" : "pembatalan",
+        withRefund: (amount: string) =>
+          `Berdasarkan kebijakan pembatalan kami, perkiraan pengembalian dana Anda adalah <strong>${amount}</strong>. Staf kami akan meninjau dan mengonfirmasi sebelum ada yang dikembalikan.`,
+        withoutRefund: "Staf kami akan meninjau dokumentasi pendukung Anda dan menghubungi Anda kembali.",
+        viewBooking: "Lihat pemesanan Anda",
+        subject: (title: string) => `Permintaan diterima — ${title}`,
+      }
+    : {
+        heading: "Request received",
+        body: (name: string, kind: string, title: string, code: string) =>
+          `Hi ${name}, we've received your ${kind} request for <strong>${title}</strong> (${code}).`,
+        pathLabel: params.path === "force_majeure" ? "force majeure" : "cancellation",
+        withRefund: (amount: string) =>
+          `Based on our cancellation policy, your calculated refund is <strong>${amount}</strong>. A staff member will review and confirm before anything is refunded.`,
+        withoutRefund: "A staff member will review your supporting documentation and get back to you.",
+        viewBooking: "View your booking",
+        subject: (title: string) => `Request received — ${title}`,
+      };
+
   const html = `
     <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
-      <h1 style="color: #0F3A3D;">Request received</h1>
-      <p>Hi ${escapeHtml(params.customerName)}, we've received your ${
-        params.path === "force_majeure" ? "force majeure" : "cancellation"
-      } request for <strong>${escapeHtml(params.productTitle)}</strong> (${escapeHtml(params.bookingCode)}).</p>
+      <h1 style="color: #0F3A3D;">${t.heading}</h1>
+      <p>${t.body(escapeHtml(params.customerName), t.pathLabel, escapeHtml(params.productTitle), escapeHtml(params.bookingCode))}</p>
       ${
         params.calculatedRefundIdr != null
-          ? `<p>Based on our cancellation policy, your calculated refund is <strong>${escapeHtml(formatIdr(params.calculatedRefundIdr))}</strong>. A staff member will review and confirm before anything is refunded.</p>`
-          : `<p>A staff member will review your supporting documentation and get back to you.</p>`
+          ? `<p>${t.withRefund(escapeHtml(formatIdr(params.calculatedRefundIdr)))}</p>`
+          : `<p>${t.withoutRefund}</p>`
       }
-      <p><a href="${params.bookingUrl}" style="display: inline-block; background: #E1613C; color: #fff; padding: 10px 18px; border-radius: 8px; text-decoration: none;">View your booking</a></p>
+      <p><a href="${params.bookingUrl}" style="display: inline-block; background: #E1613C; color: #fff; padding: 10px 18px; border-radius: 8px; text-decoration: none;">${t.viewBooking}</a></p>
     </div>
   `;
 
   await sendEmail({
     to: params.toEmail,
-    subject: `Request received — ${params.productTitle}`,
+    subject: t.subject(params.productTitle),
     html,
   });
 }
@@ -680,23 +883,45 @@ interface CancellationApprovedRefundEmailParams {
   bookingCode: string;
   refundAmountIdr: number;
   bookingUrl: string;
+  locale: Locale;
 }
 
 export async function sendCancellationApprovedRefundEmail(
   params: CancellationApprovedRefundEmailParams
 ): Promise<void> {
+  const t =
+    params.locale === "id"
+      ? {
+          heading: "Pembatalan Anda disetujui",
+          body: (name: string, title: string, code: string) =>
+            `Hai ${name}, pembatalan Anda untuk <strong>${title}</strong> (${code}) telah disetujui.`,
+          refund: (amount: string) =>
+            `Jumlah pengembalian dana: <strong>${amount}</strong>. Ini akan diproses ke metode pembayaran asli Anda — mohon tunggu beberapa hari kerja.`,
+          viewBooking: "Lihat pemesanan Anda",
+          subject: (title: string) => `Pembatalan disetujui — ${title}`,
+        }
+      : {
+          heading: "Your cancellation is approved",
+          body: (name: string, title: string, code: string) =>
+            `Hi ${name}, your cancellation for <strong>${title}</strong> (${code}) has been approved.`,
+          refund: (amount: string) =>
+            `Refund amount: <strong>${amount}</strong>. This will be processed to your original payment method -- please allow a few business days.`,
+          viewBooking: "View your booking",
+          subject: (title: string) => `Cancellation approved — ${title}`,
+        };
+
   const html = `
     <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
-      <h1 style="color: #0F3A3D;">Your cancellation is approved</h1>
-      <p>Hi ${escapeHtml(params.customerName)}, your cancellation for <strong>${escapeHtml(params.productTitle)}</strong> (${escapeHtml(params.bookingCode)}) has been approved.</p>
-      <p>Refund amount: <strong>${escapeHtml(formatIdr(params.refundAmountIdr))}</strong>. This will be processed to your original payment method -- please allow a few business days.</p>
-      <p><a href="${params.bookingUrl}" style="display: inline-block; background: #E1613C; color: #fff; padding: 10px 18px; border-radius: 8px; text-decoration: none;">View your booking</a></p>
+      <h1 style="color: #0F3A3D;">${t.heading}</h1>
+      <p>${t.body(escapeHtml(params.customerName), escapeHtml(params.productTitle), escapeHtml(params.bookingCode))}</p>
+      <p>${t.refund(escapeHtml(formatIdr(params.refundAmountIdr)))}</p>
+      <p><a href="${params.bookingUrl}" style="display: inline-block; background: #E1613C; color: #fff; padding: 10px 18px; border-radius: 8px; text-decoration: none;">${t.viewBooking}</a></p>
     </div>
   `;
 
   await sendEmail({
     to: params.toEmail,
-    subject: `Cancellation approved — ${params.productTitle}`,
+    subject: t.subject(params.productTitle),
     html,
   });
 }
@@ -708,23 +933,43 @@ interface CancellationApprovedRescheduleEmailParams {
   bookingCode: string;
   newSlotDate: string;
   bookingUrl: string;
+  locale: Locale;
 }
 
 export async function sendCancellationApprovedRescheduleEmail(
   params: CancellationApprovedRescheduleEmailParams
 ): Promise<void> {
+  const t =
+    params.locale === "id"
+      ? {
+          heading: "Jadwal Anda telah diubah",
+          body: (name: string, title: string, code: string) =>
+            `Hai ${name}, permintaan Anda untuk menjadwalkan ulang <strong>${title}</strong> (${code}) telah disetujui — tanpa biaya.`,
+          newDate: (date: string) => `Tanggal baru: <strong>${date}</strong>.`,
+          viewBooking: "Lihat pemesanan Anda",
+          subject: (title: string) => `Dijadwalkan ulang — ${title}`,
+        }
+      : {
+          heading: "You're rescheduled",
+          body: (name: string, title: string, code: string) =>
+            `Hi ${name}, your request to reschedule <strong>${title}</strong> (${code}) has been approved -- no fee.`,
+          newDate: (date: string) => `New date: <strong>${date}</strong>.`,
+          viewBooking: "View your booking",
+          subject: (title: string) => `Rescheduled — ${title}`,
+        };
+
   const html = `
     <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
-      <h1 style="color: #0F3A3D;">You're rescheduled</h1>
-      <p>Hi ${escapeHtml(params.customerName)}, your request to reschedule <strong>${escapeHtml(params.productTitle)}</strong> (${escapeHtml(params.bookingCode)}) has been approved -- no fee.</p>
-      <p>New date: <strong>${escapeHtml(params.newSlotDate)}</strong>.</p>
-      <p><a href="${params.bookingUrl}" style="display: inline-block; background: #E1613C; color: #fff; padding: 10px 18px; border-radius: 8px; text-decoration: none;">View your booking</a></p>
+      <h1 style="color: #0F3A3D;">${t.heading}</h1>
+      <p>${t.body(escapeHtml(params.customerName), escapeHtml(params.productTitle), escapeHtml(params.bookingCode))}</p>
+      <p>${t.newDate(escapeHtml(params.newSlotDate))}</p>
+      <p><a href="${params.bookingUrl}" style="display: inline-block; background: #E1613C; color: #fff; padding: 10px 18px; border-radius: 8px; text-decoration: none;">${t.viewBooking}</a></p>
     </div>
   `;
 
   await sendEmail({
     to: params.toEmail,
-    subject: `Rescheduled — ${params.productTitle}`,
+    subject: t.subject(params.productTitle),
     html,
   });
 }
@@ -740,6 +985,7 @@ interface CancellationApprovedGiftVoucherEmailParams {
   expiresAt: string;
   bookingUrl: string;
   redeemUrl: string;
+  locale: Locale;
 }
 
 /** Goes to the *original* customer, who's expected to forward the code
@@ -751,31 +997,61 @@ interface CancellationApprovedGiftVoucherEmailParams {
 export async function sendCancellationApprovedGiftVoucherEmail(
   params: CancellationApprovedGiftVoucherEmailParams
 ): Promise<void> {
+  const l = ROW_LABELS[params.locale];
   const waLink = whatsappLink(`Hi, I'd like to redeem gift voucher ${params.voucherCode}`);
+  const t =
+    params.locale === "id"
+      ? {
+          heading: "Voucher hadiah Anda sudah siap",
+          body: (name: string, title: string, code: string, recipient: string) =>
+            `Hai ${name}, permintaan Anda untuk <strong>${title}</strong> (${code}) telah diubah menjadi voucher hadiah untuk ${recipient}.`,
+          forward: (recipient: string) =>
+            `Silakan teruskan email ini atau bagikan kode di atas kepada ${recipient}. Saat mereka siap memesan, berikut yang harus mereka lakukan:`,
+          redeemButton: "Tukarkan voucher ini",
+          reachDirectly: (email: string, waLine: string) =>
+            `Halaman itu memandu mereka mengirimkan detail dan tanggal pilihan mereka. Jika mereka ingin menghubungi kami langsung: email <a href="mailto:${email}" style="color: #1E7A73;">${email}</a> dengan menyebutkan kode voucher${waLine}.`,
+          viewBooking: "Lihat pemesanan Anda",
+          subject: (code: string) => `Voucher hadiah Anda — ${code}`,
+        }
+      : {
+          heading: "Your gift voucher is ready",
+          body: (name: string, title: string, code: string, recipient: string) =>
+            `Hi ${name}, your request for <strong>${title}</strong> (${code}) has been converted into a gift voucher for ${recipient}.`,
+          forward: (recipient: string) =>
+            `Please forward this email or share the code above with ${recipient}. When they're ready to book, here's exactly what they should do:`,
+          redeemButton: "Redeem this voucher",
+          reachDirectly: (email: string, waLine: string) =>
+            `That page walks them through submitting their details and preferred date. If they'd rather reach us directly: email <a href="mailto:${email}" style="color: #1E7A73;">${email}</a> quoting the voucher code${waLine}.`,
+          viewBooking: "View your booking",
+          subject: (code: string) => `Your gift voucher — ${code}`,
+        };
+  const waLine = waLink
+    ? params.locale === "id"
+      ? ` atau WhatsApp kami di <a href="${waLink}" style="color: #1E7A73;">${escapeHtml(WHATSAPP_NUMBER ?? "")}</a>`
+      : ` or WhatsApp us at <a href="${waLink}" style="color: #1E7A73;">${escapeHtml(WHATSAPP_NUMBER ?? "")}</a>`
+    : "";
+
   const html = `
     <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
-      <h1 style="color: #0F3A3D;">Your gift voucher is ready</h1>
-      <p>Hi ${escapeHtml(params.customerName)}, your request for <strong>${escapeHtml(params.productTitle)}</strong> (${escapeHtml(params.bookingCode)}) has been converted into a gift voucher for ${escapeHtml(params.recipientName)}.</p>
+      <h1 style="color: #0F3A3D;">${t.heading}</h1>
+      <p>${t.body(escapeHtml(params.customerName), escapeHtml(params.productTitle), escapeHtml(params.bookingCode), escapeHtml(params.recipientName))}</p>
       <table style="width: 100%; border-collapse: collapse; margin: 16px 0;">
-        <tr><td style="padding: 6px 0; color: #4B5854;">Voucher code</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">${escapeHtml(params.voucherCode)}</td></tr>
-        <tr><td style="padding: 6px 0; color: #4B5854;">Value</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">${escapeHtml(formatIdr(params.valueIdr))}</td></tr>
-        <tr><td style="padding: 6px 0; color: #4B5854;">Expires</td><td style="padding: 6px 0; text-align: right;">${escapeHtml(new Date(params.expiresAt).toLocaleDateString())}</td></tr>
+        <tr><td style="padding: 6px 0; color: #4B5854;">${l.voucherCode}</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">${escapeHtml(params.voucherCode)}</td></tr>
+        <tr><td style="padding: 6px 0; color: #4B5854;">${l.value}</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">${escapeHtml(formatIdr(params.valueIdr))}</td></tr>
+        <tr><td style="padding: 6px 0; color: #4B5854;">${l.expires}</td><td style="padding: 6px 0; text-align: right;">${escapeHtml(new Date(params.expiresAt).toLocaleDateString())}</td></tr>
       </table>
-      <p>Please forward this email or share the code above with ${escapeHtml(params.recipientName)}. When they're ready to book, here's exactly what they should do:</p>
-      <p><a href="${params.redeemUrl}" style="display: inline-block; background: #E1613C; color: #fff; padding: 10px 18px; border-radius: 8px; text-decoration: none;">Redeem this voucher</a></p>
+      <p>${t.forward(escapeHtml(params.recipientName))}</p>
+      <p><a href="${params.redeemUrl}" style="display: inline-block; background: #E1613C; color: #fff; padding: 10px 18px; border-radius: 8px; text-decoration: none;">${t.redeemButton}</a></p>
       <p style="color: #4B5854; font-size: 14px;">
-        That page walks them through submitting their details and preferred date. If they'd rather reach us directly: email
-        <a href="mailto:${escapeHtml(SUPPORT_EMAIL)}" style="color: #1E7A73;">${escapeHtml(SUPPORT_EMAIL)}</a> quoting the voucher code${
-          waLink ? ` or WhatsApp us at <a href="${waLink}" style="color: #1E7A73;">${escapeHtml(WHATSAPP_NUMBER ?? "")}</a>` : ""
-        }.
+        ${t.reachDirectly(escapeHtml(SUPPORT_EMAIL), waLine)}
       </p>
-      <p><a href="${params.bookingUrl}" style="display: inline-block; background: #E1613C; color: #fff; padding: 10px 18px; border-radius: 8px; text-decoration: none;">View your booking</a></p>
+      <p><a href="${params.bookingUrl}" style="display: inline-block; background: #E1613C; color: #fff; padding: 10px 18px; border-radius: 8px; text-decoration: none;">${t.viewBooking}</a></p>
     </div>
   `;
 
   await sendEmail({
     to: params.toEmail,
-    subject: `Your gift voucher — ${params.voucherCode}`,
+    subject: t.subject(params.voucherCode),
     html,
   });
 }
@@ -787,24 +1063,43 @@ export async function sendCancellationApprovedGiftVoucherEmail(
  * their own booking page, same as any other customer), or reach us
  * directly by WhatsApp (only rendered once a number is actually
  * configured) or email. */
-function contactChannelsHtml(opts: { voucherCode: string; signupEmail?: string }): string {
+function contactChannelsHtml(opts: { voucherCode: string; signupEmail?: string; locale: Locale }): string {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+  const pathPrefix = opts.locale === "id" ? "/id" : "";
   const waLink = whatsappLink(`Hi, I'm asking about gift voucher ${opts.voucherCode}`);
   // Lands them back on their own voucher's page post-signup (it'll show
   // their request is already on file) instead of the bare homepage.
-  const returnTo = `/redeem?code=${encodeURIComponent(opts.voucherCode)}`;
+  const returnTo = `${pathPrefix}/redeem?code=${encodeURIComponent(opts.voucherCode)}`;
   const signupHref = opts.signupEmail
-    ? `${siteUrl}/login?mode=signup&email=${encodeURIComponent(opts.signupEmail)}&return_to=${encodeURIComponent(returnTo)}`
-    : `${siteUrl}/login?mode=signup&return_to=${encodeURIComponent(returnTo)}`;
+    ? `${siteUrl}${pathPrefix}/login?mode=signup&email=${encodeURIComponent(opts.signupEmail)}&return_to=${encodeURIComponent(returnTo)}`
+    : `${siteUrl}${pathPrefix}/login?mode=signup&return_to=${encodeURIComponent(returnTo)}`;
+  const t =
+    opts.locale === "id"
+      ? {
+          heading: "Cara menghubungi kami",
+          createAccount: "Buat akun gratis",
+          createAccountRest: "— setelah Anda memilikinya, Anda dapat menghubungi kami kapan saja dari halaman perjalanan Anda di aplikasi.",
+          emailUs: "Email",
+          quoting: (code: string) => `dengan menyebutkan voucher ${code}.`,
+          whatsappUs: "WhatsApp kami di",
+        }
+      : {
+          heading: "Ways to reach us",
+          createAccount: "Create a free account",
+          createAccountRest: "-- once you have one, you can message us any time from your trip's page in the app.",
+          emailUs: "Email",
+          quoting: (code: string) => `quoting voucher ${code}.`,
+          whatsappUs: "WhatsApp us at",
+        };
   return `
     <div style="margin-top: 20px; padding-top: 16px; border-top: 1px solid #E4DFD4;">
-      <p style="font-weight: 600; color: #0F3A3D;">Ways to reach us</p>
+      <p style="font-weight: 600; color: #0F3A3D;">${t.heading}</p>
       <ul style="padding-left: 18px; color: #4B5854;">
-        <li><a href="${signupHref}" style="color: #1E7A73;">Create a free account</a> -- once you have one, you can message us any time from your trip's page in the app.</li>
-        <li>Email <a href="mailto:${escapeHtml(SUPPORT_EMAIL)}" style="color: #1E7A73;">${escapeHtml(SUPPORT_EMAIL)}</a> quoting voucher ${escapeHtml(opts.voucherCode)}.</li>
+        <li><a href="${signupHref}" style="color: #1E7A73;">${t.createAccount}</a> ${t.createAccountRest}</li>
+        <li>${t.emailUs} <a href="mailto:${escapeHtml(SUPPORT_EMAIL)}" style="color: #1E7A73;">${escapeHtml(SUPPORT_EMAIL)}</a> ${t.quoting(escapeHtml(opts.voucherCode))}</li>
         ${
           waLink
-            ? `<li>WhatsApp us at <a href="${waLink}" style="color: #1E7A73;">${escapeHtml(WHATSAPP_NUMBER ?? "")}</a>.</li>`
+            ? `<li>${t.whatsappUs} <a href="${waLink}" style="color: #1E7A73;">${escapeHtml(WHATSAPP_NUMBER ?? "")}</a>.</li>`
             : ""
         }
       </ul>
@@ -817,6 +1112,7 @@ interface VoucherRedemptionReceivedEmailParams {
   recipientName: string;
   productTitle: string;
   voucherCode: string;
+  locale: Locale;
 }
 
 /** Confirms to whoever just submitted the /redeem form that it went
@@ -826,18 +1122,35 @@ interface VoucherRedemptionReceivedEmailParams {
 export async function sendVoucherRedemptionReceivedEmail(
   params: VoucherRedemptionReceivedEmailParams
 ): Promise<void> {
+  const t =
+    params.locale === "id"
+      ? {
+          heading: "Permintaan penukaran Anda diterima",
+          body: (name: string, code: string, title: string) =>
+            `Hai ${name}, kami telah menerima permintaan Anda untuk menukarkan voucher <strong>${code}</strong> untuk <strong>${title}</strong>.`,
+          notice: "Kami akan segera menghubungi Anda untuk mengonfirmasi tanggal dan detail perjalanan Anda.",
+          subject: (code: string) => `Permintaan penukaran diterima — ${code}`,
+        }
+      : {
+          heading: "Got your redemption request",
+          body: (name: string, code: string, title: string) =>
+            `Hi ${name}, we've received your request to redeem voucher <strong>${code}</strong> for <strong>${title}</strong>.`,
+          notice: "We'll be in touch shortly to confirm your date and the trip details.",
+          subject: (code: string) => `Redemption request received — ${code}`,
+        };
+
   const html = `
     <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
-      <h1 style="color: #0F3A3D;">Got your redemption request</h1>
-      <p>Hi ${escapeHtml(params.recipientName)}, we've received your request to redeem voucher <strong>${escapeHtml(params.voucherCode)}</strong> for <strong>${escapeHtml(params.productTitle)}</strong>.</p>
-      <p>We'll be in touch shortly to confirm your date and the trip details.</p>
-      ${contactChannelsHtml({ voucherCode: params.voucherCode, signupEmail: params.toEmail })}
+      <h1 style="color: #0F3A3D;">${t.heading}</h1>
+      <p>${t.body(escapeHtml(params.recipientName), escapeHtml(params.voucherCode), escapeHtml(params.productTitle))}</p>
+      <p>${t.notice}</p>
+      ${contactChannelsHtml({ voucherCode: params.voucherCode, signupEmail: params.toEmail, locale: params.locale })}
     </div>
   `;
 
   await sendEmail({
     to: params.toEmail,
-    subject: `Redemption request received — ${params.voucherCode}`,
+    subject: t.subject(params.voucherCode),
     html,
   });
 }
@@ -847,6 +1160,7 @@ interface VoucherRedeemedNeedsAccountEmailParams {
   recipientName: string;
   productTitle: string;
   voucherCode: string;
+  locale: Locale;
 }
 
 /** Sent when staff try to confirm a redemption but no account exists
@@ -857,26 +1171,49 @@ export async function sendVoucherRedeemedNeedsAccountEmail(
   params: VoucherRedeemedNeedsAccountEmailParams
 ): Promise<void> {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
-  const returnTo = `/redeem?code=${encodeURIComponent(params.voucherCode)}`;
-  const signupHref = `${siteUrl}/login?mode=signup&email=${encodeURIComponent(params.toEmail)}&return_to=${encodeURIComponent(returnTo)}`;
+  const pathPrefix = params.locale === "id" ? "/id" : "";
+  const returnTo = `${pathPrefix}/redeem?code=${encodeURIComponent(params.voucherCode)}`;
+  const signupHref = `${siteUrl}${pathPrefix}/login?mode=signup&email=${encodeURIComponent(params.toEmail)}&return_to=${encodeURIComponent(returnTo)}`;
+  const t =
+    params.locale === "id"
+      ? {
+          heading: (title: string) => `Satu langkah lagi untuk ${title}`,
+          body: (name: string, email: string) =>
+            `Hai ${name}, kami siap mengonfirmasi perjalanan Anda — kami hanya perlu Anda membuat akun gratis terlebih dahulu, menggunakan alamat email yang sama ini (${email}). Itulah yang memungkinkan kami menghubungkan perjalanan Anda ke akun Anda sehingga Anda dapat melihatnya dan menghubungi kami kapan saja.`,
+          button: "Buat akun Anda",
+          afterSignup: "Anda akan kembali ke halaman voucher Anda setelah mendaftar — tidak perlu melakukan apa pun lagi, kami akan mengonfirmasi perjalanan Anda dari pihak kami segera setelahnya.",
+          inAHurry: "Terburu-buru? Email",
+          subject: "Hampir sampai — buat akun Anda untuk mengonfirmasi perjalanan Anda",
+        }
+      : {
+          heading: (title: string) => `One more step for ${title}`,
+          body: (name: string, email: string) =>
+            `Hi ${name}, we're ready to confirm your trip -- we just need you to create a free account first, using this same email address (${email}). That's what lets us attach your trip to your account so you can see it and message us any time.`,
+          button: "Create your account",
+          afterSignup: "You'll land back on your voucher page once you're signed up -- no need to do anything else, we'll confirm your trip from our end shortly after.",
+          inAHurry: "In a hurry? Email",
+          subject: "Almost there — create your account to confirm your trip",
+        };
+  const waLink = whatsappLink(`Hi, I'm setting up my account to redeem a gift voucher`);
+  const waLine = waLink
+    ? params.locale === "id"
+      ? ` atau WhatsApp kami di <a href="${waLink}" style="color: #1E7A73;">${escapeHtml(WHATSAPP_NUMBER ?? "")}</a>`
+      : ` or WhatsApp us at <a href="${waLink}" style="color: #1E7A73;">${escapeHtml(WHATSAPP_NUMBER ?? "")}</a>`
+    : "";
+
   const html = `
     <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
-      <h1 style="color: #0F3A3D;">One more step for ${escapeHtml(params.productTitle)}</h1>
-      <p>Hi ${escapeHtml(params.recipientName)}, we're ready to confirm your trip -- we just need you to create a free account first, using this same email address (${escapeHtml(params.toEmail)}). That's what lets us attach your trip to your account so you can see it and message us any time.</p>
-      <p><a href="${signupHref}" style="display: inline-block; background: #E1613C; color: #fff; padding: 10px 18px; border-radius: 8px; text-decoration: none;">Create your account</a></p>
-      <p style="color: #4B5854;">You'll land back on your voucher page once you're signed up -- no need to do anything else, we'll confirm your trip from our end shortly after.</p>
-      <p style="color: #4B5854;">In a hurry? Email <a href="mailto:${escapeHtml(SUPPORT_EMAIL)}" style="color: #1E7A73;">${escapeHtml(SUPPORT_EMAIL)}</a>
-        ${(() => {
-          const waLink = whatsappLink(`Hi, I'm setting up my account to redeem a gift voucher`);
-          return waLink ? ` or WhatsApp us at <a href="${waLink}" style="color: #1E7A73;">${escapeHtml(WHATSAPP_NUMBER ?? "")}</a>` : "";
-        })()}.
-      </p>
+      <h1 style="color: #0F3A3D;">${t.heading(escapeHtml(params.productTitle))}</h1>
+      <p>${t.body(escapeHtml(params.recipientName), escapeHtml(params.toEmail))}</p>
+      <p><a href="${signupHref}" style="display: inline-block; background: #E1613C; color: #fff; padding: 10px 18px; border-radius: 8px; text-decoration: none;">${t.button}</a></p>
+      <p style="color: #4B5854;">${t.afterSignup}</p>
+      <p style="color: #4B5854;">${t.inAHurry} <a href="mailto:${escapeHtml(SUPPORT_EMAIL)}" style="color: #1E7A73;">${escapeHtml(SUPPORT_EMAIL)}</a>${waLine}.</p>
     </div>
   `;
 
   await sendEmail({
     to: params.toEmail,
-    subject: `Almost there — create your account to confirm your trip`,
+    subject: t.subject,
     html,
   });
 }
@@ -887,6 +1224,7 @@ interface VoucherRedeemedBookingConfirmedEmailParams {
   productTitle: string;
   slotDate: string;
   bookingUrl: string;
+  locale: Locale;
 }
 
 /** The actual "you're all set" moment -- a real booking now exists
@@ -895,24 +1233,43 @@ interface VoucherRedeemedBookingConfirmedEmailParams {
 export async function sendVoucherRedeemedBookingConfirmedEmail(
   params: VoucherRedeemedBookingConfirmedEmailParams
 ): Promise<void> {
+  const t =
+    params.locale === "id"
+      ? {
+          heading: "Semua sudah siap!",
+          body: (name: string, title: string, date: string) =>
+            `Hai ${name}, perjalanan hadiah Anda telah dikonfirmasi: <strong>${title}</strong> pada <strong>${date}</strong>. Tidak perlu pembayaran lebih lanjut — sudah tercakup oleh voucher.`,
+          viewTrip: "Lihat perjalanan Anda",
+          contact: "Anda dapat menghubungi kami kapan saja dari halaman itu — titik penjemputan, detail hotel, apa pun. Ada pertanyaan sekarang? Email",
+          subject: (title: string) => `Semua sudah siap — ${title}`,
+        }
+      : {
+          heading: "You're all set!",
+          body: (name: string, title: string, date: string) =>
+            `Hi ${name}, your gift trip is confirmed: <strong>${title}</strong> on <strong>${date}</strong>. No further payment needed -- it's already covered by the voucher.`,
+          viewTrip: "View your trip",
+          contact: "You can message us any time from that page -- pickup point, hotel details, anything at all. Questions right now? Email",
+          subject: (title: string) => `You're all set — ${title}`,
+        };
+  const waLink = whatsappLink(`Hi, I have a question about my trip: ${params.productTitle}`);
+  const waLine = waLink
+    ? params.locale === "id"
+      ? ` atau WhatsApp kami di <a href="${waLink}" style="color: #1E7A73;">${escapeHtml(WHATSAPP_NUMBER ?? "")}</a>`
+      : ` or WhatsApp us at <a href="${waLink}" style="color: #1E7A73;">${escapeHtml(WHATSAPP_NUMBER ?? "")}</a>`
+    : "";
+
   const html = `
     <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
-      <h1 style="color: #0F3A3D;">You're all set!</h1>
-      <p>Hi ${escapeHtml(params.recipientName)}, your gift trip is confirmed: <strong>${escapeHtml(params.productTitle)}</strong> on <strong>${escapeHtml(params.slotDate)}</strong>. No further payment needed -- it's already covered by the voucher.</p>
-      <p><a href="${params.bookingUrl}" style="display: inline-block; background: #E1613C; color: #fff; padding: 10px 18px; border-radius: 8px; text-decoration: none;">View your trip</a></p>
-      <p style="color: #4B5854;">You can message us any time from that page -- pickup point, hotel details, anything at all. Questions right now?
-        Email <a href="mailto:${escapeHtml(SUPPORT_EMAIL)}" style="color: #1E7A73;">${escapeHtml(SUPPORT_EMAIL)}</a>
-        ${(() => {
-          const waLink = whatsappLink(`Hi, I have a question about my trip: ${params.productTitle}`);
-          return waLink ? ` or WhatsApp us at <a href="${waLink}" style="color: #1E7A73;">${escapeHtml(WHATSAPP_NUMBER ?? "")}</a>` : "";
-        })()}.
-      </p>
+      <h1 style="color: #0F3A3D;">${t.heading}</h1>
+      <p>${t.body(escapeHtml(params.recipientName), escapeHtml(params.productTitle), escapeHtml(params.slotDate))}</p>
+      <p><a href="${params.bookingUrl}" style="display: inline-block; background: #E1613C; color: #fff; padding: 10px 18px; border-radius: 8px; text-decoration: none;">${t.viewTrip}</a></p>
+      <p style="color: #4B5854;">${t.contact} <a href="mailto:${escapeHtml(SUPPORT_EMAIL)}" style="color: #1E7A73;">${escapeHtml(SUPPORT_EMAIL)}</a>${waLine}.</p>
     </div>
   `;
 
   await sendEmail({
     to: params.toEmail,
-    subject: `You're all set — ${params.productTitle}`,
+    subject: t.subject(params.productTitle),
     html,
   });
 }
@@ -923,6 +1280,7 @@ interface GiftVoucherRedeemedNotifyGiverEmailParams {
   recipientName: string;
   productTitle: string;
   slotDate: string;
+  locale: Locale;
 }
 
 /** The person who originally converted their trip into a gift voucher
@@ -932,17 +1290,34 @@ interface GiftVoucherRedeemedNotifyGiverEmailParams {
 export async function sendGiftVoucherRedeemedNotifyGiverEmail(
   params: GiftVoucherRedeemedNotifyGiverEmailParams
 ): Promise<void> {
+  const t =
+    params.locale === "id"
+      ? {
+          heading: "Hadiah Anda telah ditukarkan!",
+          body: (name: string, recipient: string, title: string, date: string) =>
+            `Hai ${name}, kabar baik — ${recipient} baru saja menukarkan voucher hadiah yang Anda buat untuk <strong>${title}</strong>. Perjalanan mereka telah dikonfirmasi untuk <strong>${date}</strong>.`,
+          notice: "Itu saja — tidak ada lagi yang perlu Anda lakukan. Terima kasih sudah memikirkan mereka!",
+          subject: (title: string) => `Hadiah Anda telah ditukarkan — ${title}`,
+        }
+      : {
+          heading: "Your gift was redeemed!",
+          body: (name: string, recipient: string, title: string, date: string) =>
+            `Hi ${name}, good news -- ${recipient} just redeemed the gift voucher you set up for <strong>${title}</strong>. Their trip is confirmed for <strong>${date}</strong>.`,
+          notice: "That's it -- nothing further needed from you. Thanks for thinking of them!",
+          subject: (title: string) => `Your gift was redeemed — ${title}`,
+        };
+
   const html = `
     <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
-      <h1 style="color: #0F3A3D;">Your gift was redeemed!</h1>
-      <p>Hi ${escapeHtml(params.giverName)}, good news -- ${escapeHtml(params.recipientName)} just redeemed the gift voucher you set up for <strong>${escapeHtml(params.productTitle)}</strong>. Their trip is confirmed for <strong>${escapeHtml(params.slotDate)}</strong>.</p>
-      <p style="color: #4B5854;">That's it -- nothing further needed from you. Thanks for thinking of them!</p>
+      <h1 style="color: #0F3A3D;">${t.heading}</h1>
+      <p>${t.body(escapeHtml(params.giverName), escapeHtml(params.recipientName), escapeHtml(params.productTitle), escapeHtml(params.slotDate))}</p>
+      <p style="color: #4B5854;">${t.notice}</p>
     </div>
   `;
 
   await sendEmail({
     to: params.toEmail,
-    subject: `Your gift was redeemed — ${params.productTitle}`,
+    subject: t.subject(params.productTitle),
     html,
   });
 }
@@ -991,24 +1366,44 @@ interface CancellationRejectedEmailParams {
   bookingCode: string;
   adminNotes: string | null;
   bookingUrl: string;
+  locale: Locale;
 }
 
 export async function sendCancellationRejectedEmail(
   params: CancellationRejectedEmailParams
 ): Promise<void> {
+  const t =
+    params.locale === "id"
+      ? {
+          heading: "Permintaan Anda tidak disetujui",
+          body: (name: string, title: string, code: string) =>
+            `Hai ${name}, kami tidak dapat menyetujui permintaan pembatalan/penjadwalan ulang Anda untuk <strong>${title}</strong> (${code}).`,
+          contact: "Hubungi kami jika Anda memiliki pertanyaan — kirim pesan kepada kami kapan saja dari halaman pemesanan Anda.",
+          viewBooking: "Lihat pemesanan Anda",
+          subject: (title: string) => `Kabar terbaru tentang permintaan Anda — ${title}`,
+        }
+      : {
+          heading: "Your request wasn't approved",
+          body: (name: string, title: string, code: string) =>
+            `Hi ${name}, we weren't able to approve your cancellation/reschedule request for <strong>${title}</strong> (${code}).`,
+          contact: "Contact us if you have questions -- message us any time from your booking page.",
+          viewBooking: "View your booking",
+          subject: (title: string) => `Update on your request — ${title}`,
+        };
+
   const html = `
     <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
-      <h1 style="color: #B3441E;">Your request wasn't approved</h1>
-      <p>Hi ${escapeHtml(params.customerName)}, we weren't able to approve your cancellation/reschedule request for <strong>${escapeHtml(params.productTitle)}</strong> (${escapeHtml(params.bookingCode)}).</p>
+      <h1 style="color: #B3441E;">${t.heading}</h1>
+      <p>${t.body(escapeHtml(params.customerName), escapeHtml(params.productTitle), escapeHtml(params.bookingCode))}</p>
       ${params.adminNotes ? `<p style="color: #4B5854;">${escapeHtml(params.adminNotes)}</p>` : ""}
-      <p>Contact us if you have questions -- message us any time from your booking page.</p>
-      <p><a href="${params.bookingUrl}" style="display: inline-block; background: #E1613C; color: #fff; padding: 10px 18px; border-radius: 8px; text-decoration: none;">View your booking</a></p>
+      <p>${t.contact}</p>
+      <p><a href="${params.bookingUrl}" style="display: inline-block; background: #E1613C; color: #fff; padding: 10px 18px; border-radius: 8px; text-decoration: none;">${t.viewBooking}</a></p>
     </div>
   `;
 
   await sendEmail({
     to: params.toEmail,
-    subject: `Update on your request — ${params.productTitle}`,
+    subject: t.subject(params.productTitle),
     html,
   });
 }
@@ -1022,6 +1417,7 @@ interface GiftVoucherPurchaseConfirmedEmailParams {
   recipientName: string;
   expiresAt: string;
   redeemUrl: string;
+  locale: Locale;
 }
 
 /** Sent once payment for a standalone-purchased gift voucher (not one
@@ -1032,30 +1428,58 @@ interface GiftVoucherPurchaseConfirmedEmailParams {
 export async function sendGiftVoucherPurchaseConfirmedEmail(
   params: GiftVoucherPurchaseConfirmedEmailParams
 ): Promise<void> {
+  const l = ROW_LABELS[params.locale];
   const waLink = whatsappLink(`Hi, I'd like to redeem gift voucher ${params.voucherCode}`);
+  const t =
+    params.locale === "id"
+      ? {
+          heading: "Voucher hadiah Anda sudah siap",
+          body: (name: string, title: string, recipient: string) =>
+            `Hai ${name}, terima kasih atas pembelian Anda — <strong>${title}</strong> kini menjadi voucher hadiah untuk ${recipient}.`,
+          forward: (recipient: string) =>
+            `Silakan teruskan email ini atau bagikan kode di atas kepada ${recipient}. Saat mereka siap memesan, berikut yang harus mereka lakukan:`,
+          redeemButton: "Tukarkan voucher ini",
+          reachDirectly: (email: string, waLine: string) =>
+            `Halaman itu memandu mereka mengirimkan detail dan tanggal pilihan mereka. Jika mereka ingin menghubungi kami langsung: email <a href="mailto:${email}" style="color: #1E7A73;">${email}</a> dengan menyebutkan kode voucher${waLine}.`,
+          subject: (code: string) => `Voucher hadiah Anda — ${code}`,
+        }
+      : {
+          heading: "Your gift voucher is ready",
+          body: (name: string, title: string, recipient: string) =>
+            `Hi ${name}, thanks for your purchase -- <strong>${title}</strong> is now a gift voucher for ${recipient}.`,
+          forward: (recipient: string) =>
+            `Please forward this email or share the code above with ${recipient}. When they're ready to book, here's exactly what they should do:`,
+          redeemButton: "Redeem this voucher",
+          reachDirectly: (email: string, waLine: string) =>
+            `That page walks them through submitting their details and preferred date. If they'd rather reach us directly: email <a href="mailto:${email}" style="color: #1E7A73;">${email}</a> quoting the voucher code${waLine}.`,
+          subject: (code: string) => `Your gift voucher — ${code}`,
+        };
+  const waLine = waLink
+    ? params.locale === "id"
+      ? ` atau WhatsApp kami di <a href="${waLink}" style="color: #1E7A73;">${escapeHtml(WHATSAPP_NUMBER ?? "")}</a>`
+      : ` or WhatsApp us at <a href="${waLink}" style="color: #1E7A73;">${escapeHtml(WHATSAPP_NUMBER ?? "")}</a>`
+    : "";
+
   const html = `
     <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
-      <h1 style="color: #0F3A3D;">Your gift voucher is ready</h1>
-      <p>Hi ${escapeHtml(params.purchaserName)}, thanks for your purchase -- <strong>${escapeHtml(params.productTitle)}</strong> is now a gift voucher for ${escapeHtml(params.recipientName)}.</p>
+      <h1 style="color: #0F3A3D;">${t.heading}</h1>
+      <p>${t.body(escapeHtml(params.purchaserName), escapeHtml(params.productTitle), escapeHtml(params.recipientName))}</p>
       <table style="width: 100%; border-collapse: collapse; margin: 16px 0;">
-        <tr><td style="padding: 6px 0; color: #4B5854;">Voucher code</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">${escapeHtml(params.voucherCode)}</td></tr>
-        <tr><td style="padding: 6px 0; color: #4B5854;">Value</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">${escapeHtml(formatIdr(params.valueIdr))}</td></tr>
-        <tr><td style="padding: 6px 0; color: #4B5854;">Expires</td><td style="padding: 6px 0; text-align: right;">${escapeHtml(new Date(params.expiresAt).toLocaleDateString())}</td></tr>
+        <tr><td style="padding: 6px 0; color: #4B5854;">${l.voucherCode}</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">${escapeHtml(params.voucherCode)}</td></tr>
+        <tr><td style="padding: 6px 0; color: #4B5854;">${l.value}</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">${escapeHtml(formatIdr(params.valueIdr))}</td></tr>
+        <tr><td style="padding: 6px 0; color: #4B5854;">${l.expires}</td><td style="padding: 6px 0; text-align: right;">${escapeHtml(new Date(params.expiresAt).toLocaleDateString())}</td></tr>
       </table>
-      <p>Please forward this email or share the code above with ${escapeHtml(params.recipientName)}. When they're ready to book, here's exactly what they should do:</p>
-      <p><a href="${params.redeemUrl}" style="display: inline-block; background: #E1613C; color: #fff; padding: 10px 18px; border-radius: 8px; text-decoration: none;">Redeem this voucher</a></p>
+      <p>${t.forward(escapeHtml(params.recipientName))}</p>
+      <p><a href="${params.redeemUrl}" style="display: inline-block; background: #E1613C; color: #fff; padding: 10px 18px; border-radius: 8px; text-decoration: none;">${t.redeemButton}</a></p>
       <p style="color: #4B5854; font-size: 14px;">
-        That page walks them through submitting their details and preferred date. If they'd rather reach us directly: email
-        <a href="mailto:${escapeHtml(SUPPORT_EMAIL)}" style="color: #1E7A73;">${escapeHtml(SUPPORT_EMAIL)}</a> quoting the voucher code${
-          waLink ? ` or WhatsApp us at <a href="${waLink}" style="color: #1E7A73;">${escapeHtml(WHATSAPP_NUMBER ?? "")}</a>` : ""
-        }.
+        ${t.reachDirectly(escapeHtml(SUPPORT_EMAIL), waLine)}
       </p>
     </div>
   `;
 
   await sendEmail({
     to: params.toEmail,
-    subject: `Your gift voucher — ${params.voucherCode}`,
+    subject: t.subject(params.voucherCode),
     html,
   });
 }
@@ -1102,6 +1526,7 @@ interface GiftVoucherRefundRequestedEmailParams {
   purchaserName: string;
   productTitle: string;
   voucherCode: string;
+  locale: Locale;
 }
 
 /** Confirms to the purchaser that their "please refund this gift I
@@ -1111,17 +1536,34 @@ interface GiftVoucherRefundRequestedEmailParams {
 export async function sendGiftVoucherRefundRequestedEmail(
   params: GiftVoucherRefundRequestedEmailParams
 ): Promise<void> {
+  const t =
+    params.locale === "id"
+      ? {
+          heading: "Permintaan pengembalian dana Anda diterima",
+          body: (name: string, code: string, title: string) =>
+            `Hai ${name}, kami telah menerima permintaan Anda untuk mengembalikan dana voucher hadiah <strong>${code}</strong> untuk <strong>${title}</strong>.`,
+          notice: "Kami akan meninjaunya dan menghubungi Anda kembali segera.",
+          subject: (code: string) => `Permintaan pengembalian dana diterima — ${code}`,
+        }
+      : {
+          heading: "Got your refund request",
+          body: (name: string, code: string, title: string) =>
+            `Hi ${name}, we've received your request to refund the gift voucher <strong>${code}</strong> for <strong>${title}</strong>.`,
+          notice: "We'll review it and get back to you shortly.",
+          subject: (code: string) => `Refund request received — ${code}`,
+        };
+
   const html = `
     <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
-      <h1 style="color: #0F3A3D;">Got your refund request</h1>
-      <p>Hi ${escapeHtml(params.purchaserName)}, we've received your request to refund the gift voucher <strong>${escapeHtml(params.voucherCode)}</strong> for <strong>${escapeHtml(params.productTitle)}</strong>.</p>
-      <p>We'll review it and get back to you shortly.</p>
+      <h1 style="color: #0F3A3D;">${t.heading}</h1>
+      <p>${t.body(escapeHtml(params.purchaserName), escapeHtml(params.voucherCode), escapeHtml(params.productTitle))}</p>
+      <p>${t.notice}</p>
     </div>
   `;
 
   await sendEmail({
     to: params.toEmail,
-    subject: `Refund request received — ${params.voucherCode}`,
+    subject: t.subject(params.voucherCode),
     html,
   });
 }
@@ -1165,22 +1607,42 @@ interface GiftVoucherRefundApprovedEmailParams {
   productTitle: string;
   voucherCode: string;
   refundAmountIdr: number;
+  locale: Locale;
 }
 
 export async function sendGiftVoucherRefundApprovedEmail(
   params: GiftVoucherRefundApprovedEmailParams
 ): Promise<void> {
+  const t =
+    params.locale === "id"
+      ? {
+          heading: "Pengembalian dana Anda disetujui",
+          body: (name: string, code: string, title: string) =>
+            `Hai ${name}, pengembalian dana untuk voucher hadiah <strong>${code}</strong> (${title}) telah disetujui.`,
+          refund: (amount: string) =>
+            `Jumlah pengembalian dana: <strong>${amount}</strong>. Ini akan diproses ke metode pembayaran asli Anda — mohon tunggu beberapa hari kerja. Voucher itu sendiri tidak lagi berlaku.`,
+          subject: (code: string) => `Pengembalian dana disetujui — ${code}`,
+        }
+      : {
+          heading: "Your refund is approved",
+          body: (name: string, code: string, title: string) =>
+            `Hi ${name}, your refund for gift voucher <strong>${code}</strong> (${title}) has been approved.`,
+          refund: (amount: string) =>
+            `Refund amount: <strong>${amount}</strong>. This will be processed to your original payment method -- please allow a few business days. The voucher itself is no longer valid.`,
+          subject: (code: string) => `Refund approved — ${code}`,
+        };
+
   const html = `
     <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
-      <h1 style="color: #0F3A3D;">Your refund is approved</h1>
-      <p>Hi ${escapeHtml(params.purchaserName)}, your refund for gift voucher <strong>${escapeHtml(params.voucherCode)}</strong> (${escapeHtml(params.productTitle)}) has been approved.</p>
-      <p>Refund amount: <strong>${escapeHtml(formatIdr(params.refundAmountIdr))}</strong>. This will be processed to your original payment method -- please allow a few business days. The voucher itself is no longer valid.</p>
+      <h1 style="color: #0F3A3D;">${t.heading}</h1>
+      <p>${t.body(escapeHtml(params.purchaserName), escapeHtml(params.voucherCode), escapeHtml(params.productTitle))}</p>
+      <p>${t.refund(escapeHtml(formatIdr(params.refundAmountIdr)))}</p>
     </div>
   `;
 
   await sendEmail({
     to: params.toEmail,
-    subject: `Refund approved — ${params.voucherCode}`,
+    subject: t.subject(params.voucherCode),
     html,
   });
 }
@@ -1191,23 +1653,43 @@ interface GiftVoucherRefundDeclinedEmailParams {
   productTitle: string;
   voucherCode: string;
   adminNotes: string | null;
+  locale: Locale;
 }
 
 export async function sendGiftVoucherRefundDeclinedEmail(
   params: GiftVoucherRefundDeclinedEmailParams
 ): Promise<void> {
+  const t =
+    params.locale === "id"
+      ? {
+          heading: "Permintaan pengembalian dana Anda tidak disetujui",
+          body: (name: string, code: string, title: string) =>
+            `Hai ${name}, kami tidak dapat menyetujui permintaan pengembalian dana Anda untuk voucher hadiah <strong>${code}</strong> (${title}).`,
+          notice: "Voucher masih berlaku dan dapat ditukarkan seperti biasa. Hubungi kami di",
+          ifQuestions: "jika Anda memiliki pertanyaan.",
+          subject: (code: string) => `Kabar terbaru tentang permintaan pengembalian dana Anda — ${code}`,
+        }
+      : {
+          heading: "Your refund request wasn't approved",
+          body: (name: string, code: string, title: string) =>
+            `Hi ${name}, we weren't able to approve your refund request for gift voucher <strong>${code}</strong> (${title}).`,
+          notice: "The voucher is still valid and can be redeemed as normal. Contact us at",
+          ifQuestions: "if you have questions.",
+          subject: (code: string) => `Update on your refund request — ${code}`,
+        };
+
   const html = `
     <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
-      <h1 style="color: #B3441E;">Your refund request wasn't approved</h1>
-      <p>Hi ${escapeHtml(params.purchaserName)}, we weren't able to approve your refund request for gift voucher <strong>${escapeHtml(params.voucherCode)}</strong> (${escapeHtml(params.productTitle)}).</p>
+      <h1 style="color: #B3441E;">${t.heading}</h1>
+      <p>${t.body(escapeHtml(params.purchaserName), escapeHtml(params.voucherCode), escapeHtml(params.productTitle))}</p>
       ${params.adminNotes ? `<p style="color: #4B5854;">${escapeHtml(params.adminNotes)}</p>` : ""}
-      <p>The voucher is still valid and can be redeemed as normal. Contact us at <a href="mailto:${escapeHtml(SUPPORT_EMAIL)}" style="color: #1E7A73;">${escapeHtml(SUPPORT_EMAIL)}</a> if you have questions.</p>
+      <p>${t.notice} <a href="mailto:${escapeHtml(SUPPORT_EMAIL)}" style="color: #1E7A73;">${escapeHtml(SUPPORT_EMAIL)}</a> ${t.ifQuestions}</p>
     </div>
   `;
 
   await sendEmail({
     to: params.toEmail,
-    subject: `Update on your refund request — ${params.voucherCode}`,
+    subject: t.subject(params.voucherCode),
     html,
   });
 }
@@ -1217,6 +1699,7 @@ interface ReviewRequestEmailParams {
   customerName: string;
   productTitle: string;
   reviewUrl: string;
+  locale: Locale;
 }
 
 /**
@@ -1227,19 +1710,38 @@ interface ReviewRequestEmailParams {
  * login required.
  */
 export async function sendReviewRequestEmail(params: ReviewRequestEmailParams): Promise<void> {
+  const t =
+    params.locale === "id"
+      ? {
+          heading: (title: string) => `Bagaimana ${title} Anda?`,
+          greeting: (name: string) => `Hai ${name},`,
+          body: "Kami harap Anda menikmati waktu yang menyenangkan. Boleh berbagi ulasan singkat? Ini sungguh membantu wisatawan lain — dan hanya butuh kurang dari semenit.",
+          button: "Tulis ulasan Anda",
+          notice: "Tautan ini khusus untuk Anda dan kedaluwarsa dalam 30 hari.",
+          subject: (title: string) => `Bagaimana ${title} Anda?`,
+        }
+      : {
+          heading: (title: string) => `How was your ${title}?`,
+          greeting: (name: string) => `Hi ${name},`,
+          body: "We hope you had a great time. Mind sharing a quick review? It genuinely helps other travelers -- and takes less than a minute.",
+          button: "Write your review",
+          notice: "This link is just for you and expires in 30 days.",
+          subject: (title: string) => `How was your ${title}?`,
+        };
+
   const html = `
     <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
-      <h1 style="color: #0F3A3D;">How was your ${escapeHtml(params.productTitle)}?</h1>
-      <p>Hi ${escapeHtml(params.customerName)},</p>
-      <p>We hope you had a great time. Mind sharing a quick review? It genuinely helps other travelers -- and takes less than a minute.</p>
-      <p><a href="${params.reviewUrl}" style="display: inline-block; background: #E1613C; color: #fff; padding: 10px 18px; border-radius: 8px; text-decoration: none;">Write your review</a></p>
-      <p style="color: #4B5854; font-size: 13px;">This link is just for you and expires in 30 days.</p>
+      <h1 style="color: #0F3A3D;">${t.heading(escapeHtml(params.productTitle))}</h1>
+      <p>${t.greeting(escapeHtml(params.customerName))}</p>
+      <p>${t.body}</p>
+      <p><a href="${params.reviewUrl}" style="display: inline-block; background: #E1613C; color: #fff; padding: 10px 18px; border-radius: 8px; text-decoration: none;">${t.button}</a></p>
+      <p style="color: #4B5854; font-size: 13px;">${t.notice}</p>
     </div>
   `;
 
   await sendEmail({
     to: params.toEmail,
-    subject: `How was your ${params.productTitle}?`,
+    subject: t.subject(params.productTitle),
     html,
   });
 }

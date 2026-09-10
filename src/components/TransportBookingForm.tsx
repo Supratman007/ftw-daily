@@ -97,6 +97,11 @@ interface TransportBookingFormProps {
    * this form's own selection state. */
   onVehicleTypeChange?: (vehicleType: TransportVehicleType | undefined) => void;
   dict?: TransportFormDict;
+  /** Carried as a hidden field so startTransportCheckoutAction knows
+   * which language to send the customer back to on error/login --
+   * same "plain prop, not getDictionary" story as dict above. Defaults
+   * to English so nothing breaks if a caller doesn't pass it yet. */
+  locale?: "en" | "id";
 }
 
 export function TransportBookingForm({
@@ -109,6 +114,7 @@ export function TransportBookingForm({
   minPickupDate,
   onVehicleTypeChange,
   dict = DEFAULT_DICT,
+  locale = "en",
 }: TransportBookingFormProps) {
   const [vehicleTypeId, setVehicleTypeId] = useState(vehicleTypes[0]?.id ?? "");
   const [pickupId, setPickupId] = useState(meetingPoints[0]?.id ?? OTHER_MEETING_POINT_VALUE);
@@ -136,6 +142,7 @@ export function TransportBookingForm({
 
   return (
     <form action={action} className="flex flex-col gap-3">
+      <input type="hidden" name="locale" value={locale} />
       <label className={labelClass}>
         {dict.vehicleLabel}
         <select

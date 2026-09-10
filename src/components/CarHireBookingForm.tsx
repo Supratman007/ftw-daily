@@ -110,6 +110,11 @@ interface CarHireBookingFormProps {
    * this form's own selection state. */
   onCarTypeChange?: (carType: CarType | undefined) => void;
   dict?: CarHireFormDict;
+  /** Carried as a hidden field so startCarHireCheckoutAction knows
+   * which language to send the customer back to on error/login --
+   * same "plain prop, not getDictionary" story as dict above. Defaults
+   * to English so nothing breaks if a caller doesn't pass it yet. */
+  locale?: "en" | "id";
 }
 
 export function CarHireBookingForm({
@@ -123,6 +128,7 @@ export function CarHireBookingForm({
   minPickupDate,
   onCarTypeChange,
   dict = DEFAULT_DICT,
+  locale = "en",
 }: CarHireBookingFormProps) {
   const [carTypeId, setCarTypeId] = useState(carTypes[0]?.id ?? "");
   const packagesForCarType = useMemo(
@@ -166,6 +172,7 @@ export function CarHireBookingForm({
 
   return (
     <form action={action} className="flex flex-col gap-3">
+      <input type="hidden" name="locale" value={locale} />
       <label className={labelClass}>
         {dict.carLabel}
         <select

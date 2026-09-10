@@ -241,13 +241,21 @@ export async function startCarHireCheckoutAction(productId: string, slug: string
   const pickupTime = String(formData.get("pickup_time") ?? "");
   const discountCodeInput = String(formData.get("discount_code") ?? "").trim();
 
+  // Hidden field on the form (see CarHireBookingForm) -- same
+  // "carries whichever locale the customer was already browsing in"
+  // reasoning as startCheckoutAction above, previously missing here
+  // entirely, which meant an Indonesian visitor filling out this form
+  // got bounced to the English login page and English error redirects.
+  const locale = formData.get("locale") === "id" ? "id" : "en";
+  const pathPrefix = locale === "id" ? "/id" : "";
+
   const cookieStore = await cookies();
   const referralCodeInput = cookieStore.get(REFERRAL_COOKIE_NAME)?.value?.trim() ?? "";
 
-  const customer = await requireCustomer(`/p/${slug}`);
+  const customer = await requireCustomer(`${pathPrefix}/p/${slug}`);
 
   function fail(message: string): never {
-    redirect(`/p/${slug}?${new URLSearchParams({ error: message }).toString()}`);
+    redirect(`${pathPrefix}/p/${slug}?${new URLSearchParams({ error: message }).toString()}`);
   }
 
   const isOtherMeetingPoint = meetingPointIdInput === OTHER_MEETING_POINT_VALUE;
@@ -414,8 +422,8 @@ export async function startCarHireCheckoutAction(productId: string, slug: string
       amountIdr: totalIdr,
       payerEmail: customer.email,
       description: `${p.title} — ${ct.name} (${pkg.duration_hours}h)`,
-      successRedirectUrl: `${siteUrl}/confirmation/${bookingId}`,
-      failureRedirectUrl: `${siteUrl}/p/${slug}`,
+      successRedirectUrl: `${siteUrl}${pathPrefix}/confirmation/${bookingId}`,
+      failureRedirectUrl: `${siteUrl}${pathPrefix}/p/${slug}`,
     });
   } catch (err) {
     await releaseDiscount();
@@ -482,13 +490,18 @@ export async function startTransportCheckoutAction(productId: string, slug: stri
   const pickupTime = String(formData.get("pickup_time") ?? "");
   const discountCodeInput = String(formData.get("discount_code") ?? "").trim();
 
+  // Same previously-missing hidden-field fix as startCarHireCheckoutAction
+  // above.
+  const locale = formData.get("locale") === "id" ? "id" : "en";
+  const pathPrefix = locale === "id" ? "/id" : "";
+
   const cookieStore = await cookies();
   const referralCodeInput = cookieStore.get(REFERRAL_COOKIE_NAME)?.value?.trim() ?? "";
 
-  const customer = await requireCustomer(`/p/${slug}`);
+  const customer = await requireCustomer(`${pathPrefix}/p/${slug}`);
 
   function fail(message: string): never {
-    redirect(`/p/${slug}?${new URLSearchParams({ error: message }).toString()}`);
+    redirect(`${pathPrefix}/p/${slug}?${new URLSearchParams({ error: message }).toString()}`);
   }
 
   const isOtherMeetingPoint = meetingPointIdInput === OTHER_MEETING_POINT_VALUE;
@@ -659,8 +672,8 @@ export async function startTransportCheckoutAction(productId: string, slug: stri
       amountIdr: totalIdr,
       payerEmail: customer.email,
       description: `${p.title} — ${vehicleType.name} (${meetingPoint?.name ?? meetingPointCustom} → ${dropoffPoint?.name ?? dropoffCustom})`,
-      successRedirectUrl: `${siteUrl}/confirmation/${bookingId}`,
-      failureRedirectUrl: `${siteUrl}/p/${slug}`,
+      successRedirectUrl: `${siteUrl}${pathPrefix}/confirmation/${bookingId}`,
+      failureRedirectUrl: `${siteUrl}${pathPrefix}/p/${slug}`,
     });
   } catch (err) {
     await releaseDiscount();

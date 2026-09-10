@@ -17,7 +17,8 @@ import {
 export async function submitRedemptionRequestAction(voucherCode: string, formData: FormData) {
   // Same hidden-field, carry-the-visitor's-locale-through-every-redirect
   // approach as startCheckoutAction -- see that action's comment.
-  const redeemPath = formData.get("locale") === "id" ? "/id/redeem" : "/redeem";
+  const locale = formData.get("locale") === "id" ? "id" : "en";
+  const redeemPath = locale === "id" ? "/id/redeem" : "/redeem";
 
   function fail(message: string): never {
     redirect(`${redeemPath}?code=${encodeURIComponent(voucherCode)}&error=${encodeURIComponent(message)}`);
@@ -67,6 +68,7 @@ export async function submitRedemptionRequestAction(voucherCode: string, formDat
       requested_pax_count: paxCount,
       redemption_message: message || null,
       redemption_requested_at: new Date().toISOString(),
+      redeemed_locale: locale,
     })
     .eq("id", voucher.id);
 
@@ -88,6 +90,7 @@ export async function submitRedemptionRequestAction(voucherCode: string, formDat
       recipientName: name,
       productTitle,
       voucherCode,
+      locale,
     }),
     ...(staff ?? []).map((admin) =>
       sendVoucherRedemptionRequestStaffEmail({

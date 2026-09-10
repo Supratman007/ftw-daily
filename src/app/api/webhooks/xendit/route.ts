@@ -116,7 +116,7 @@ export async function POST(request: NextRequest) {
       supabase.from("products").select("title").eq("id", booking.product_id).maybeSingle(),
       supabase
         .from("customers")
-        .select("name, email, phone")
+        .select("name, email, phone, preferred_locale")
         .eq("id", booking.customer_id)
         .maybeSingle(),
       // Everyone active gets it for now -- Phase 1 hasn't enforced the
@@ -127,6 +127,7 @@ export async function POST(request: NextRequest) {
 
     if (product && customer) {
       const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+      const pathPrefix = customer.preferred_locale === "id" ? "/id" : "";
       await sendBookingConfirmedEmail({
         toEmail: customer.email,
         customerName: customer.name,
@@ -135,10 +136,11 @@ export async function POST(request: NextRequest) {
         paxCount: booking.pax_count,
         totalIdr: booking.total_idr,
         bookingCode: booking.booking_code,
-        bookingUrl: `${siteUrl}/confirmation/${booking.id}`,
+        bookingUrl: `${siteUrl}${pathPrefix}/confirmation/${booking.id}`,
         discountCode: booking.discount_code,
         discountAmountUsd: booking.discount_amount_usd,
         pickupNote,
+        locale: customer.preferred_locale,
       });
 
       await Promise.all(
@@ -185,18 +187,24 @@ export async function POST(request: NextRequest) {
 
     const [{ data: product }, { data: customer }] = await Promise.all([
       supabase.from("products").select("title, slug").eq("id", booking.product_id).maybeSingle(),
-      supabase.from("customers").select("name, email").eq("id", booking.customer_id).maybeSingle(),
+      supabase
+        .from("customers")
+        .select("name, email, preferred_locale")
+        .eq("id", booking.customer_id)
+        .maybeSingle(),
     ]);
 
     if (product && customer) {
       const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+      const pathPrefix = customer.preferred_locale === "id" ? "/id" : "";
       await sendPaymentFailedEmail({
         toEmail: customer.email,
         customerName: customer.name,
         productTitle: product.title,
         slotDate: booking.slot_date,
         bookingCode: booking.booking_code,
-        productUrl: `${siteUrl}/p/${product.slug}`,
+        productUrl: `${siteUrl}${pathPrefix}/p/${product.slug}`,
+        locale: customer.preferred_locale,
       });
     }
 
@@ -361,7 +369,7 @@ async function handleGiftVoucherWebhook(
       supabase.from("products").select("title").eq("id", voucher.product_id).maybeSingle(),
       supabase
         .from("customers")
-        .select("name, email")
+        .select("name, email, preferred_locale")
         .eq("id", voucher.purchaser_customer_id)
         .maybeSingle(),
       supabase.from("admin_users").select("email").eq("status", "active"),
@@ -369,6 +377,7 @@ async function handleGiftVoucherWebhook(
 
     if (product && purchaser) {
       const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+      const pathPrefix = purchaser.preferred_locale === "id" ? "/id" : "";
       await sendGiftVoucherPurchaseConfirmedEmail({
         toEmail: purchaser.email,
         purchaserName: purchaser.name,
@@ -377,7 +386,8 @@ async function handleGiftVoucherWebhook(
         valueIdr: voucher.value_amount_idr,
         recipientName: voucher.recipient_name,
         expiresAt: expiresAt.toISOString(),
-        redeemUrl: `${siteUrl}/redeem?code=${encodeURIComponent(voucher.redemption_code)}`,
+        redeemUrl: `${siteUrl}${pathPrefix}/redeem?code=${encodeURIComponent(voucher.redemption_code)}`,
+        locale: purchaser.preferred_locale,
       });
 
       await Promise.all(

@@ -197,6 +197,7 @@ export async function ProductPage({
           error={error}
           priceLabel={dict.carHirePriceLabel}
           formDict={fullDict.carHireForm}
+          locale={locale}
         />
       ) : isTransport ? (
         <TransportProductSection
@@ -213,6 +214,7 @@ export async function ProductPage({
           error={error}
           priceLabel={dict.transportPriceLabel}
           formDict={fullDict.transportForm}
+          locale={locale}
         />
       ) : (
       <div className="grid gap-8 md:grid-cols-[1.4fr_1fr]">

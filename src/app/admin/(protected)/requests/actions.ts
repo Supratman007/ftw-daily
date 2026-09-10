@@ -41,7 +41,7 @@ export async function confirmRequestAction(bookingId: string) {
   }
 
   const [{ data: customer }, { data: product }] = await Promise.all([
-    supabase.from("customers").select("name, email").eq("id", booking.customer_id).maybeSingle(),
+    supabase.from("customers").select("name, email, preferred_locale").eq("id", booking.customer_id).maybeSingle(),
     supabase.from("products").select("title").eq("id", booking.product_id).maybeSingle(),
   ]);
 
@@ -50,6 +50,7 @@ export async function confirmRequestAction(bookingId: string) {
   }
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+  const pathPrefix = customer.preferred_locale === "id" ? "/id" : "";
   let invoice;
   try {
     invoice = await createXenditInvoice({
@@ -57,8 +58,8 @@ export async function confirmRequestAction(bookingId: string) {
       amountIdr: booking.total_idr,
       payerEmail: customer.email,
       description: product.title,
-      successRedirectUrl: `${siteUrl}/confirmation/${booking.id}`,
-      failureRedirectUrl: `${siteUrl}/account/booking/${booking.id}`,
+      successRedirectUrl: `${siteUrl}${pathPrefix}/confirmation/${booking.id}`,
+      failureRedirectUrl: `${siteUrl}${pathPrefix}/account/booking/${booking.id}`,
       invoiceDurationSeconds: CONFIRMATION_WINDOW_SECONDS,
     });
   } catch (err) {
@@ -92,6 +93,7 @@ export async function confirmRequestAction(bookingId: string) {
     bookingCode: booking.booking_code,
     totalIdr: booking.total_idr,
     paymentUrl: invoice.invoice_url,
+    locale: customer.preferred_locale,
   });
 
   redirect(`/admin/requests/${bookingId}?confirmed=1`);
@@ -144,12 +146,13 @@ export async function declineRequestAction(bookingId: string, formData: FormData
   });
 
   const [{ data: customer }, { data: product }] = await Promise.all([
-    supabase.from("customers").select("name, email").eq("id", booking.customer_id).maybeSingle(),
+    supabase.from("customers").select("name, email, preferred_locale").eq("id", booking.customer_id).maybeSingle(),
     supabase.from("products").select("title, slug").eq("id", booking.product_id).maybeSingle(),
   ]);
 
   if (customer && product) {
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+    const pathPrefix = customer.preferred_locale === "id" ? "/id" : "";
     await sendBookingRequestDeclinedEmail({
       toEmail: customer.email,
       customerName: customer.name,
@@ -157,7 +160,8 @@ export async function declineRequestAction(bookingId: string, formData: FormData
       slotDate: booking.slot_date,
       bookingCode: booking.booking_code,
       declineReason: reason,
-      productUrl: `${siteUrl}/p/${product.slug}`,
+      productUrl: `${siteUrl}${pathPrefix}/p/${product.slug}`,
+      locale: customer.preferred_locale,
     });
   }
 

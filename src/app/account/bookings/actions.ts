@@ -76,6 +76,7 @@ export async function requestGiftVoucherRefundAction(voucherId: string, formData
       purchaserName: customer.name,
       productTitle,
       voucherCode: voucher.redemption_code,
+      locale: customer.preferred_locale,
     }),
     ...(staff ?? []).map((admin) =>
       sendGiftVoucherRefundRequestStaffEmail({

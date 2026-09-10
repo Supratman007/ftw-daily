@@ -11,6 +11,7 @@ import {
   sendCancellationApprovedGiftVoucherEmail,
   sendCancellationRejectedEmail,
 } from "@/lib/email/resend";
+import type { Locale } from "@/lib/i18n/locales";
 
 type PendingRequest = {
   id: string;
@@ -27,7 +28,7 @@ type PendingRequest = {
     product_id: string;
     customer_id: string;
     products: { title: string } | null;
-    customers: { name: string; email: string; phone: string | null } | null;
+    customers: { name: string; email: string; phone: string | null; preferred_locale: Locale } | null;
   } | null;
 };
 
@@ -35,21 +36,27 @@ async function loadPendingRequest(supabase: Awaited<ReturnType<typeof createSupa
   const { data } = await supabase
     .from("cancellation_requests")
     .select(
-      "id, booking_id, path, status, calculated_refund_amount_idr, bookings(id, booking_code, slot_date, pax_count, total_idr, product_id, customer_id, products(title), customers(name, email, phone))"
+      "id, booking_id, path, status, calculated_refund_amount_idr, bookings(id, booking_code, slot_date, pax_count, total_idr, product_id, customer_id, products(title), customers(name, email, phone, preferred_locale))"
     )
     .eq("id", requestId)
     .maybeSingle();
   return data as unknown as PendingRequest | null;
 }
 
-function bookingUrlFor(bookingId: string): string {
+// Every email in this file goes to the customer whose booking this is --
+// their own preferred_locale (kept in sync by requireCustomer, see
+// src/lib/customers/auth.ts) decides both the email's language and
+// which /id-prefixed link this points them at.
+function bookingUrlFor(bookingId: string, locale: Locale): string {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
-  return `${siteUrl}/account/booking/${bookingId}`;
+  const pathPrefix = locale === "id" ? "/id" : "";
+  return `${siteUrl}${pathPrefix}/account/booking/${bookingId}`;
 }
 
-function redeemUrlFor(voucherCode: string): string {
+function redeemUrlFor(voucherCode: string, locale: Locale): string {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
-  return `${siteUrl}/redeem?code=${encodeURIComponent(voucherCode)}`;
+  const pathPrefix = locale === "id" ? "/id" : "";
+  return `${siteUrl}${pathPrefix}/redeem?code=${encodeURIComponent(voucherCode)}`;
 }
 
 /** Standard path only -- refunds the already-calculated amount
@@ -104,7 +111,8 @@ export async function approveRefundAction(requestId: string, formData: FormData)
       productTitle: booking.products?.title ?? "your trip",
       bookingCode: booking.booking_code,
       refundAmountIdr: request.calculated_refund_amount_idr ?? 0,
-      bookingUrl: bookingUrlFor(booking.id),
+      bookingUrl: bookingUrlFor(booking.id, booking.customers.preferred_locale),
+      locale: booking.customers.preferred_locale,
     });
   }
 
@@ -197,7 +205,8 @@ export async function approveRescheduleAction(requestId: string, formData: FormD
       productTitle: booking.products?.title ?? "your trip",
       bookingCode: booking.booking_code,
       newSlotDate,
-      bookingUrl: bookingUrlFor(booking.id),
+      bookingUrl: bookingUrlFor(booking.id, booking.customers.preferred_locale),
+      locale: booking.customers.preferred_locale,
     });
   }
 
@@ -317,8 +326,9 @@ export async function approveGiftVoucherAction(requestId: string, formData: Form
       valueIdr: valueAmountIdr,
       recipientName,
       expiresAt: voucher.expires_at,
-      bookingUrl: bookingUrlFor(booking.id),
-      redeemUrl: redeemUrlFor(voucher.redemption_code),
+      bookingUrl: bookingUrlFor(booking.id, booking.customers.preferred_locale),
+      redeemUrl: redeemUrlFor(voucher.redemption_code, booking.customers.preferred_locale),
+      locale: booking.customers.preferred_locale,
     });
   }
 
@@ -360,7 +370,8 @@ export async function rejectCancellationRequestAction(requestId: string, formDat
       productTitle: request.bookings.products?.title ?? "your trip",
       bookingCode: request.bookings.booking_code,
       adminNotes,
-      bookingUrl: bookingUrlFor(request.bookings.id),
+      bookingUrl: bookingUrlFor(request.bookings.id, request.bookings.customers.preferred_locale),
+      locale: request.bookings.customers.preferred_locale,
     });
   }
 

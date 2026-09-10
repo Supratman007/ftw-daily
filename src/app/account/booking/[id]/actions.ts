@@ -43,6 +43,7 @@ export async function resendConfirmationEmailAction(bookingId: string, locale: L
       bookingUrl: `${siteUrl}/confirmation/${booking.id}`,
       discountCode: booking.discount_code,
       discountAmountUsd: booking.discount_amount_usd,
+      locale: customer.preferred_locale,
     });
   }
 

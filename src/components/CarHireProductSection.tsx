@@ -30,6 +30,9 @@ interface CarHireProductSectionProps {
   /** Same "optional, defaults to English inside the form itself" story
    * as priceLabel -- passed straight through to CarHireBookingForm. */
   formDict?: CarHireFormDict;
+  /** Passed straight through to CarHireBookingForm's hidden locale
+   * field. */
+  locale?: "en" | "id";
 }
 
 /**
@@ -55,6 +58,7 @@ export function CarHireProductSection({
   error,
   priceLabel = "Price by car, duration & pickup area — pick your options below",
   formDict,
+  locale,
 }: CarHireProductSectionProps) {
   const [selectedCarType, setSelectedCarType] = useState<CarType | undefined>(carTypes[0]);
 
@@ -114,6 +118,7 @@ export function CarHireProductSection({
           minPickupDate={minPickupDate}
           onCarTypeChange={setSelectedCarType}
           dict={formDict}
+          locale={locale}
         />
       </div>
     </div>

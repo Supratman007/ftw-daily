@@ -13,31 +13,38 @@ import {
   sendGiftVoucherRefundApprovedEmail,
   sendGiftVoucherRefundDeclinedEmail,
 } from "@/lib/email/resend";
+import type { Locale } from "@/lib/i18n/locales";
 
 /** A voucher's giver is reached one of two ways depending on where it
  * came from: through the original booking it was cancelled from, or
  * (for one bought directly at /p/[slug]/gift) purchaser_customer_id
  * recorded on the voucher itself. Shared here since the refund
  * approve/decline actions both need it, same as
- * confirmVoucherRedemptionAction already does inline. */
+ * confirmVoucherRedemptionAction already does inline. Includes
+ * preferred_locale (the giver is always a real customer, unlike the
+ * recipient at redemption time) so callers can email them in their
+ * own language. */
 async function resolveVoucherGiver(
   serviceClient: ReturnType<typeof createSupabaseServiceRoleClient>,
   voucher: { original_booking_id: string | null; purchaser_customer_id: string | null }
-): Promise<{ name: string; email: string } | null> {
+): Promise<{ name: string; email: string; preferred_locale: Locale } | null> {
   if (voucher.original_booking_id) {
     const { data: booking } = await serviceClient
       .from("bookings")
-      .select("customers(name, email)")
+      .select("customers(name, email, preferred_locale)")
       .eq("id", voucher.original_booking_id)
       .maybeSingle();
-    const giver = (booking as unknown as { customers: { name: string; email: string } | null } | null)
-      ?.customers;
+    const giver = (
+      booking as unknown as {
+        customers: { name: string; email: string; preferred_locale: Locale } | null;
+      } | null
+    )?.customers;
     if (giver) return giver;
   }
   if (voucher.purchaser_customer_id) {
     const { data: purchaser } = await serviceClient
       .from("customers")
-      .select("name, email")
+      .select("name, email, preferred_locale")
       .eq("id", voucher.purchaser_customer_id)
       .maybeSingle();
     if (purchaser) return purchaser;
@@ -74,7 +81,7 @@ export async function confirmVoucherRedemptionAction(voucherId: string, formData
   const { data: voucher } = await serviceClient
     .from("gift_vouchers")
     .select(
-      "id, status, expires_at, product_id, value_amount_idr, original_booking_id, purchaser_customer_id, redeemed_by_name, redeemed_by_email, requested_slot_date, requested_pax_count, redemption_code, products(title, adult_price_usd, capacity_per_date, duration_days)"
+      "id, status, expires_at, product_id, value_amount_idr, original_booking_id, purchaser_customer_id, redeemed_by_name, redeemed_by_email, redeemed_locale, requested_slot_date, requested_pax_count, redemption_code, products(title, adult_price_usd, capacity_per_date, duration_days)"
     )
     .eq("id", voucherId)
     .maybeSingle();
@@ -109,14 +116,14 @@ export async function confirmVoucherRedemptionAction(voucherId: string, formData
     voucher.original_booking_id
       ? serviceClient
           .from("bookings")
-          .select("pax_count, customers(name, email)")
+          .select("pax_count, customers(name, email, preferred_locale)")
           .eq("id", voucher.original_booking_id)
           .maybeSingle()
       : Promise.resolve({ data: null }),
     voucher.purchaser_customer_id
       ? serviceClient
           .from("customers")
-          .select("name, email")
+          .select("name, email, preferred_locale")
           .eq("id", voucher.purchaser_customer_id)
           .maybeSingle()
       : Promise.resolve({ data: null }),
@@ -138,6 +145,7 @@ export async function confirmVoucherRedemptionAction(voucherId: string, formData
       recipientName: voucher.redeemed_by_name ?? "there",
       productTitle,
       voucherCode: voucher.redemption_code,
+      locale: voucher.redeemed_locale,
     });
     redirect(
       withParam(
@@ -190,9 +198,13 @@ export async function confirmVoucherRedemptionAction(voucherId: string, formData
     .eq("id", voucher.id);
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+  const recipientPathPrefix = voucher.redeemed_locale === "id" ? "/id" : "";
   const originalGiver =
-    (originalBooking as unknown as { customers: { name: string; email: string } | null } | null)
-      ?.customers ?? purchaser;
+    (
+      originalBooking as unknown as {
+        customers: { name: string; email: string; preferred_locale: Locale } | null;
+      } | null
+    )?.customers ?? purchaser;
 
   await Promise.all([
     sendVoucherRedeemedBookingConfirmedEmail({
@@ -200,7 +212,8 @@ export async function confirmVoucherRedemptionAction(voucherId: string, formData
       recipientName: voucher.redeemed_by_name ?? "there",
       productTitle,
       slotDate,
-      bookingUrl: `${siteUrl}/account/booking/${booking.id}`,
+      bookingUrl: `${siteUrl}${recipientPathPrefix}/account/booking/${booking.id}`,
+      locale: voucher.redeemed_locale,
     }),
     // Whoever originally gave the gift never otherwise finds out it was
     // used -- only the recipient gets confirmation emails throughout
@@ -214,6 +227,7 @@ export async function confirmVoucherRedemptionAction(voucherId: string, formData
             recipientName: voucher.redeemed_by_name ?? "Your recipient",
             productTitle,
             slotDate,
+            locale: originalGiver.preferred_locale,
           }),
         ]
       : []),
@@ -269,6 +283,7 @@ export async function approveGiftVoucherRefundAction(voucherId: string, formData
       productTitle,
       voucherCode: voucher.redemption_code,
       refundAmountIdr: voucher.value_amount_idr,
+      locale: giver.preferred_locale,
     });
   }
 
@@ -308,6 +323,7 @@ export async function declineGiftVoucherRefundAction(voucherId: string, formData
       productTitle,
       voucherCode: voucher.redemption_code,
       adminNotes: adminNotes || null,
+      locale: giver.preferred_locale,
     });
   }
 
