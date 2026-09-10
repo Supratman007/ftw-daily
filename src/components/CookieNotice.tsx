@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 
 const DISMISSED_KEY = "alb_cookie_notice_dismissed";
 
@@ -61,9 +62,9 @@ export function CookieNotice({
       <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 text-sm text-ink-soft">
         <p className="flex-1">
           {message}{" "}
-          <a href={learnMoreHref} className="font-semibold text-teal hover:underline">
+          <Link href={learnMoreHref} className="font-semibold text-teal hover:underline">
             {learnMoreLabel}
-          </a>
+          </Link>
         </p>
         <button
           type="button"

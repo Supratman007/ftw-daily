@@ -176,12 +176,12 @@ export async function ConfirmationPage({
         <h1 className="mt-2 font-serif text-2xl font-semibold text-coral-dark">{dict.failedHeading}</h1>
         <p className="mt-2 text-sm text-ink-soft">{dict.failedBody}</p>
         {product?.slug && (
-          <a
+          <Link
             href={locale === "en" ? `/p/${product.slug}` : `/id/p/${product.slug}`}
             className="mt-6 rounded-lg bg-coral px-4 py-2 text-sm font-semibold text-white"
           >
             {dict.backToTrip}
-          </a>
+          </Link>
         )}
       </main>
     );

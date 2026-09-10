@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { loginAction, signupAction } from "@/app/login/actions";
 import { PageViewTracker } from "@/components/PageViewTracker";
 import { getDictionary } from "@/lib/i18n/getDictionary";
@@ -95,20 +96,20 @@ export async function LoginPage({
 
       {!isSignup && (
         <p className="mt-3 text-center text-sm">
-          <a href={locale === "id" ? "/id/forgot-password" : "/forgot-password"} className="text-teal hover:underline">
+          <Link href={locale === "id" ? "/id/forgot-password" : "/forgot-password"} className="text-teal hover:underline">
             {dict.forgotPassword}
-          </a>
+          </Link>
         </p>
       )}
 
       <p className="mt-4 text-center text-sm text-ink-soft">
         {isSignup ? dict.haveAccountPrompt : dict.newHerePrompt}
-        <a
+        <Link
           href={`${loginPath}?mode=${isSignup ? "login" : "signup"}&return_to=${encodeURIComponent(returnTo)}`}
           className="font-semibold text-teal hover:underline"
         >
           {isSignup ? dict.loginLink : dict.signupLink}
-        </a>
+        </Link>
       </p>
     </main>
   );

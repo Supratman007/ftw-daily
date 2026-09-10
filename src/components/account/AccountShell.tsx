@@ -36,11 +36,11 @@ export async function AccountShell({
             {dict.common.siteName}
           </Link>
           <nav className="mt-1 flex gap-4 font-serif text-sm font-semibold text-ocean">
-            <a href={`${pathPrefix}/account`}>{nav.overview}</a>
-            <a href={`${pathPrefix}/account/bookings`}>{nav.myBookings}</a>
-            <a href={`${pathPrefix}/account/messages`}>{nav.messages}</a>
-            <a href={`${pathPrefix}/account/profile`}>{nav.profile}</a>
-            <a href={`${pathPrefix}/redeem`}>{nav.redeemGift}</a>
+            <Link href={`${pathPrefix}/account`}>{nav.overview}</Link>
+            <Link href={`${pathPrefix}/account/bookings`}>{nav.myBookings}</Link>
+            <Link href={`${pathPrefix}/account/messages`}>{nav.messages}</Link>
+            <Link href={`${pathPrefix}/account/profile`}>{nav.profile}</Link>
+            <Link href={`${pathPrefix}/redeem`}>{nav.redeemGift}</Link>
             <Link href={pathPrefix || "/"} className="text-coral-dark">
               {nav.bookATrip}
             </Link>

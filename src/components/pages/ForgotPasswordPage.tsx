@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { requestPasswordResetAction } from "@/app/forgot-password/actions";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import type { Locale } from "@/lib/i18n/locales";
@@ -52,9 +53,9 @@ export async function ForgotPasswordPage({
       )}
 
       <p className="mt-4 text-center text-sm text-ink-soft">
-        <a href={`${pathPrefix}/login`} className="font-semibold text-teal hover:underline">
+        <Link href={`${pathPrefix}/login`} className="font-semibold text-teal hover:underline">
           {dict.backToLogin}
-        </a>
+        </Link>
       </p>
     </main>
   );

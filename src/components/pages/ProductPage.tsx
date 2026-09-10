@@ -1,4 +1,6 @@
 import { notFound } from "next/navigation";
+import Link from "next/link";
+import Image from "next/image";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { formatIdr, formatUsd, usdToIdr } from "@/lib/currency";
 import type { Product } from "@/lib/products/types";
@@ -177,12 +179,19 @@ export async function ProductPage({
         <LocaleSwitcher locale={locale} basePath={`/p/${p.slug}`} />
       </div>
       {p.cover_image_url && (
-        // eslint-disable-next-line @next/next/no-img-element -- prototype-stage product page; Next/Image optimization is a later polish pass
-        <img
-          src={p.cover_image_url}
-          alt=""
-          className="mb-6 h-72 w-full rounded-2xl object-cover"
-        />
+        // This is the product page's LCP element (the big above-the-fold
+        // hero photo), so preload=true tells the browser to start
+        // fetching it from the <head> instead of discovering it later.
+        <div className="relative mb-6 h-72 w-full overflow-hidden rounded-2xl">
+          <Image
+            src={p.cover_image_url}
+            alt=""
+            fill
+            sizes="(max-width: 1024px) 100vw, 896px"
+            preload
+            className="object-cover"
+          />
+        </div>
       )}
 
       {isCarHire ? (
@@ -349,12 +358,12 @@ export async function ProductPage({
           )}
 
           {p.is_bookable && (
-            <a
+            <Link
               href={giftHref}
               className="mt-3 block rounded-lg border border-sand-deep px-4 py-3 text-center text-sm font-semibold text-ink hover:bg-sand"
             >
               {dict.giftThisTrip}
-            </a>
+            </Link>
           )}
         </div>
       </div>

@@ -519,12 +519,12 @@ export async function BookingDetailPage({
                 </div>
                 <p className="mt-2 border-t border-sand-deep pt-2 text-xs">
                   {dict.shareVoucherCode(vouchers[0].recipient_name)}{" "}
-                  <a
+                  <Link
                     href={`${pathPrefix}/redeem?code=${encodeURIComponent(vouchers[0].redemption_code)}`}
                     className="font-semibold text-teal hover:underline"
                   >
                     adventure-lombok.com/redeem
-                  </a>
+                  </Link>
                   .
                 </p>
 

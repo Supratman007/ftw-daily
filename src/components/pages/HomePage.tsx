@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { formatUsd, formatIdr, usdToIdr } from "@/lib/currency";
 import { PRODUCT_TYPE_LABELS } from "@/lib/products/types";
@@ -132,14 +133,21 @@ export async function HomePage({
         ) : (
           <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {items.map((p) => (
-              <a
+              <Link
                 key={p.id}
                 href={locale === "en" ? `/p/${p.slug}` : `/id/p/${p.slug}`}
                 className="flex flex-col overflow-hidden rounded-2xl border border-sand-deep bg-white transition hover:shadow-md"
               >
                 {p.cover_image_url ? (
-                  // eslint-disable-next-line @next/next/no-img-element -- prototype-stage listing; Next/Image optimization is a later polish pass
-                  <img src={p.cover_image_url} alt="" className="h-40 w-full object-cover" />
+                  <div className="relative h-40 w-full">
+                    <Image
+                      src={p.cover_image_url}
+                      alt=""
+                      fill
+                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                      className="object-cover"
+                    />
+                  </div>
                 ) : (
                   <div className="h-40 w-full bg-sand" />
                 )}
@@ -162,7 +170,7 @@ export async function HomePage({
                     </p>
                   )}
                 </div>
-              </a>
+              </Link>
             ))}
           </div>
         )}

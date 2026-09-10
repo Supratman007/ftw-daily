@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 
 interface VehicleDetailPanelProps {
   name: string;
@@ -34,8 +35,15 @@ export function VehicleDetailPanel({
   return (
     <div className="overflow-hidden rounded-2xl border border-sand-deep bg-white">
       {activePhoto ? (
-        // eslint-disable-next-line @next/next/no-img-element -- prototype-stage booking flow; Next/Image optimization is a later polish pass
-        <img src={activePhoto} alt={name} className="h-48 w-full object-cover" />
+        <div className="relative h-48 w-full">
+          <Image
+            src={activePhoto}
+            alt={name}
+            fill
+            sizes="(max-width: 768px) 100vw, 400px"
+            className="object-cover"
+          />
+        </div>
       ) : (
         <div className="flex h-48 w-full items-center justify-center bg-sand text-5xl">
           {placeholderEmoji}
