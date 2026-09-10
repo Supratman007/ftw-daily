@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { ADMIN_SECTION_ROLES, requireAdmin, type AdminSection } from "@/lib/admin/auth";
 import { logoutAction } from "./actions";
 
@@ -28,12 +29,19 @@ export default async function ProtectedAdminLayout({
 
   return (
     <div className="min-h-screen bg-sand">
-      <header className="flex items-center justify-between border-b border-sand-deep bg-white px-6 py-4">
+      <header className="flex flex-col gap-3 border-b border-sand-deep bg-white px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="font-mono text-xs uppercase tracking-widest text-ink-soft">
-            Adventure Lombok Booking — Admin
-          </p>
-          <nav className="mt-1 flex flex-wrap gap-4 font-serif text-sm font-semibold text-ocean">
+          <Link href="/admin" className="flex shrink-0 items-center gap-2">
+            <Image
+              src="/logo.jpg"
+              alt="Adventure Lombok Booking"
+              width={120}
+              height={36}
+              className="h-8 w-auto sm:h-9"
+            />
+            <span className="font-mono text-xs uppercase tracking-widest text-ink-soft">Admin</span>
+          </Link>
+          <nav className="mt-2 flex flex-wrap gap-x-4 gap-y-1 font-serif text-sm font-semibold text-ocean">
             <Link href="/admin">Overview</Link>
             {NAV_LINKS.filter((link) => ADMIN_SECTION_ROLES[link.section].includes(admin.role)).map(
               (link) => (
@@ -45,7 +53,7 @@ export default async function ProtectedAdminLayout({
             {admin.role === "super_admin" && <Link href="/admin/team">Team</Link>}
           </nav>
         </div>
-        <div className="flex items-center gap-3 text-sm text-ink-soft">
+        <div className="flex flex-wrap items-center gap-3 text-sm text-ink-soft">
           <span>{admin.name || admin.email}</span>
           <form action={logoutAction}>
             <button type="submit" className="font-semibold text-coral-dark hover:underline">

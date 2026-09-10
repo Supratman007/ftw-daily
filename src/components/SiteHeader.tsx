@@ -47,13 +47,13 @@ export async function SiteHeader({ locale = DEFAULT_LOCALE }: { locale?: Locale 
   }
 
   return (
-    <header className="flex items-center justify-between border-b border-sand-deep bg-white px-6 py-4">
-      <Link href={locale === "en" ? "/" : "/id"} className="flex items-center">
-        <Image src="/logo.jpg" alt={dict.siteName} width={120} height={36} preload />
+    <header className="flex flex-col gap-3 border-b border-sand-deep bg-white px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
+      <Link href={locale === "en" ? "/" : "/id"} className="flex shrink-0 items-center">
+        <Image src="/logo.jpg" alt={dict.siteName} width={120} height={36} className="h-8 w-auto sm:h-9" preload />
       </Link>
       <div className="text-sm">
         {user ? (
-          <div className="flex items-center gap-3 text-ink-soft">
+          <div className="flex flex-wrap items-center gap-3 text-ink-soft">
             <Link href={locale === "en" ? "/redeem" : "/id/redeem"} className="font-semibold text-teal hover:underline">
               {dict.redeemVoucher}
             </Link>
@@ -67,7 +67,7 @@ export async function SiteHeader({ locale = DEFAULT_LOCALE }: { locale?: Locale 
             </form>
           </div>
         ) : (
-          <div className="flex items-center gap-3 text-ink-soft">
+          <div className="flex flex-wrap items-center gap-3 text-ink-soft">
             <Link href={locale === "en" ? "/redeem" : "/id/redeem"} className="font-semibold text-teal hover:underline">
               {dict.redeemVoucher}
             </Link>
