@@ -116,6 +116,7 @@ export type AdminSection =
   | "bookings"
   | "pickups"
   | "reports"
+  | "analytics"
   | "vouchers"
   | "commissions"
   | "commission_tiers"
@@ -134,6 +135,7 @@ export const ADMIN_SECTION_ROLES: Record<AdminSection, AdminRole[]> = {
   bookings: ["super_admin", "reservations", "accounting"],
   pickups: ["super_admin", "reservations"],
   reports: ["super_admin", "accounting"],
+  analytics: ["super_admin", "accounting"],
   vouchers: ["super_admin", "reservations", "accounting"],
   commissions: ["super_admin", "accounting"],
   commission_tiers: ["super_admin"],
