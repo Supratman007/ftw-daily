@@ -103,6 +103,8 @@ export const requireSuperAdmin = cache(async (): Promise<AdminUser> => {
  *   Reservations quotes customers and what Accounting reports on);
  *   Meeting points is open to Reservations too, since they already
  *   own day-to-day pickups.
+ * - Pickups (not a spec item -- built directly) is Reservations'
+ *   operational screen, so Super Admin + Reservations only.
  */
 export type AdminSection =
   | "dashboard"
@@ -112,6 +114,7 @@ export type AdminSection =
   | "moderation"
   | "inbox"
   | "bookings"
+  | "pickups"
   | "reports"
   | "vouchers"
   | "commissions"
@@ -129,6 +132,7 @@ export const ADMIN_SECTION_ROLES: Record<AdminSection, AdminRole[]> = {
   moderation: ["super_admin", "reservations"],
   inbox: ["super_admin", "reservations", "support"],
   bookings: ["super_admin", "reservations", "accounting"],
+  pickups: ["super_admin", "reservations"],
   reports: ["super_admin", "accounting"],
   vouchers: ["super_admin", "reservations", "accounting"],
   commissions: ["super_admin", "accounting"],

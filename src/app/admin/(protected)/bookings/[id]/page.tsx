@@ -5,6 +5,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { formatIdr, formatUsd } from "@/lib/currency";
 import { formatCommissionAmount } from "@/lib/agents/commission";
 import { BOOKING_STATUS_LABELS, type Booking } from "@/lib/bookings/types";
+import { buildDriverMessageLink } from "@/lib/bookings/driverMessage";
 import { startCustomerConversationAction } from "../../inbox/actions";
 
 type BookingRow = Booking & {
@@ -86,29 +87,22 @@ export default async function AdminBookingDetailPage({
     }
   }
 
-  // A pre-filled, no-recipient wa.me link -- opening it drops the admin
-  // straight into WhatsApp's own "choose who to send this to" screen,
-  // so they can pick the driver (or a driver group chat) from their
-  // own contacts. There's no driver-contacts feature in this app, so
-  // this is deliberately the whole mechanism: it never needs one.
-  let driverMessageLink: string | null = null;
-  if (b.pickup_datetime) {
-    const pickupArea = [meetingPointName, b.meeting_point_custom].filter(Boolean).join(", ") || "Not set";
-    const dropoffArea = [dropoffPointName, b.dropoff_location_custom].filter(Boolean).join(", ") || null;
-    const lines = [
-      "New pickup:",
-      `Trip: ${b.products?.title ?? "Trip"}`,
-      `Booking: ${b.booking_code}`,
-      `Pickup: ${new Date(b.pickup_datetime).toLocaleString()}`,
-      carLabel ? `Car: ${carLabel}` : null,
-      `From: ${pickupArea}`,
-      dropoffArea ? `To: ${dropoffArea}` : null,
-      `Passenger: ${b.passenger_name ?? b.customers?.name ?? "—"}`,
-      b.flight_details ? `Flight: ${b.flight_details}` : null,
-      b.pickup_whatsapp_number ? `Customer WhatsApp: ${b.pickup_whatsapp_number}` : null,
-    ].filter((line): line is string => Boolean(line));
-    driverMessageLink = `https://wa.me/?text=${encodeURIComponent(lines.join("\n"))}`;
-  }
+  // See buildDriverMessageLink for what this actually opens (a
+  // pre-filled, no-recipient wa.me link).
+  const driverMessageLink = b.pickup_datetime
+    ? buildDriverMessageLink({
+        productTitle: b.products?.title,
+        bookingCode: b.booking_code,
+        pickupDatetime: b.pickup_datetime,
+        carLabel,
+        pickupArea: [meetingPointName, b.meeting_point_custom].filter(Boolean).join(", ") || "Not set",
+        dropoffArea: [dropoffPointName, b.dropoff_location_custom].filter(Boolean).join(", ") || null,
+        passengerName: b.passenger_name,
+        customerName: b.customers?.name,
+        flightDetails: b.flight_details,
+        pickupWhatsappNumber: b.pickup_whatsapp_number,
+      })
+    : null;
 
   return (
     <div className="max-w-xl">

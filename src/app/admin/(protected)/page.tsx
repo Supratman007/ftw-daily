@@ -3,6 +3,8 @@ import { ADMIN_SECTION_ROLES, requireAdminSection } from "@/lib/admin/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { formatIdr } from "@/lib/currency";
 import { BOOKING_STATUS_LABELS, type Booking } from "@/lib/bookings/types";
+import { lombokTodayAndTomorrow } from "@/lib/timezone";
+import { tripStartFromDate } from "@/lib/products/leadTime";
 
 const cardClass =
   "rounded-2xl border border-sand-deep bg-white p-5 transition hover:shadow-md";
@@ -37,8 +39,13 @@ export default async function AdminOverviewPage({
   const canSeeInbox = ADMIN_SECTION_ROLES.inbox.includes(admin.role);
   const canSeeCancellations = ADMIN_SECTION_ROLES.cancellations.includes(admin.role);
   const canSeeVouchers = ADMIN_SECTION_ROLES.vouchers.includes(admin.role);
+  const canSeePickups = ADMIN_SECTION_ROLES.pickups.includes(admin.role);
   const { error, password_set } = await searchParams;
   const supabase = await createSupabaseServerClient();
+
+  const { todayStr, tomorrowStr } = lombokTodayAndTomorrow();
+  const todayStart = tripStartFromDate(todayStr);
+  const todayEnd = tripStartFromDate(tomorrowStr);
 
   const [
     confirmedCount,
@@ -51,6 +58,7 @@ export default async function AdminOverviewPage({
     pendingCancellationCount,
     pendingVoucherCount,
     outstandingVoucherValue,
+    todayPickupCount,
   ] = await Promise.all([
     supabase.from("bookings").select("*", { count: "exact", head: true }).eq("status", "paid_confirmed"),
     supabase.from("bookings").select("*", { count: "exact", head: true }).eq("status", "pending_payment"),
@@ -80,6 +88,13 @@ export default async function AdminOverviewPage({
       .select("value_amount_idr")
       .eq("status", "issued")
       .gte("expires_at", new Date().toISOString()),
+    supabase
+      .from("bookings")
+      .select("*", { count: "exact", head: true })
+      .eq("status", "paid_confirmed")
+      .not("pickup_datetime", "is", null)
+      .gte("pickup_datetime", todayStart.toISOString())
+      .lt("pickup_datetime", todayEnd.toISOString()),
   ]);
 
   const totalRevenueIdr = (revenue.data ?? []).reduce((sum, r) => sum + r.total_idr, 0);
@@ -195,6 +210,16 @@ export default async function AdminOverviewPage({
               className={`mt-1 font-serif text-2xl font-semibold ${pendingCancellations > 0 ? "text-coral-dark" : "text-ink"}`}
             >
               {pendingCancellations} awaiting review
+            </p>
+          </Link>
+        )}
+        {canSeePickups && (
+          <Link href="/admin/pickups" className={cardClass}>
+            <p className="font-mono text-xs uppercase tracking-widest text-ink-soft">
+              Pickups today
+            </p>
+            <p className="mt-1 font-serif text-2xl font-semibold text-ink">
+              {todayPickupCount.count ?? 0}
             </p>
           </Link>
         )}

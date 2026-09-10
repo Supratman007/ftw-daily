@@ -4,6 +4,7 @@ import { logoutAction } from "./actions";
 
 const NAV_LINKS: Array<{ href: string; label: string; section: AdminSection }> = [
   { href: "/admin/bookings", label: "Bookings", section: "bookings" },
+  { href: "/admin/pickups", label: "Pickups", section: "pickups" },
   { href: "/admin/requests", label: "Requests", section: "requests" },
   { href: "/admin/inbox", label: "Inbox", section: "inbox" },
   { href: "/admin/cancellations", label: "Cancellations", section: "cancellations" },
