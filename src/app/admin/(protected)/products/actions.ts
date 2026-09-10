@@ -24,6 +24,30 @@ function optionalNumber(formData: FormData, key: string): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
+/** Highlights/includes/excludes/trip notes are all "one per line" in
+ * the admin form -- simplest possible input for a non-technical admin,
+ * no add/remove-row UI needed for what's genuinely just a bullet list. */
+function linesToList(formData: FormData, key: string): string[] {
+  return decodeHtmlEntities(String(formData.get(key) ?? ""))
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+}
+
+/** Itinerary needs a title *and* a description per stop, so it can't
+ * be one line per entry -- the form submits two same-named,
+ * same-order field lists (same pattern as gallery_urls) and this zips
+ * them back into pairs, dropping any row left with no title. */
+function formToItinerary(formData: FormData): Array<{ title: string; description: string }> {
+  const titles = formData.getAll("itinerary_title").map((v) => decodeHtmlEntities(String(v)).trim());
+  const descriptions = formData
+    .getAll("itinerary_description")
+    .map((v) => decodeHtmlEntities(String(v)).trim());
+  return titles
+    .map((title, i) => ({ title, description: descriptions[i] ?? "" }))
+    .filter((entry) => entry.title !== "");
+}
+
 type BuildProductRowResult =
   | { ok: true; row: ReturnType<typeof toProductRow> }
   | { ok: false; error: string };
@@ -55,6 +79,11 @@ function toProductRow(formData: FormData, productType: ProductType, title: strin
     min_lead_hours: minLeadHours,
     cover_image_url: galleryUrls[0] ?? null,
     gallery_urls: galleryUrls,
+    highlights: linesToList(formData, "highlights"),
+    includes: linesToList(formData, "includes"),
+    excludes: linesToList(formData, "excludes"),
+    trip_notes: linesToList(formData, "trip_notes"),
+    itinerary: formToItinerary(formData),
     source_url: optionalText(formData, "source_url"),
     is_bookable: formData.get("is_bookable") === "on",
     status: (formData.get("status") === "inactive" ? "inactive" : "active") as "active" | "inactive",

@@ -16,6 +16,17 @@ interface ProductFormProps {
   error?: string;
 }
 
+/** One itinerary row's client-side identity -- a stable `id` so
+ * removing a row in the middle doesn't make React reuse another row's
+ * (uncontrolled) input DOM node and show its old text. Unrelated to
+ * anything saved -- the server only ever sees the title/description
+ * text itself (formToItinerary in ../../app/admin/(protected)/products/actions.ts). */
+interface ItineraryRow {
+  id: string;
+  title: string;
+  description: string;
+}
+
 export function ProductForm({ action, product, error }: ProductFormProps) {
   const [images, setImages] = useState<string[]>(product?.gallery_urls ?? []);
   const [uploading, setUploading] = useState(false);
@@ -23,7 +34,22 @@ export function ProductForm({ action, product, error }: ProductFormProps) {
   const [slugTouched, setSlugTouched] = useState(Boolean(product));
   const [slug, setSlug] = useState(product?.slug ?? "");
   const [productType, setProductType] = useState<ProductType>(product?.product_type ?? "tour");
+  const [itineraryRows, setItineraryRows] = useState<ItineraryRow[]>(
+    (product?.itinerary ?? []).map((step) => ({
+      id: crypto.randomUUID(),
+      title: step.title,
+      description: step.description,
+    }))
+  );
   const isCarOrTransport = productType === "car_hire" || productType === "transport";
+
+  function addItineraryRow() {
+    setItineraryRows((prev) => [...prev, { id: crypto.randomUUID(), title: "", description: "" }]);
+  }
+
+  function removeItineraryRow(id: string) {
+    setItineraryRows((prev) => prev.filter((row) => row.id !== id));
+  }
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const files = e.target.files;
@@ -165,6 +191,108 @@ export function ProductForm({ action, product, error }: ProductFormProps) {
           defaultValue={product?.description ?? ""}
           className={inputClass}
         />
+      </div>
+
+      <div>
+        <label className={labelClass} htmlFor="highlights">
+          Trip highlights
+        </label>
+        <textarea
+          id="highlights"
+          name="highlights"
+          rows={4}
+          defaultValue={(product?.highlights ?? []).join("\n")}
+          placeholder={"One per line, e.g.\nSunrise summit views over Bali and the Gili Islands\nLocal, licensed mountain guide included"}
+          className={inputClass}
+        />
+        <p className="mt-1 text-xs text-ink-soft">One per line. Shown as a bullet list on the trip page.</p>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div>
+          <label className={labelClass} htmlFor="includes">
+            What&apos;s included
+          </label>
+          <textarea
+            id="includes"
+            name="includes"
+            rows={4}
+            defaultValue={(product?.includes ?? []).join("\n")}
+            placeholder={"One per line, e.g.\nHotel pickup and drop-off\nLunch and drinking water"}
+            className={inputClass}
+          />
+        </div>
+        <div>
+          <label className={labelClass} htmlFor="excludes">
+            What&apos;s not included
+          </label>
+          <textarea
+            id="excludes"
+            name="excludes"
+            rows={4}
+            defaultValue={(product?.excludes ?? []).join("\n")}
+            placeholder={"One per line, e.g.\nPersonal travel insurance\nGratuities"}
+            className={inputClass}
+          />
+        </div>
+      </div>
+
+      <div>
+        <label className={labelClass} htmlFor="trip_notes">
+          Good to know / trip notes
+        </label>
+        <textarea
+          id="trip_notes"
+          name="trip_notes"
+          rows={4}
+          defaultValue={(product?.trip_notes ?? []).join("\n")}
+          placeholder={"One per line, e.g.\nModerate fitness level required\nNot recommended for children under 8"}
+          className={inputClass}
+        />
+      </div>
+
+      <div>
+        <label className={labelClass}>Itinerary</label>
+        <p className="mb-2 text-xs text-ink-soft">
+          One stop/day per row, in order. Leave empty if this trip doesn&apos;t need one.
+        </p>
+        <div className="flex flex-col gap-3">
+          {itineraryRows.map((row, i) => (
+            <div key={row.id} className="rounded-lg border border-sand-deep p-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold uppercase tracking-wide text-ink-soft">Stop {i + 1}</span>
+                <button
+                  type="button"
+                  onClick={() => removeItineraryRow(row.id)}
+                  className="text-xs font-semibold text-coral-dark hover:underline"
+                >
+                  Remove
+                </button>
+              </div>
+              <input
+                type="text"
+                name="itinerary_title"
+                defaultValue={row.title}
+                placeholder="Title, e.g. Day 1: Sembalun to Crater Rim"
+                className={`${inputClass} mt-2`}
+              />
+              <textarea
+                name="itinerary_description"
+                defaultValue={row.description}
+                rows={2}
+                placeholder="What happens at this stop"
+                className={`${inputClass} mt-2`}
+              />
+            </div>
+          ))}
+        </div>
+        <button
+          type="button"
+          onClick={addItineraryRow}
+          className="mt-2 rounded-lg border border-sand-deep px-3 py-1.5 text-xs font-semibold text-ink hover:bg-sand"
+        >
+          + Add stop
+        </button>
       </div>
 
       <div className="grid grid-cols-2 gap-4">
