@@ -5,6 +5,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/service";
 import { formatIdr } from "@/lib/currency";
 import { customerLogoutAction } from "@/app/actions";
+import { PageViewTracker } from "@/components/PageViewTracker";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import type { Locale } from "@/lib/i18n/locales";
 
@@ -116,6 +117,7 @@ export async function GiftConfirmationPage({
 
   return (
     <main className="mx-auto flex min-h-screen max-w-md flex-col items-center justify-center px-6 py-12 text-center">
+      <PageViewTracker path={`${pathPrefix}/gift/confirmation/[voucherId]`} locale={locale} />
       <p className="font-mono text-xs uppercase tracking-widest text-teal">{dict.purchasedLabel}</p>
       <h1 className="mt-2 font-serif text-2xl font-semibold text-ocean">
         {product?.title ?? "Your gift"}

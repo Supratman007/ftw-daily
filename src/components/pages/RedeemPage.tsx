@@ -3,6 +3,7 @@ import { createSupabaseServiceRoleClient } from "@/lib/supabase/service";
 import { formatIdr } from "@/lib/currency";
 import { SUPPORT_EMAIL } from "@/lib/contact";
 import { SiteHeader } from "@/components/SiteHeader";
+import { PageViewTracker } from "@/components/PageViewTracker";
 import { submitRedemptionRequestAction } from "@/app/redeem/actions";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import type { Locale } from "@/lib/i18n/locales";
@@ -43,10 +44,12 @@ export async function RedeemPage({
   const dict = getDictionary(locale).redeem;
   const { code, submitted, error } = await searchParams;
   const homeHref = locale === "en" ? "/" : "/id";
+  const redeemPath = locale === "en" ? "/redeem" : "/id/redeem";
 
   if (!code) {
     return (
       <>
+        <PageViewTracker path={redeemPath} locale={locale} />
         <SiteHeader locale={locale} />
         <main className="mx-auto max-w-md px-6 py-10">
           <h1 className="font-serif text-2xl font-semibold text-ink">{dict.heading}</h1>
@@ -88,6 +91,7 @@ export async function RedeemPage({
   if (!voucher) {
     return (
       <>
+        <PageViewTracker path={redeemPath} locale={locale} />
         <SiteHeader locale={locale} />
         <main className="mx-auto max-w-md px-6 py-10">
           <h1 className="font-serif text-2xl font-semibold text-ink">{dict.notFoundHeading}</h1>
@@ -110,6 +114,7 @@ export async function RedeemPage({
 
   return (
     <>
+      <PageViewTracker path={redeemPath} locale={locale} />
       <SiteHeader locale={locale} />
       <main className="mx-auto max-w-md px-6 py-10">
         <p className="font-mono text-xs uppercase tracking-widest text-ink-soft">

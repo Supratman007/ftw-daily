@@ -4,6 +4,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { formatIdr, formatUsd, usdToIdr } from "@/lib/currency";
 import type { Product } from "@/lib/products/types";
 import { SiteHeader } from "@/components/SiteHeader";
+import { PageViewTracker } from "@/components/PageViewTracker";
 import { startGiftCheckoutAction } from "@/app/p/[slug]/gift/actions";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import type { Locale } from "@/lib/i18n/locales";
@@ -66,6 +67,7 @@ export async function GiftPurchasePage({
 
   return (
     <>
+      <PageViewTracker path={`${pathPrefix}/p/${slug}/gift`} locale={locale} />
       <SiteHeader locale={locale} />
       <main className="mx-auto max-w-2xl px-6 py-10">
         <p className="font-mono text-xs uppercase tracking-widest text-ink-soft">{p.title}</p>

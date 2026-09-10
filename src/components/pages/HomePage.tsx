@@ -5,6 +5,7 @@ import { PRODUCT_TYPE_LABELS } from "@/lib/products/types";
 import type { Product } from "@/lib/products/types";
 import { SiteHeader } from "@/components/SiteHeader";
 import { LocaleSwitcher } from "@/components/LocaleSwitcher";
+import { PageViewTracker } from "@/components/PageViewTracker";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import type { Locale } from "@/lib/i18n/locales";
 
@@ -67,6 +68,7 @@ export async function HomePage({
 
   return (
     <>
+      <PageViewTracker path={locale === "id" ? "/id" : "/"} locale={locale} />
       <SiteHeader locale={locale} />
       <main className="mx-auto max-w-5xl px-6 py-10">
         <div className="flex items-center justify-between">

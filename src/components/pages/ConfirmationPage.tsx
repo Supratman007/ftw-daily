@@ -5,6 +5,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/service";
 import { formatIdr, formatUsd } from "@/lib/currency";
 import { customerLogoutAction } from "@/app/actions";
+import { PageViewTracker } from "@/components/PageViewTracker";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import type { Locale } from "@/lib/i18n/locales";
 
@@ -188,6 +189,10 @@ export async function ConfirmationPage({
 
   return (
     <main className="mx-auto flex min-h-screen max-w-md flex-col items-center justify-center px-6 py-12 text-center">
+      {/* Normalized path (not the real booking id) -- a booking id in
+       * every row would just be noise in "top pages," with no
+       * analytical value over "this many confirmations happened." */}
+      <PageViewTracker path={`${pathPrefix}/confirmation/[bookingId]`} locale={locale} />
       <p className="font-mono text-xs uppercase tracking-widest text-teal">{dict.confirmedLabel}</p>
       <h1 className="mt-2 font-serif text-2xl font-semibold text-ocean">
         {product?.title ?? "Your trip"}

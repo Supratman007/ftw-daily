@@ -11,6 +11,7 @@ import type {
   TransportVehicleType,
 } from "@/lib/cars/types";
 import { SiteHeader } from "@/components/SiteHeader";
+import { PageViewTracker } from "@/components/PageViewTracker";
 import { CarHireProductSection } from "@/components/CarHireProductSection";
 import { TransportProductSection } from "@/components/TransportProductSection";
 import { startCheckoutAction, startCarHireCheckoutAction, startTransportCheckoutAction } from "@/app/p/[slug]/actions";
@@ -167,6 +168,7 @@ export async function ProductPage({
 
   return (
     <>
+      <PageViewTracker path={locale === "en" ? `/p/${slug}` : `/id/p/${slug}`} locale={locale} />
       <SiteHeader locale={locale} />
       <main className="mx-auto max-w-4xl px-6 py-10">
       <div className="mb-4 flex justify-end">

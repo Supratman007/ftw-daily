@@ -1,6 +1,7 @@
 import { Fragment } from "react";
 import Link from "next/link";
 import { SiteHeader } from "@/components/SiteHeader";
+import { PageViewTracker } from "@/components/PageViewTracker";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/service";
 import { submitReviewAction } from "./actions";
 
@@ -34,6 +35,7 @@ export default async function ReviewPage({
 
   return (
     <>
+      <PageViewTracker path="/review/[token]" locale="en" />
       <SiteHeader />
       <main className="mx-auto max-w-md px-6 py-16">
         {!booking ? (

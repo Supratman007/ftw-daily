@@ -1,4 +1,5 @@
 import { loginAction, signupAction } from "@/app/login/actions";
+import { PageViewTracker } from "@/components/PageViewTracker";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import type { Locale } from "@/lib/i18n/locales";
 
@@ -33,6 +34,7 @@ export async function LoginPage({
 
   return (
     <main className="mx-auto flex min-h-screen max-w-sm flex-col justify-center px-6 py-12">
+      <PageViewTracker path={loginPath} locale={locale} />
       <p className="font-mono text-xs uppercase tracking-widest text-ink-soft">
         Adventure Lombok Booking
       </p>

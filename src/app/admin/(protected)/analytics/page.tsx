@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requireAdminSection } from "@/lib/admin/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabaseServiceRoleClient } from "@/lib/supabase/service";
 import { formatIdr } from "@/lib/currency";
 import { formatCommissionAmount } from "@/lib/agents/commission";
 import { REPORT_PRESETS, resolveReportRange } from "@/lib/reports/dateRange";
@@ -16,16 +17,19 @@ type BookingRow = {
   sales_agents: { name: string; referral_code: string } | null;
 };
 
+type PageViewRow = { path: string; locale: "en" | "id"; referrer_host: string | null; visitor_id: string };
+
 /**
  * Spec §12 Phase 4's "Analytics (which agents/products/channels
- * convert best)" -- deliberately built from data the app already has
- * (confirmed bookings, their product, and whether an agent referral is
- * attached) rather than adding new pageview/traffic tracking: there's
- * no visitor-analytics instrumentation anywhere in this app today, and
- * standing that up is a materially different, much bigger project than
- * "show me what's already in the database, ranked." "Channels" here
+ * convert best)". Two data sources feed this page: confirmed bookings
+ * (top trips, top agents, direct-vs-referred) and, further down, the
+ * in-house visitor tracker (page_views, via PageViewTracker.tsx +
+ * src/app/api/track/route.ts) for raw traffic -- top pages, unique
+ * visitors, where they came from. "Channels" in the spec's own phrase
  * means the one channel distinction the data model actually supports:
- * direct vs. agent-referred. Same date-range picker as Reports (shared
+ * direct vs. agent-referred bookings, plus (now) external referrer
+ * hosts for raw traffic -- there's still no UTM/campaign tagging
+ * anywhere in this app. Same date-range picker as Reports (shared
  * dateRange lib), same visual style, same "accounting can see this"
  * role scoping -- this is a natural sibling to that page, not a
  * separate concept.
@@ -102,6 +106,71 @@ export default async function AdminAnalyticsPage({
   const totalCount = rows.length;
   const pct = (n: number) => (totalCount === 0 ? "0%" : `${Math.round((n / totalCount) * 100)}%`);
 
+  // Raw site traffic, from the in-house visitor tracker -- separate
+  // query since page_views has nothing to do with bookings. Service-
+  // role client, deliberately: page_views has zero RLS policies (see
+  // its migration) since every write already goes through
+  // /api/track's own service-role client, not a customer-writable
+  // policy -- this page's own requireAdminSection call above is the
+  // real access gate for reading it.
+  const serviceClient = createSupabaseServiceRoleClient();
+  let pageViewsQuery = serviceClient.from("page_views").select("path, locale, referrer_host, visitor_id");
+  if (range.from) pageViewsQuery = pageViewsQuery.gte("created_at", `${range.from}T00:00:00Z`);
+  if (range.to) pageViewsQuery = pageViewsQuery.lte("created_at", `${range.to}T23:59:59Z`);
+  const { data: pageViewData } = await pageViewsQuery;
+  const pageViews = (pageViewData ?? []) as PageViewRow[];
+
+  const totalViews = pageViews.length;
+  const uniqueVisitors = new Set(pageViews.map((v) => v.visitor_id)).size;
+
+  const byPath = new Map<string, { views: number; visitors: Set<string> }>();
+  for (const v of pageViews) {
+    const existing = byPath.get(v.path);
+    if (existing) {
+      existing.views += 1;
+      existing.visitors.add(v.visitor_id);
+    } else {
+      byPath.set(v.path, { views: 1, visitors: new Set([v.visitor_id]) });
+    }
+  }
+
+  // A tracked /p/[slug] path is just a slug -- resolve real trip
+  // titles for the ones that actually got traffic, in one batched
+  // query, rather than one lookup per row.
+  const productPathPattern = /^\/(?:id\/)?p\/([^/]+)$/;
+  const slugsWithTraffic = Array.from(byPath.keys())
+    .map((path) => path.match(productPathPattern)?.[1])
+    .filter((slug): slug is string => Boolean(slug));
+  const { data: productTitleRows } =
+    slugsWithTraffic.length > 0
+      ? await supabase.from("products").select("slug, title").in("slug", slugsWithTraffic)
+      : { data: [] as Array<{ slug: string; title: string }> };
+  const titleBySlug = new Map((productTitleRows ?? []).map((p) => [p.slug, p.title]));
+
+  const topPages = Array.from(byPath.entries())
+    .map(([path, v]) => {
+      const slug = path.match(productPathPattern)?.[1];
+      const title = slug ? titleBySlug.get(slug) : undefined;
+      return { path, label: title ? `${title} (${path})` : path, views: v.views, visitors: v.visitors.size };
+    })
+    .sort((a, b) => b.views - a.views)
+    .slice(0, 15);
+
+  const byLocale = new Map<string, number>();
+  for (const v of pageViews) {
+    byLocale.set(v.locale, (byLocale.get(v.locale) ?? 0) + 1);
+  }
+
+  const byReferrer = new Map<string, number>();
+  for (const v of pageViews) {
+    if (!v.referrer_host) continue;
+    byReferrer.set(v.referrer_host, (byReferrer.get(v.referrer_host) ?? 0) + 1);
+  }
+  const topReferrers = Array.from(byReferrer.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 10);
+  const directViewCount = totalViews - Array.from(byReferrer.values()).reduce((sum, n) => sum + n, 0);
+
   return (
     <div>
       <h1 className="font-serif text-2xl font-semibold text-ink">Analytics</h1>
@@ -155,6 +224,82 @@ export default async function AdminAnalyticsPage({
           Custom range
         </button>
       </form>
+
+      <h2 className="mt-8 font-serif text-lg font-semibold text-ink">Website traffic</h2>
+      <p className="mt-1 text-xs text-ink-soft">
+        Real page views of the public site (not the admin/agent panels), tracked since this feature
+        shipped -- there&apos;s no history from before then.
+      </p>
+      <div className="mt-2 grid gap-4 sm:grid-cols-3">
+        <div className={cardClass}>
+          <p className="font-mono text-xs uppercase tracking-widest text-ink-soft">Page views</p>
+          <p className="mt-1 font-serif text-2xl font-semibold text-ink">{totalViews}</p>
+        </div>
+        <div className={cardClass}>
+          <p className="font-mono text-xs uppercase tracking-widest text-ink-soft">Unique visitors</p>
+          <p className="mt-1 font-serif text-2xl font-semibold text-ink">{uniqueVisitors}</p>
+        </div>
+        <div className={cardClass}>
+          <p className="font-mono text-xs uppercase tracking-widest text-ink-soft">English / Indonesian</p>
+          <p className="mt-1 font-serif text-2xl font-semibold text-ink">
+            {byLocale.get("en") ?? 0} / {byLocale.get("id") ?? 0}
+          </p>
+        </div>
+      </div>
+
+      <h3 className="mt-6 font-serif text-base font-semibold text-ink">Top pages</h3>
+      <div className="mt-2 overflow-x-auto rounded-lg border border-sand-deep bg-white">
+        <table className="w-full min-w-[500px] text-left text-sm">
+          <thead className="bg-sand text-xs uppercase text-ink-soft">
+            <tr>
+              <th className="px-4 py-2">Page</th>
+              <th className="px-4 py-2">Views</th>
+              <th className="px-4 py-2">Unique visitors</th>
+            </tr>
+          </thead>
+          <tbody>
+            {topPages.length === 0 ? (
+              <tr>
+                <td colSpan={3} className="px-4 py-6 text-center text-ink-soft">
+                  No tracked page views in this range.
+                </td>
+              </tr>
+            ) : (
+              topPages.map((p) => (
+                <tr key={p.path} className="border-t border-sand-deep">
+                  <td className="px-4 py-2 text-ink">{p.label}</td>
+                  <td className="px-4 py-2">{p.views}</td>
+                  <td className="px-4 py-2 text-ink-soft">{p.visitors}</td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      <h3 className="mt-6 font-serif text-base font-semibold text-ink">Where visitors came from</h3>
+      <div className="mt-2 overflow-x-auto rounded-lg border border-sand-deep bg-white">
+        <table className="w-full min-w-[400px] text-left text-sm">
+          <thead className="bg-sand text-xs uppercase text-ink-soft">
+            <tr>
+              <th className="px-4 py-2">Source</th>
+              <th className="px-4 py-2">Views</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr className="border-t border-sand-deep">
+              <td className="px-4 py-2 text-ink">Direct / unknown</td>
+              <td className="px-4 py-2">{directViewCount}</td>
+            </tr>
+            {topReferrers.map(([host, count]) => (
+              <tr key={host} className="border-t border-sand-deep">
+                <td className="px-4 py-2 text-ink">{host}</td>
+                <td className="px-4 py-2">{count}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
 
       <h2 className="mt-8 font-serif text-lg font-semibold text-ink">Direct vs. agent-referred</h2>
       <p className="mt-1 text-xs text-ink-soft">
