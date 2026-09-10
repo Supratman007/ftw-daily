@@ -1,0 +1,192 @@
+"use server";
+
+import { redirect } from "next/navigation";
+import { requireCustomer } from "@/lib/customers/auth";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabaseServiceRoleClient } from "@/lib/supabase/service";
+import { sendBookingConfirmedEmail, sendPickupTimeChangedStaffEmail } from "@/lib/email/resend";
+import { PICKUP_CHANGE_CUTOFF_HOURS } from "@/lib/bookings/types";
+import { hasEnoughLeadTime, pickupDatetimeInBusinessTimezone } from "@/lib/products/leadTime";
+import { REVIEW_TOKEN_EXPIRY_DAYS } from "@/lib/reviews/types";
+import { getDictionary } from "@/lib/i18n/getDictionary";
+import type { Locale } from "@/lib/i18n/locales";
+
+/** Spec §6h booking detail actions, "Upcoming: view confirmation email"
+ * -- rather than a separate page that just re-renders the same email
+ * content, this resends the actual email, which covers the same need
+ * ("I want that email again") more directly. `locale` is bound by
+ * BookingDetailPage on every action below, same as everywhere else in
+ * this account area. */
+export async function resendConfirmationEmailAction(bookingId: string, locale: Locale) {
+  const pathPrefix = locale === "id" ? "/id" : "";
+  const customer = await requireCustomer(`${pathPrefix}/account/booking/${bookingId}`);
+  const supabase = await createSupabaseServerClient();
+
+  const { data: booking } = await supabase
+    .from("bookings")
+    .select("*, products(title)")
+    .eq("id", bookingId)
+    .eq("customer_id", customer.id)
+    .eq("status", "paid_confirmed")
+    .maybeSingle();
+
+  if (booking) {
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+    await sendBookingConfirmedEmail({
+      toEmail: customer.email,
+      customerName: customer.name,
+      productTitle: booking.products?.title ?? "Your trip",
+      slotDate: booking.slot_date,
+      paxCount: booking.pax_count,
+      totalIdr: booking.total_idr,
+      bookingCode: booking.booking_code,
+      bookingUrl: `${siteUrl}/confirmation/${booking.id}`,
+      discountCode: booking.discount_code,
+      discountAmountUsd: booking.discount_amount_usd,
+      locale: customer.preferred_locale,
+    });
+  }
+
+  redirect(`${pathPrefix}/account/booking/${bookingId}?resent=1`);
+}
+
+function formatPickup(iso: string): string {
+  return new Date(iso).toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short" });
+}
+
+/**
+ * Self-service pickup-time change (spec §6e), Car Hire/Transport only.
+ * Uses the service-role client for the actual write -- like every other
+ * customer-triggered booking mutation in this app (see the RLS notes on
+ * requestGiftVoucherRefundAction), bookings has no customer UPDATE
+ * policy at all, by design, so this can't go through the session
+ * client. Ownership is still verified first, via the session client's
+ * own RLS-scoped read.
+ */
+export async function changePickupTimeAction(bookingId: string, locale: Locale, formData: FormData) {
+  const pathPrefix = locale === "id" ? "/id" : "";
+  const errors = getDictionary(locale).account.errors;
+  const customer = await requireCustomer(`${pathPrefix}/account/booking/${bookingId}`);
+  const supabase = await createSupabaseServerClient();
+
+  function fail(message: string): never {
+    redirect(`${pathPrefix}/account/booking/${bookingId}?error=${encodeURIComponent(message)}`);
+  }
+
+  const { data: booking } = await supabase
+    .from("bookings")
+    .select("id, status, pickup_datetime, booking_code, product_id, products(title, min_lead_hours)")
+    .eq("id", bookingId)
+    .eq("customer_id", customer.id)
+    .maybeSingle();
+
+  if (!booking || !booking.pickup_datetime) {
+    fail(errors.pickupNoTimeToChange);
+  }
+  if (booking.status !== "paid_confirmed") {
+    fail(errors.onlyConfirmedCanChangePickup);
+  }
+
+  const oldPickupDatetime = booking.pickup_datetime;
+  const hoursUntilPickup = (new Date(oldPickupDatetime).getTime() - Date.now()) / 3_600_000;
+  if (hoursUntilPickup < PICKUP_CHANGE_CUTOFF_HOURS) {
+    fail(errors.pickupTooCloseToChange(PICKUP_CHANGE_CUTOFF_HOURS));
+  }
+
+  const newDate = String(formData.get("pickup_date") ?? "");
+  const newTime = String(formData.get("pickup_time") ?? "");
+  if (!newDate || !newTime) {
+    fail(errors.pleaseChooseValidPickup);
+  }
+  const newPickupDatetime = pickupDatetimeInBusinessTimezone(newDate, newTime);
+  if (Number.isNaN(newPickupDatetime.getTime())) {
+    fail(errors.pleaseChooseValidPickup);
+  }
+  const minLeadHours = booking.products?.[0]?.min_lead_hours ?? PICKUP_CHANGE_CUTOFF_HOURS;
+  if (!hasEnoughLeadTime(newPickupDatetime, minLeadHours)) {
+    fail(errors.needMoreLeadTime(minLeadHours));
+  }
+
+  const serviceClient = createSupabaseServiceRoleClient();
+  const { error: updateError } = await serviceClient
+    .from("bookings")
+    .update({ pickup_datetime: newPickupDatetime.toISOString(), updated_at: new Date().toISOString() })
+    .eq("id", bookingId);
+
+  if (updateError) {
+    fail(errors.couldntUpdatePickup(updateError.message));
+  }
+
+  await serviceClient.from("booking_pickup_changes").insert({
+    booking_id: bookingId,
+    old_datetime: oldPickupDatetime,
+    new_datetime: newPickupDatetime.toISOString(),
+  });
+
+  const { data: staff } = await serviceClient
+    .from("admin_users")
+    .select("email")
+    .eq("status", "active");
+
+  const productTitle = booking.products?.[0]?.title ?? "Trip";
+  await Promise.all(
+    (staff ?? []).map((admin) =>
+      sendPickupTimeChangedStaffEmail({
+        toEmail: admin.email,
+        productTitle,
+        bookingCode: booking.booking_code,
+        customerName: customer.name,
+        oldPickupNote: formatPickup(oldPickupDatetime),
+        newPickupNote: formatPickup(newPickupDatetime.toISOString()),
+      })
+    )
+  );
+
+  redirect(`${pathPrefix}/account/booking/${bookingId}?notice=${encodeURIComponent(errors.pickupUpdatedNotice)}`);
+}
+
+/**
+ * Spec §6h, "Completed: write a review" -- self-serve entry point into
+ * the same token-based /review/[token] page the request-email links
+ * to (spec §6d/§6g), so a customer doesn't have to wait for the daily
+ * cron if they're ready to review right now. Reuses an existing,
+ * still-valid token if the email already went out; otherwise mints
+ * one on the spot. Written via the service-role client -- same "no
+ * customer UPDATE policy on bookings" reasoning as changePickupTimeAction
+ * above.
+ */
+export async function writeReviewAction(bookingId: string, locale: Locale) {
+  const pathPrefix = locale === "id" ? "/id" : "";
+  const customer = await requireCustomer(`${pathPrefix}/account/booking/${bookingId}`);
+  const supabase = await createSupabaseServerClient();
+
+  const { data: booking } = await supabase
+    .from("bookings")
+    .select("id, status, review_token, review_token_expires_at, review_token_used_at")
+    .eq("id", bookingId)
+    .eq("customer_id", customer.id)
+    .maybeSingle();
+
+  if (!booking || booking.status !== "paid_confirmed") {
+    redirect(`${pathPrefix}/account/booking/${bookingId}`);
+  }
+
+  const hasValidToken =
+    booking.review_token &&
+    !booking.review_token_used_at &&
+    (!booking.review_token_expires_at || new Date(booking.review_token_expires_at) > new Date());
+
+  if (hasValidToken) {
+    redirect(`/review/${booking.review_token}`);
+  }
+
+  const token = crypto.randomUUID();
+  const expiresAt = new Date(Date.now() + REVIEW_TOKEN_EXPIRY_DAYS * 24 * 60 * 60 * 1000);
+  const serviceClient = createSupabaseServiceRoleClient();
+  await serviceClient
+    .from("bookings")
+    .update({ review_token: token, review_token_expires_at: expiresAt.toISOString() })
+    .eq("id", bookingId);
+
+  redirect(`/review/${token}`);
+}
