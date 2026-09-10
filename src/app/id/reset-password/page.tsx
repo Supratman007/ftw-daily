@@ -11,5 +11,5 @@ export default function Page({
 }: {
   searchParams: Promise<{ error?: string }>;
 }) {
-  return <ResetPasswordPage searchParams={searchParams} locale="en" />;
+  return <ResetPasswordPage searchParams={searchParams} locale="id" />;
 }

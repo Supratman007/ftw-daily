@@ -271,6 +271,31 @@ export const en = {
     forAQuote: "for a quote.",
     continueToCheckout: "Continue to checkout",
   },
+  // Shared by src/app/forgot-password + src/app/reset-password and
+  // their /id counterparts. This flow is used by customers, staff, and
+  // Sales Agents alike (see reset-password/actions.ts's role check) --
+  // staff/agents only ever reach it through an English link, so the
+  // locale-aware bits (the page copy, and the redirect back to
+  // /account on success) only actually matter for a customer.
+  passwordReset: {
+    siteName: "Adventure Lombok Booking",
+    forgotHeading: "Reset your password",
+    checkYourEmail: "If that email has an account, we've sent a link to reset the password. Check your inbox.",
+    forgotIntro: "Enter your email and we'll send you a link to set a new password.",
+    emailPlaceholder: "Email",
+    sendResetLink: "Send reset link",
+    backToLogin: "Back to login",
+    resetHeading: "Set a new password",
+    newPasswordPlaceholder: "New password",
+    confirmNewPasswordPlaceholder: "Confirm new password",
+    setNewPassword: "Set new password",
+    errors: {
+      pleaseEnterEmail: "Please enter your email.",
+      linkExpired: "That reset link expired or was already used -- please request a new one.",
+      passwordTooShort: "Password must be at least 6 characters.",
+      passwordsDontMatch: "Passwords don't match.",
+    },
+  },
   // The customer-facing /account/* area (spec §6h) -- signed-in only,
   // so lower SEO stakes than the public pages, but still real UI a
   // Indonesian-speaking guest reads on every visit to manage a booking.

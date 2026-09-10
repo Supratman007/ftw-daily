@@ -252,6 +252,25 @@ export const id = {
     forAQuote: "untuk mendapatkan penawaran.",
     continueToCheckout: "Lanjutkan ke pembayaran",
   },
+  passwordReset: {
+    siteName: "Adventure Lombok Booking",
+    forgotHeading: "Atur ulang kata sandi Anda",
+    checkYourEmail: "Jika email tersebut memiliki akun, kami telah mengirimkan tautan untuk mengatur ulang kata sandi. Periksa kotak masuk Anda.",
+    forgotIntro: "Masukkan email Anda dan kami akan mengirimkan tautan untuk membuat kata sandi baru.",
+    emailPlaceholder: "Email",
+    sendResetLink: "Kirim tautan pengaturan ulang",
+    backToLogin: "Kembali ke halaman masuk",
+    resetHeading: "Buat kata sandi baru",
+    newPasswordPlaceholder: "Kata sandi baru",
+    confirmNewPasswordPlaceholder: "Konfirmasi kata sandi baru",
+    setNewPassword: "Atur kata sandi baru",
+    errors: {
+      pleaseEnterEmail: "Silakan masukkan email Anda.",
+      linkExpired: "Tautan pengaturan ulang itu sudah kedaluwarsa atau telah digunakan — silakan minta yang baru.",
+      passwordTooShort: "Kata sandi minimal harus 6 karakter.",
+      passwordsDontMatch: "Kata sandi tidak cocok.",
+    },
+  },
   account: {
     nav: {
       overview: "Ringkasan",

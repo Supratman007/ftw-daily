@@ -10,9 +10,7 @@ const inputClass =
  * src/app/id/login/page.tsx (Indonesian), same "one implementation,
  * two thin route entrypoints" pattern as the other translated pages.
  * The mode-toggle link ("Create an account" / "Log in") and forgot-
- * password link stay on this same page's own address -- see loginPath
- * below -- but /forgot-password itself isn't translated yet, so that
- * one link always points at the English page regardless of locale.
+ * password link both stay on this same locale -- see loginPath below.
  */
 export async function LoginPage({
   searchParams,
@@ -95,7 +93,7 @@ export async function LoginPage({
 
       {!isSignup && (
         <p className="mt-3 text-center text-sm">
-          <a href="/forgot-password" className="text-teal hover:underline">
+          <a href={locale === "id" ? "/id/forgot-password" : "/forgot-password"} className="text-teal hover:underline">
             {dict.forgotPassword}
           </a>
         </p>

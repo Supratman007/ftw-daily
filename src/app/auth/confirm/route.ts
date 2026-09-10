@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import type { EmailOtpType } from "@supabase/supabase-js";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getDictionary } from "@/lib/i18n/getDictionary";
 
 /**
  * Where password-reset and staff-invite emails send people, via a
@@ -28,9 +29,10 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  return NextResponse.redirect(
-    `${origin}/forgot-password?error=${encodeURIComponent(
-      "That reset link expired or was already used -- please request a new one."
-    )}`
-  );
+  // `next` already carries the /id prefix when the reset was requested
+  // from the Indonesian forgot-password page (see its action), so it's
+  // the only signal this route has for which language to fail back to.
+  const pathPrefix = next.startsWith("/id") ? "/id" : "";
+  const message = getDictionary(pathPrefix === "/id" ? "id" : "en").passwordReset.errors.linkExpired;
+  return NextResponse.redirect(`${origin}${pathPrefix}/forgot-password?error=${encodeURIComponent(message)}`);
 }

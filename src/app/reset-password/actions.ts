@@ -2,24 +2,30 @@
 
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getDictionary } from "@/lib/i18n/getDictionary";
+import type { Locale } from "@/lib/i18n/locales";
 
-export async function resetPasswordAction(formData: FormData) {
+/** `locale` is bound by ResetPasswordPage. Only the error redirects and
+ * the final customer-only redirect are locale-aware -- staff/agents
+ * only ever reach this in English, so their two redirects below stay
+ * hardcoded English regardless of what locale was bound. */
+export async function resetPasswordAction(locale: Locale, formData: FormData) {
+  const pathPrefix = locale === "id" ? "/id" : "";
+  const dict = getDictionary(locale).passwordReset.errors;
   const password = String(formData.get("password") ?? "");
   const confirmPassword = String(formData.get("confirm_password") ?? "");
 
   if (password.length < 6) {
-    redirect(
-      `/reset-password?error=${encodeURIComponent("Password must be at least 6 characters.")}`
-    );
+    redirect(`${pathPrefix}/reset-password?error=${encodeURIComponent(dict.passwordTooShort)}`);
   }
   if (password !== confirmPassword) {
-    redirect(`/reset-password?error=${encodeURIComponent("Passwords don't match.")}`);
+    redirect(`${pathPrefix}/reset-password?error=${encodeURIComponent(dict.passwordsDontMatch)}`);
   }
 
   const supabase = await createSupabaseServerClient();
   const { error, data } = await supabase.auth.updateUser({ password });
   if (error) {
-    redirect(`/reset-password?error=${encodeURIComponent(error.message)}`);
+    redirect(`${pathPrefix}/reset-password?error=${encodeURIComponent(error.message)}`);
   }
 
   // Updating the password while on the recovery session leaves the
@@ -41,5 +47,5 @@ export async function resetPasswordAction(formData: FormData) {
   if (agent) {
     redirect("/agent?password_set=1");
   }
-  redirect("/account?password_reset=1");
+  redirect(`${pathPrefix}/account?password_reset=1`);
 }
