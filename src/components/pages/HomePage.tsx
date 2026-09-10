@@ -1,5 +1,5 @@
 import Link from "next/link";
-import Image from "next/image";
+import { ProductCardImage } from "@/components/ProductCardImage";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { formatUsd, formatIdr, usdToIdr } from "@/lib/currency";
 import { PRODUCT_TYPE_LABELS } from "@/lib/products/types";
@@ -205,31 +205,13 @@ export async function HomePage({
                   href={locale === "en" ? `/p/${p.slug}` : `/id/p/${p.slug}`}
                   className="flex flex-col overflow-hidden rounded-2xl border border-sand-deep bg-white transition hover:shadow-md"
                 >
-                  {p.cover_image_url ? (
-                    <div className="relative h-40 w-full">
-                      <Image
-                        src={p.cover_image_url}
-                        alt=""
-                        fill
-                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                        className="object-cover"
-                      />
-                    </div>
-                  ) : (
-                    // A plain sand-colored block here used to be
-                    // indistinguishable from "the photo is broken" --
-                    // this makes it obvious at a glance that it's just
-                    // waiting on a photo upload in the admin panel, not
-                    // a bug.
-                    <div className="flex h-40 w-full flex-col items-center justify-center gap-1 bg-sand text-ink-soft">
-                      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                        <rect x="3" y="6" width="18" height="14" rx="2" />
-                        <path d="M8 6l1.5-2.5h5L16 6" />
-                        <circle cx="12" cy="13" r="3.5" />
-                      </svg>
-                      <span className="text-[11px]">{dict.photoComingSoon}</span>
-                    </div>
-                  )}
+                  <ProductCardImage
+                    src={p.cover_image_url}
+                    alt=""
+                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                    comingSoonLabel={dict.photoComingSoon}
+                    className="h-40"
+                  />
                   <div className="flex flex-1 flex-col gap-1 p-4">
                     <p className="font-mono text-[11px] uppercase tracking-widest text-ink-soft">
                       {PRODUCT_TYPE_LABELS[p.product_type]}

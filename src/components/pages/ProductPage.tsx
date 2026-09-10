@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import Image from "next/image";
+import { ProductCardImage } from "@/components/ProductCardImage";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { formatIdr, formatUsd, usdToIdr } from "@/lib/currency";
 import { PRODUCT_TYPE_LABELS, type Product } from "@/lib/products/types";
@@ -581,26 +581,13 @@ export async function ProductPage({
                 href={locale === "en" ? `/p/${r.slug}` : `/id/p/${r.slug}`}
                 className="flex w-[70%] flex-shrink-0 snap-start flex-col overflow-hidden rounded-2xl border border-sand-deep bg-white transition hover:shadow-md sm:w-auto sm:flex-shrink"
               >
-                {r.cover_image_url ? (
-                  <div className="relative h-32 w-full">
-                    <Image
-                      src={r.cover_image_url}
-                      alt=""
-                      fill
-                      sizes="(max-width: 640px) 70vw, 25vw"
-                      className="object-cover"
-                    />
-                  </div>
-                ) : (
-                  <div className="flex h-32 w-full flex-col items-center justify-center gap-1 bg-sand text-ink-soft">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                      <rect x="3" y="6" width="18" height="14" rx="2" />
-                      <path d="M8 6l1.5-2.5h5L16 6" />
-                      <circle cx="12" cy="13" r="3.5" />
-                    </svg>
-                    <span className="text-[10px]">{dict.photoComingSoon}</span>
-                  </div>
-                )}
+                <ProductCardImage
+                  src={r.cover_image_url}
+                  alt=""
+                  sizes="(max-width: 640px) 70vw, 25vw"
+                  comingSoonLabel={dict.photoComingSoon}
+                  className="h-32"
+                />
                 <div className="flex flex-1 flex-col gap-1 p-3">
                   <p className="font-mono text-[10px] uppercase tracking-widest text-ink-soft">
                     {PRODUCT_TYPE_LABELS[r.product_type]}

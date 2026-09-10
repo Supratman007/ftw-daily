@@ -6,6 +6,9 @@ import { getDictionary } from "@/lib/i18n/getDictionary";
 import { DEFAULT_LOCALE, type Locale } from "@/lib/i18n/locales";
 import { SiteNav, type SiteNavLink } from "@/components/SiteNav";
 
+const accountLinkClass = "font-semibold text-teal hover:underline";
+const accentLinkClass = "font-semibold text-coral-dark hover:underline";
+
 /**
  * Compact top bar shared across every customer-facing page (homepage,
  * product pages, ...) -- without this, a page other than the homepage
@@ -68,42 +71,63 @@ export async function SiteHeader({ locale = DEFAULT_LOCALE }: { locale?: Locale 
     { href: `${basePath}?q=${encodeURIComponent("Bali")}`, label: dict.navBaliTours },
   ];
 
+  // Login/redeem/become-an-agent (or, once signed in, account/
+  // dashboard) -- rendered twice, same "desktop inline, mobile inside
+  // the hamburger panel" split as browseLinks: once here as the
+  // always-there desktop row (hidden on phones now, sm:flex), and
+  // again passed into SiteNav so the mobile panel has them too. The
+  // logout *form* can't be one of these plain {href,label} links (it
+  // needs the "use server" action, not a client-navigable href), so it
+  // goes through its own render + a separate prop.
+  const redeemLink: SiteNavLink = { href: locale === "en" ? "/redeem" : "/id/redeem", label: dict.redeemVoucher };
+  const accountLinks: SiteNavLink[] = user
+    ? [redeemLink, { href: dashboardHref, label: dashboardLabel }]
+    : [
+        redeemLink,
+        { href: locale === "en" ? "/login" : "/id/login", label: dict.login },
+        { href: "/agent/register", label: dict.becomeAgent, variant: "accent" },
+      ];
+  const logoutForm = user ? (
+    <form action={customerLogoutAction.bind(null, locale)}>
+      <button type="submit" className={accentLinkClass}>
+        {dict.logout}
+      </button>
+    </form>
+  ) : null;
+  const mobileLogoutSlot = user ? (
+    <form action={customerLogoutAction.bind(null, locale)}>
+      <button type="submit" className="w-full rounded-lg px-2 py-2 text-left text-sm font-semibold text-coral-dark hover:bg-sand">
+        {dict.logout}
+      </button>
+    </form>
+  ) : null;
+
   return (
     <header className="relative flex flex-col gap-3 border-b border-sand-deep bg-white px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
       <div className="flex items-center justify-between gap-3 sm:justify-start sm:gap-6">
         <Link href={locale === "en" ? "/" : "/id"} className="flex shrink-0 items-center">
           <Image src="/logo.jpg" alt={dict.siteName} width={120} height={36} className="h-8 w-auto sm:h-9" preload />
         </Link>
-        <SiteNav links={browseLinks} openLabel={dict.openMenu} closeLabel={dict.closeMenu} />
+        <SiteNav
+          links={browseLinks}
+          accountLinks={accountLinks}
+          logoutSlot={mobileLogoutSlot}
+          openLabel={dict.openMenu}
+          closeLabel={dict.closeMenu}
+        />
       </div>
-      <div className="text-sm">
-        {user ? (
-          <div className="flex flex-wrap items-center gap-3 text-ink-soft">
-            <Link href={locale === "en" ? "/redeem" : "/id/redeem"} className="font-semibold text-teal hover:underline">
-              {dict.redeemVoucher}
+      {/* Desktop only now -- phones reach these same links (and
+          logout) through the hamburger panel above instead, so the
+          mobile header is just the logo and one button. */}
+      <div className="hidden text-sm sm:block">
+        <div className="flex flex-wrap items-center gap-3 text-ink-soft">
+          {accountLinks.map((link) => (
+            <Link key={link.href} href={link.href} className={link.variant === "accent" ? accentLinkClass : accountLinkClass}>
+              {link.label}
             </Link>
-            <Link href={dashboardHref} className="font-semibold text-teal hover:underline">
-              {dashboardLabel}
-            </Link>
-            <form action={customerLogoutAction.bind(null, locale)}>
-              <button type="submit" className="font-semibold text-coral-dark hover:underline">
-                {dict.logout}
-              </button>
-            </form>
-          </div>
-        ) : (
-          <div className="flex flex-wrap items-center gap-3 text-ink-soft">
-            <Link href={locale === "en" ? "/redeem" : "/id/redeem"} className="font-semibold text-teal hover:underline">
-              {dict.redeemVoucher}
-            </Link>
-            <Link href={locale === "en" ? "/login" : "/id/login"} className="font-semibold text-teal hover:underline">
-              {dict.login}
-            </Link>
-            <Link href="/agent/register" className="font-semibold text-coral-dark hover:underline">
-              {dict.becomeAgent}
-            </Link>
-          </div>
-        )}
+          ))}
+          {logoutForm}
+        </div>
       </div>
     </header>
   );
