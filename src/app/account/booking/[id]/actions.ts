@@ -8,13 +8,18 @@ import { sendBookingConfirmedEmail, sendPickupTimeChangedStaffEmail } from "@/li
 import { PICKUP_CHANGE_CUTOFF_HOURS } from "@/lib/bookings/types";
 import { hasEnoughLeadTime, pickupDatetimeInBusinessTimezone } from "@/lib/products/leadTime";
 import { REVIEW_TOKEN_EXPIRY_DAYS } from "@/lib/reviews/types";
+import { getDictionary } from "@/lib/i18n/getDictionary";
+import type { Locale } from "@/lib/i18n/locales";
 
 /** Spec §6h booking detail actions, "Upcoming: view confirmation email"
  * -- rather than a separate page that just re-renders the same email
  * content, this resends the actual email, which covers the same need
- * ("I want that email again") more directly. */
-export async function resendConfirmationEmailAction(bookingId: string) {
-  const customer = await requireCustomer(`/account/booking/${bookingId}`);
+ * ("I want that email again") more directly. `locale` is bound by
+ * BookingDetailPage on every action below, same as everywhere else in
+ * this account area. */
+export async function resendConfirmationEmailAction(bookingId: string, locale: Locale) {
+  const pathPrefix = locale === "id" ? "/id" : "";
+  const customer = await requireCustomer(`${pathPrefix}/account/booking/${bookingId}`);
   const supabase = await createSupabaseServerClient();
 
   const { data: booking } = await supabase
@@ -41,7 +46,7 @@ export async function resendConfirmationEmailAction(bookingId: string) {
     });
   }
 
-  redirect(`/account/booking/${bookingId}?resent=1`);
+  redirect(`${pathPrefix}/account/booking/${bookingId}?resent=1`);
 }
 
 function formatPickup(iso: string): string {
@@ -57,12 +62,14 @@ function formatPickup(iso: string): string {
  * client. Ownership is still verified first, via the session client's
  * own RLS-scoped read.
  */
-export async function changePickupTimeAction(bookingId: string, formData: FormData) {
-  const customer = await requireCustomer(`/account/booking/${bookingId}`);
+export async function changePickupTimeAction(bookingId: string, locale: Locale, formData: FormData) {
+  const pathPrefix = locale === "id" ? "/id" : "";
+  const errors = getDictionary(locale).account.errors;
+  const customer = await requireCustomer(`${pathPrefix}/account/booking/${bookingId}`);
   const supabase = await createSupabaseServerClient();
 
   function fail(message: string): never {
-    redirect(`/account/booking/${bookingId}?error=${encodeURIComponent(message)}`);
+    redirect(`${pathPrefix}/account/booking/${bookingId}?error=${encodeURIComponent(message)}`);
   }
 
   const { data: booking } = await supabase
@@ -73,34 +80,30 @@ export async function changePickupTimeAction(bookingId: string, formData: FormDa
     .maybeSingle();
 
   if (!booking || !booking.pickup_datetime) {
-    fail("This booking doesn't have a pickup time to change.");
+    fail(errors.pickupNoTimeToChange);
   }
   if (booking.status !== "paid_confirmed") {
-    fail("Only confirmed bookings can have their pickup time changed.");
+    fail(errors.onlyConfirmedCanChangePickup);
   }
 
   const oldPickupDatetime = booking.pickup_datetime;
   const hoursUntilPickup = (new Date(oldPickupDatetime).getTime() - Date.now()) / 3_600_000;
   if (hoursUntilPickup < PICKUP_CHANGE_CUTOFF_HOURS) {
-    fail(
-      `Pickup is less than ${PICKUP_CHANGE_CUTOFF_HOURS} hours away, so this can't be changed online anymore -- please contact us directly and we'll do our best to help.`
-    );
+    fail(errors.pickupTooCloseToChange(PICKUP_CHANGE_CUTOFF_HOURS));
   }
 
   const newDate = String(formData.get("pickup_date") ?? "");
   const newTime = String(formData.get("pickup_time") ?? "");
   if (!newDate || !newTime) {
-    fail("Please choose a valid pickup date and time.");
+    fail(errors.pleaseChooseValidPickup);
   }
   const newPickupDatetime = pickupDatetimeInBusinessTimezone(newDate, newTime);
   if (Number.isNaN(newPickupDatetime.getTime())) {
-    fail("Please choose a valid pickup date and time.");
+    fail(errors.pleaseChooseValidPickup);
   }
   const minLeadHours = booking.products?.[0]?.min_lead_hours ?? PICKUP_CHANGE_CUTOFF_HOURS;
   if (!hasEnoughLeadTime(newPickupDatetime, minLeadHours)) {
-    fail(
-      `We need at least ${minLeadHours} hours' notice for pickup -- please choose a later time, or contact us directly.`
-    );
+    fail(errors.needMoreLeadTime(minLeadHours));
   }
 
   const serviceClient = createSupabaseServiceRoleClient();
@@ -110,7 +113,7 @@ export async function changePickupTimeAction(bookingId: string, formData: FormDa
     .eq("id", bookingId);
 
   if (updateError) {
-    fail(`Couldn't update your pickup time: ${updateError.message}`);
+    fail(errors.couldntUpdatePickup(updateError.message));
   }
 
   await serviceClient.from("booking_pickup_changes").insert({
@@ -138,7 +141,7 @@ export async function changePickupTimeAction(bookingId: string, formData: FormDa
     )
   );
 
-  redirect(`/account/booking/${bookingId}?notice=${encodeURIComponent("Pickup time updated.")}`);
+  redirect(`${pathPrefix}/account/booking/${bookingId}?notice=${encodeURIComponent(errors.pickupUpdatedNotice)}`);
 }
 
 /**
@@ -151,8 +154,9 @@ export async function changePickupTimeAction(bookingId: string, formData: FormDa
  * customer UPDATE policy on bookings" reasoning as changePickupTimeAction
  * above.
  */
-export async function writeReviewAction(bookingId: string) {
-  const customer = await requireCustomer(`/account/booking/${bookingId}`);
+export async function writeReviewAction(bookingId: string, locale: Locale) {
+  const pathPrefix = locale === "id" ? "/id" : "";
+  const customer = await requireCustomer(`${pathPrefix}/account/booking/${bookingId}`);
   const supabase = await createSupabaseServerClient();
 
   const { data: booking } = await supabase
@@ -163,7 +167,7 @@ export async function writeReviewAction(bookingId: string) {
     .maybeSingle();
 
   if (!booking || booking.status !== "paid_confirmed") {
-    redirect(`/account/booking/${bookingId}`);
+    redirect(`${pathPrefix}/account/booking/${bookingId}`);
   }
 
   const hasValidToken =

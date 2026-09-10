@@ -67,7 +67,7 @@ export async function GiftConfirmationPage({
             {dict.wrongAccountHeading(customer.email)}
           </h1>
           <p className="mt-2 text-sm text-ink-soft">{dict.wrongAccountBody(customer.email)}</p>
-          <form action={customerLogoutAction} className="mt-6">
+          <form action={customerLogoutAction.bind(null, locale)} className="mt-6">
             <button type="submit" className="rounded-lg bg-coral px-4 py-2 text-sm font-semibold text-white">
               {dict.logout}
             </button>

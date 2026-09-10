@@ -8,6 +8,7 @@ import {
   sendGiftVoucherRefundRequestedEmail,
   sendGiftVoucherRefundRequestStaffEmail,
 } from "@/lib/email/resend";
+import { getDictionary } from "@/lib/i18n/getDictionary";
 
 /** The "I want a refund on the gift I bought" path -- covers a
  * not-yet-redeemed voucher regardless of where it came from: bought
@@ -21,15 +22,21 @@ import {
  * from two different pages, so where to redirect back to travels with
  * the form itself rather than being hardcoded. */
 export async function requestGiftVoucherRefundAction(voucherId: string, formData: FormData) {
-  const customer = await requireCustomer("/account/bookings");
+  // Hidden "locale" field (see MyBookingsPage/BookingDetailPage) --
+  // this action is called from either page, in either language, so it
+  // needs its own copy of which locale sent the form rather than
+  // inferring it from returnTo.
+  const locale = formData.get("locale") === "id" ? "id" : "en";
+  const errors = getDictionary(locale).account.errors;
+  const customer = await requireCustomer(locale === "id" ? "/id/account/bookings" : "/account/bookings");
   const reason = String(formData.get("reason") ?? "").trim();
-  const returnTo = String(formData.get("return_to") ?? "/account/bookings");
+  const returnTo = String(formData.get("return_to") ?? (locale === "id" ? "/id/account/bookings" : "/account/bookings"));
 
   function fail(message: string): never {
     redirect(`${returnTo}${returnTo.includes("?") ? "&" : "?"}error=${encodeURIComponent(message)}`);
   }
 
-  if (!reason) fail("Please tell us why, so we can process this quickly.");
+  if (!reason) fail(errors.refundReasonRequired);
 
   const supabase = await createSupabaseServerClient();
   const { data: voucher } = await supabase
@@ -38,9 +45,9 @@ export async function requestGiftVoucherRefundAction(voucherId: string, formData
     .eq("id", voucherId)
     .maybeSingle();
 
-  if (!voucher) fail("Voucher not found.");
-  if (voucher.status !== "issued") fail("Only an unused voucher can be refunded.");
-  if (voucher.cancellation_requested_at) fail("You already have a refund request pending on this voucher.");
+  if (!voucher) fail(errors.voucherNotFound);
+  if (voucher.status !== "issued") fail(errors.onlyUnusedVoucherRefund);
+  if (voucher.cancellation_requested_at) fail(errors.refundAlreadyPending);
 
   const serviceClient = createSupabaseServiceRoleClient();
   // Service-role, not the customer's session client -- there's no
@@ -54,7 +61,7 @@ export async function requestGiftVoucherRefundAction(voucherId: string, formData
     .update({ cancellation_requested_at: new Date().toISOString(), cancellation_reason: reason })
     .eq("id", voucherId);
 
-  if (updateError) fail(`Couldn't submit your request: ${updateError.message}`);
+  if (updateError) fail(errors.couldntSubmitVoucherRequest(updateError.message));
 
   const [{ data: product }, { data: staff }] = await Promise.all([
     serviceClient.from("products").select("title").eq("id", voucher.product_id).maybeSingle(),
@@ -86,7 +93,7 @@ export async function requestGiftVoucherRefundAction(voucherId: string, formData
 
   redirect(
     `${returnTo}${returnTo.includes("?") ? "&" : "?"}notice=${encodeURIComponent(
-      "Refund request submitted -- we'll be in touch."
+      errors.voucherRefundRequestedNotice
     )}`
   );
 }

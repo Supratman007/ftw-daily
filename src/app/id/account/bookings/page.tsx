@@ -5,5 +5,5 @@ export default function Page({
 }: {
   searchParams: Promise<{ notice?: string; error?: string }>;
 }) {
-  return <MyBookingsPage searchParams={searchParams} locale="en" />;
+  return <MyBookingsPage searchParams={searchParams} locale="id" />;
 }

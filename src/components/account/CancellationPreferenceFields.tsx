@@ -2,11 +2,48 @@
 
 import { useState } from "react";
 
+/** This field's own fixed text -- same "plain object, not
+ * getDictionary, since this is a client component" reasoning as
+ * CarHireBookingForm's CarHireFormDict. */
+export interface CancellationPreferenceDict {
+  whatWouldYouLike: string;
+  optional: string;
+  justAPreference: string;
+  refund: string;
+  reschedule: string;
+  giveAsGift: string;
+  whatDateLabel: string;
+  confirmOrClosest: string;
+  recipientName: string;
+  recipientNamePlaceholder: string;
+  recipientEmail: string;
+  recipientEmailPlaceholder: string;
+  weWillSendDetails: string;
+}
+
+const DEFAULT_DICT: CancellationPreferenceDict = {
+  whatWouldYouLike: "What would you like?",
+  optional: "(optional)",
+  justAPreference:
+    "Just a preference, if you already know -- our team will confirm what's possible for your booking. (Force majeure requests get a reschedule or gift voucher, not a refund.)",
+  refund: "A refund",
+  reschedule: "Reschedule to a new date",
+  giveAsGift: "Give it as a gift to someone else instead",
+  whatDateLabel: "What date would you like instead?",
+  confirmOrClosest: "We'll confirm this date if it's available, or offer you the closest open date if not.",
+  recipientName: "Recipient's name",
+  recipientNamePlaceholder: "Who's this trip going to?",
+  recipientEmail: "Recipient's email",
+  recipientEmailPlaceholder: "their@email.com",
+  weWillSendDetails: "We'll send the voucher details to you -- this just tells our team who to address it to.",
+};
+
 interface CancellationPreferenceFieldsProps {
   /** Earliest date the customer can propose, as YYYY-MM-DD -- computed
    * server-side (tomorrow) since Date.now() would differ between server
    * render and client hydration. */
   minDate: string;
+  dict?: CancellationPreferenceDict;
 }
 
 type Preference = "refund" | "reschedule" | "gift_voucher";
@@ -25,18 +62,15 @@ const inputClass =
  * one) isn't reflected here -- a force-majeure customer who picks
  * "refund" still gets a clear server-side message steering them to
  * reschedule or a voucher instead, same as before this field existed. */
-export function CancellationPreferenceFields({ minDate }: CancellationPreferenceFieldsProps) {
+export function CancellationPreferenceFields({ minDate, dict = DEFAULT_DICT }: CancellationPreferenceFieldsProps) {
   const [preference, setPreference] = useState<Preference | null>(null);
 
   return (
     <fieldset className="rounded-2xl border border-sand-deep bg-white p-5">
       <legend className="px-1 text-sm font-semibold text-ink">
-        What would you like? <span className="font-normal normal-case text-ink-soft">(optional)</span>
+        {dict.whatWouldYouLike} <span className="font-normal normal-case text-ink-soft">{dict.optional}</span>
       </legend>
-      <p className="mt-1 text-xs text-ink-soft">
-        Just a preference, if you already know -- our team will confirm what&apos;s possible for
-        your booking. (Force majeure requests get a reschedule or gift voucher, not a refund.)
-      </p>
+      <p className="mt-1 text-xs text-ink-soft">{dict.justAPreference}</p>
       <div className="mt-3 flex flex-col gap-2">
         <label className="flex items-start gap-2 text-sm text-ink">
           <input
@@ -47,7 +81,7 @@ export function CancellationPreferenceFields({ minDate }: CancellationPreference
             onChange={() => setPreference("refund")}
             className="mt-1"
           />
-          <span>A refund</span>
+          <span>{dict.refund}</span>
         </label>
         <label className="flex items-start gap-2 text-sm text-ink">
           <input
@@ -58,7 +92,7 @@ export function CancellationPreferenceFields({ minDate }: CancellationPreference
             onChange={() => setPreference("reschedule")}
             className="mt-1"
           />
-          <span>Reschedule to a new date</span>
+          <span>{dict.reschedule}</span>
         </label>
         <label className="flex items-start gap-2 text-sm text-ink">
           <input
@@ -69,14 +103,14 @@ export function CancellationPreferenceFields({ minDate }: CancellationPreference
             onChange={() => setPreference("gift_voucher")}
             className="mt-1"
           />
-          <span>Give it as a gift to someone else instead</span>
+          <span>{dict.giveAsGift}</span>
         </label>
       </div>
 
       {preference === "reschedule" && (
         <div className="mt-3 border-t border-sand-deep pt-3">
           <label className={labelClass} htmlFor="preferred_new_date">
-            What date would you like instead?
+            {dict.whatDateLabel}
           </label>
           <input
             id="preferred_new_date"
@@ -86,10 +120,7 @@ export function CancellationPreferenceFields({ minDate }: CancellationPreference
             required
             className={inputClass}
           />
-          <p className="mt-1 text-xs text-ink-soft">
-            We&apos;ll confirm this date if it&apos;s available, or offer you the closest open
-            date if not.
-          </p>
+          <p className="mt-1 text-xs text-ink-soft">{dict.confirmOrClosest}</p>
         </div>
       )}
 
@@ -97,33 +128,30 @@ export function CancellationPreferenceFields({ minDate }: CancellationPreference
         <div className="mt-3 flex flex-col gap-3 border-t border-sand-deep pt-3">
           <div>
             <label className={labelClass} htmlFor="preferred_gift_recipient_name">
-              Recipient&apos;s name
+              {dict.recipientName}
             </label>
             <input
               id="preferred_gift_recipient_name"
               name="preferred_gift_recipient_name"
               type="text"
               required
-              placeholder="Who's this trip going to?"
+              placeholder={dict.recipientNamePlaceholder}
               className={inputClass}
             />
           </div>
           <div>
             <label className={labelClass} htmlFor="preferred_gift_recipient_email">
-              Recipient&apos;s email
+              {dict.recipientEmail}
             </label>
             <input
               id="preferred_gift_recipient_email"
               name="preferred_gift_recipient_email"
               type="email"
               required
-              placeholder="their@email.com"
+              placeholder={dict.recipientEmailPlaceholder}
               className={inputClass}
             />
-            <p className="mt-1 text-xs text-ink-soft">
-              We&apos;ll send the voucher details to you -- this just tells our team who to
-              address it to.
-            </p>
+            <p className="mt-1 text-xs text-ink-soft">{dict.weWillSendDetails}</p>
           </div>
         </div>
       )}

@@ -24,6 +24,12 @@ const LOCALIZED_PATH_PATTERNS: RegExp[] = [
   /^\/p\/[^/]+\/gift$/, // buy a trip as a gift
   /^\/redeem$/, // redeem a gift voucher
   /^\/gift\/confirmation\/[^/]+$/, // gift voucher purchase confirmation
+  /^\/account$/, // signed-in customer's account overview
+  /^\/account\/bookings$/,
+  /^\/account\/messages$/,
+  /^\/account\/profile$/,
+  /^\/account\/booking\/[^/]+$/,
+  /^\/account\/booking\/[^/]+\/cancel$/,
 ];
 
 function isLocalizedPath(pathname: string): boolean {

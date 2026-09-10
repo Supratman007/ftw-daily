@@ -62,7 +62,7 @@ export async function SiteHeader({ locale = DEFAULT_LOCALE }: { locale?: Locale 
             <Link href={dashboardHref} className="font-semibold text-teal hover:underline">
               {dashboardLabel}
             </Link>
-            <form action={customerLogoutAction}>
+            <form action={customerLogoutAction.bind(null, locale)}>
               <button type="submit" className="font-semibold text-coral-dark hover:underline">
                 {dict.logout}
               </button>

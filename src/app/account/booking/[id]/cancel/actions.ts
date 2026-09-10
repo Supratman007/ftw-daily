@@ -11,6 +11,8 @@ import {
   type CancellationPath,
   type CancellationPreferredResolution,
 } from "@/lib/cancellations/types";
+import { getDictionary } from "@/lib/i18n/getDictionary";
+import type { Locale } from "@/lib/i18n/locales";
 
 const MAX_EVIDENCE_BYTES = 5 * 1024 * 1024; // 5MB
 const EVIDENCE_EXT_BY_MIME: Record<string, string> = {
@@ -19,16 +21,21 @@ const EVIDENCE_EXT_BY_MIME: Record<string, string> = {
   "application/pdf": "pdf",
 };
 
-export async function submitCancellationRequestAction(bookingId: string, formData: FormData) {
-  const customer = await requireCustomer(`/account/booking/${bookingId}/cancel`);
+/** `locale` is bound by RequestCancellationPage, same as everywhere
+ * else in this account area -- every redirect below (error or
+ * success) keeps the visitor in that language. */
+export async function submitCancellationRequestAction(bookingId: string, locale: Locale, formData: FormData) {
+  const pathPrefix = locale === "id" ? "/id" : "";
+  const errors = getDictionary(locale).account.errors;
+  const customer = await requireCustomer(`${pathPrefix}/account/booking/${bookingId}/cancel`);
 
   function fail(message: string): never {
-    redirect(`/account/booking/${bookingId}/cancel?error=${encodeURIComponent(message)}`);
+    redirect(`${pathPrefix}/account/booking/${bookingId}/cancel?error=${encodeURIComponent(message)}`);
   }
 
   const pathRaw = String(formData.get("path") ?? "");
   if (pathRaw !== "standard" && pathRaw !== "force_majeure") {
-    fail("Please choose a request type.");
+    fail(errors.pleaseChooseRequestType);
   }
   const path = pathRaw as CancellationPath;
 
@@ -38,13 +45,11 @@ export async function submitCancellationRequestAction(bookingId: string, formDat
   let preferredResolution: CancellationPreferredResolution | null = null;
   if (preferredResolutionRaw) {
     if (!["refund", "reschedule", "gift_voucher"].includes(preferredResolutionRaw)) {
-      fail("Please choose what you'd like us to do.");
+      fail(errors.pleaseChooseResolution);
     }
     preferredResolution = preferredResolutionRaw as CancellationPreferredResolution;
     if (path === "force_majeure" && preferredResolution === "refund") {
-      fail(
-        "Force majeure requests don't offer a plain refund -- please choose reschedule or a gift voucher instead."
-      );
+      fail(errors.forceMajeureNoRefund);
     }
   }
 
@@ -52,11 +57,11 @@ export async function submitCancellationRequestAction(bookingId: string, formDat
   if (preferredResolution === "reschedule") {
     const raw = String(formData.get("preferred_new_date") ?? "").trim();
     if (!raw || Number.isNaN(Date.parse(raw))) {
-      fail("Please choose the date you'd like to reschedule to.");
+      fail(errors.pleaseChooseRescheduleDate);
     }
     const todayStr = new Date().toISOString().slice(0, 10);
     if (raw <= todayStr) {
-      fail("Please choose a future date to reschedule to.");
+      fail(errors.pleaseChooseFutureDate);
     }
     preferredNewDate = raw;
   }
@@ -69,28 +74,28 @@ export async function submitCancellationRequestAction(bookingId: string, formDat
       .trim()
       .toLowerCase();
     if (!preferredGiftRecipientName) {
-      fail("Please enter who the voucher is for.");
+      fail(errors.pleaseEnterRecipientName);
     }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(preferredGiftRecipientEmail)) {
-      fail("Please enter a valid recipient email.");
+      fail(errors.pleaseEnterValidEmail);
     }
   }
 
   const reason = String(formData.get("reason") ?? "").trim();
   if (!reason) {
-    fail("Please tell us what happened.");
+    fail(errors.pleaseTellUsWhatHappened);
   }
 
   const evidenceFile = formData.get("evidence");
   if (path === "force_majeure") {
     if (!(evidenceFile instanceof File) || evidenceFile.size === 0) {
-      fail("Please upload supporting documentation for a force majeure request.");
+      fail(errors.uploadEvidence);
     }
     if (!(evidenceFile.type in EVIDENCE_EXT_BY_MIME)) {
-      fail("Supporting documentation must be a JPG, PNG, or PDF.");
+      fail(errors.evidenceFileType);
     }
     if (evidenceFile.size > MAX_EVIDENCE_BYTES) {
-      fail("Supporting documentation must be smaller than 5MB.");
+      fail(errors.evidenceTooLarge);
     }
   }
 
@@ -103,10 +108,10 @@ export async function submitCancellationRequestAction(bookingId: string, formDat
     .maybeSingle();
 
   if (!booking) {
-    fail("Booking not found.");
+    fail(errors.bookingNotFound);
   }
   if (booking.status !== "paid_confirmed") {
-    fail("Only confirmed, paid bookings can be cancelled or rescheduled.");
+    fail(errors.onlyConfirmedCanCancel);
   }
 
   const { count: pendingCount } = await supabase
@@ -115,7 +120,7 @@ export async function submitCancellationRequestAction(bookingId: string, formDat
     .eq("booking_id", bookingId)
     .eq("status", "pending_review");
   if ((pendingCount ?? 0) > 0) {
-    fail("You already have a request pending review for this booking.");
+    fail(errors.alreadyPendingRequest);
   }
 
   let calculatedRefundPercent: number | null = null;
@@ -147,7 +152,7 @@ export async function submitCancellationRequestAction(bookingId: string, formDat
     .single();
 
   if (insertError || !inserted) {
-    fail(`Couldn't submit your request: ${insertError?.message ?? "please try again."}`);
+    fail(errors.couldntSubmitRequest(insertError?.message ?? "please try again."));
   }
 
   // Evidence upload goes through the service-role client -- same
@@ -214,5 +219,5 @@ export async function submitCancellationRequestAction(bookingId: string, formDat
     )
   );
 
-  redirect(`/account/booking/${bookingId}?notice=${encodeURIComponent("Request submitted -- we'll review it soon.")}`);
+  redirect(`${pathPrefix}/account/booking/${bookingId}?notice=${encodeURIComponent(errors.requestSubmittedNotice)}`);
 }

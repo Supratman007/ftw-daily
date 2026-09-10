@@ -10,14 +10,19 @@ import type { Message, MessageSender } from "@/lib/chat/types";
 export function ChatThread({
   messages,
   viewerRole,
+  emptyStateText = "No messages yet -- say hello below.",
 }: {
   messages: Message[];
   viewerRole: MessageSender;
+  /** Defaults to English -- staff/agent inbox usage (always English)
+   * doesn't pass this; the customer account page passes a translated
+   * one when the visitor is browsing in Indonesian. */
+  emptyStateText?: string;
 }) {
   if (messages.length === 0) {
     return (
       <p className="px-4 py-6 text-center text-sm text-ink-soft">
-        No messages yet -- say hello below.
+        {emptyStateText}
       </p>
     );
   }

@@ -7,5 +7,5 @@ export default function Page({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ error?: string }>;
 }) {
-  return <RequestCancellationPage params={params} searchParams={searchParams} locale="en" />;
+  return <RequestCancellationPage params={params} searchParams={searchParams} locale="id" />;
 }

@@ -7,9 +7,11 @@
 export function ChatComposer({
   action,
   placeholder = "Write a message…",
+  sendLabel = "Send",
 }: {
   action: (formData: FormData) => void | Promise<void>;
   placeholder?: string;
+  sendLabel?: string;
 }) {
   return (
     <form action={action} className="flex gap-2 border-t border-sand-deep p-3">
@@ -25,7 +27,7 @@ export function ChatComposer({
         type="submit"
         className="rounded-lg bg-coral px-4 py-2 text-sm font-semibold text-white"
       >
-        Send
+        {sendLabel}
       </button>
     </form>
   );

@@ -5,5 +5,5 @@ export default function Page({
 }: {
   searchParams: Promise<{ password_reset?: string }>;
 }) {
-  return <AccountOverviewPage searchParams={searchParams} locale="en" />;
+  return <AccountOverviewPage searchParams={searchParams} locale="id" />;
 }

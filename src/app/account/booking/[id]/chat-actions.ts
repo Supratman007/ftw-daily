@@ -6,16 +6,20 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/service";
 import { getOrCreateBookingConversation } from "@/lib/chat/getOrCreateConversation";
 import { sendNewConversationStaffEmail } from "@/lib/email/resend";
+import type { Locale } from "@/lib/i18n/locales";
 
 /** Spec §6b/§6c: a customer's per-booking chat with staff. Gets or
  * creates the one persistent conversation for this booking, then sends
- * into it -- same session client both steps, RLS-scoped throughout. */
-export async function sendCustomerMessageAction(bookingId: string, formData: FormData) {
-  const customer = await requireCustomer(`/account/booking/${bookingId}`);
+ * into it -- same session client both steps, RLS-scoped throughout.
+ * `locale` is bound by BookingDetailPage, same as every other account
+ * action bound with a primitive param. */
+export async function sendCustomerMessageAction(bookingId: string, locale: Locale, formData: FormData) {
+  const pathPrefix = locale === "id" ? "/id" : "";
+  const customer = await requireCustomer(`${pathPrefix}/account/booking/${bookingId}`);
   const body = String(formData.get("body") ?? "").trim();
 
   if (!body) {
-    redirect(`/account/booking/${bookingId}`);
+    redirect(`${pathPrefix}/account/booking/${bookingId}`);
   }
 
   const supabase = await createSupabaseServerClient();
@@ -32,7 +36,7 @@ export async function sendCustomerMessageAction(bookingId: string, formData: For
     .maybeSingle();
 
   if (!booking) {
-    redirect(`/account/booking/${bookingId}`);
+    redirect(`${pathPrefix}/account/booking/${bookingId}`);
   }
 
   const { conversation, created } = await getOrCreateBookingConversation(supabase, bookingId);
@@ -66,5 +70,5 @@ export async function sendCustomerMessageAction(bookingId: string, formData: For
     );
   }
 
-  redirect(`/account/booking/${bookingId}`);
+  redirect(`${pathPrefix}/account/booking/${bookingId}`);
 }

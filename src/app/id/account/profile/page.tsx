@@ -5,5 +5,5 @@ export default function Page({
 }: {
   searchParams: Promise<{ error?: string; saved?: string; password_error?: string; password_saved?: string }>;
 }) {
-  return <ProfilePage searchParams={searchParams} locale="en" />;
+  return <ProfilePage searchParams={searchParams} locale="id" />;
 }
