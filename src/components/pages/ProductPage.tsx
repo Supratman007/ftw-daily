@@ -322,7 +322,7 @@ export async function ProductPage({
           </p>
           <h1 className="mt-1 font-serif text-3xl font-semibold text-ink">{displayTitle}</h1>
           {displayDescription && (
-            <p className="mt-4 whitespace-pre-wrap text-sm leading-relaxed text-ink-soft">
+            <p className="mt-4 whitespace-pre-wrap break-words text-sm leading-relaxed text-ink-soft">
               {displayDescription}
             </p>
           )}
@@ -488,10 +488,17 @@ export async function ProductPage({
                       </span>
                       {i < p.itinerary.length - 1 && <span className="mt-1 w-px flex-1 bg-sand-deep" />}
                     </div>
-                    <div className="pb-1">
+                    {/* min-w-0: this div is a row-flex item (sibling
+                        of the numbered-circle column above) -- without
+                        it, a flex item's default automatic minimum
+                        width is its content's min-content size, so a
+                        long unbroken word/URL in the description would
+                        force this column (and the whole row) wider
+                        than the page instead of wrapping. */}
+                    <div className="min-w-0 pb-1">
                       <p className="font-semibold text-ink">{step.title}</p>
                       {step.description && (
-                        <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-ink-soft">
+                        <p className="mt-1 whitespace-pre-wrap break-words text-sm leading-relaxed text-ink-soft">
                           {step.description}
                         </p>
                       )}

@@ -70,8 +70,11 @@ export function VehicleDetailPanel({
 
       <div className="p-4">
         <div className="flex items-baseline justify-between gap-2">
-          <p className="font-serif text-lg font-semibold text-ink">{name}</p>
-          {capacityLabel && <span className="text-xs text-ink-soft">{capacityLabel}</span>}
+          {/* min-w-0 so a long car/vehicle name wraps instead of
+              pushing capacityLabel (or the panel) wider than the
+              page -- same flex-item-shrinking issue as elsewhere. */}
+          <p className="min-w-0 font-serif text-lg font-semibold text-ink">{name}</p>
+          {capacityLabel && <span className="flex-shrink-0 text-xs text-ink-soft">{capacityLabel}</span>}
         </div>
 
         {recommendedFor && (
@@ -79,7 +82,7 @@ export function VehicleDetailPanel({
         )}
 
         {description && (
-          <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-ink-soft">
+          <p className="mt-2 whitespace-pre-wrap break-words text-sm leading-relaxed text-ink-soft">
             {description}
           </p>
         )}

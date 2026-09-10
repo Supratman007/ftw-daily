@@ -64,7 +64,7 @@ export function TransportProductSection({
         </p>
         <h1 className="mt-1 font-serif text-3xl font-semibold text-ink">{title}</h1>
         {description && (
-          <p className="mt-4 whitespace-pre-wrap text-sm leading-relaxed text-ink-soft">
+          <p className="mt-4 whitespace-pre-wrap break-words text-sm leading-relaxed text-ink-soft">
             {description}
           </p>
         )}

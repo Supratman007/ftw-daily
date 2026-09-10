@@ -42,7 +42,21 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       lang={lang}
       className={`${fraunces.variable} ${inter.variable} ${plexMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      {/* Not "flex flex-col" -- every page's <main> uses the standard
+          "mx-auto max-w-*" centering pattern, and a flex item with auto
+          margins on both sides doesn't get the default stretch-to-fill
+          alignment: instead it sizes itself by its own content, capped
+          only by its max-width. In practice that meant <main> rendered
+          at close to its max-width (e.g. 896px) on every phone
+          regardless of the real viewport -- the actual cause of the
+          product page (and effectively every page) staying "wide" and
+          non-responsive on narrow phones no matter what was fixed
+          inside the page itself. Nothing here relies on body's own
+          flexbox (no sticky-footer mt-auto, no shared vertical
+          centering across pages -- the handful of pages that do center
+          vertically set up "min-h-screen flex flex-col" on their own
+          <main>, independent of this). */}
+      <body className="min-h-full">{children}</body>
     </html>
   );
 }
