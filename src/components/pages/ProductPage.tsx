@@ -568,12 +568,18 @@ export async function ProductPage({
       {related.length > 0 && (
         <div className="mt-10">
           <h2 className="font-serif text-xl font-semibold text-ink">{dict.relatedHeading}</h2>
-          <div className="mt-4 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          {/* A swipeable horizontal strip on phones (each card sized to
+              peek the next one, same overflow-x-auto pattern as the
+              photo galleries above) instead of one long vertical stack
+              -- shorter page, and a much more familiar "browse more
+              trips" gesture on mobile. Reverts to the plain grid from
+              sm: up, where there's room to just show them all. */}
+          <div className="mt-4 flex snap-x snap-mandatory gap-4 overflow-x-auto pb-2 sm:grid sm:snap-none sm:grid-cols-2 sm:gap-5 sm:overflow-visible sm:pb-0 lg:grid-cols-4">
             {related.map((r) => (
               <Link
                 key={r.id}
                 href={locale === "en" ? `/p/${r.slug}` : `/id/p/${r.slug}`}
-                className="flex flex-col overflow-hidden rounded-2xl border border-sand-deep bg-white transition hover:shadow-md"
+                className="flex w-[70%] flex-shrink-0 snap-start flex-col overflow-hidden rounded-2xl border border-sand-deep bg-white transition hover:shadow-md sm:w-auto sm:flex-shrink"
               >
                 {r.cover_image_url ? (
                   <div className="relative h-32 w-full">
@@ -581,7 +587,7 @@ export async function ProductPage({
                       src={r.cover_image_url}
                       alt=""
                       fill
-                      sizes="(max-width: 640px) 50vw, 25vw"
+                      sizes="(max-width: 640px) 70vw, 25vw"
                       className="object-cover"
                     />
                   </div>
