@@ -14,6 +14,86 @@ import {
 const labelClass = "text-xs font-semibold uppercase tracking-wide text-ink-soft";
 const inputClass = "mt-1 w-full rounded-lg border border-sand-deep px-3 py-2 text-sm";
 
+/** This form's own fixed text (labels, placeholders, hints) --
+ * separate from the app-wide Dictionary type (src/lib/i18n/
+ * dictionaries/en.ts) since getDictionary() is server-only and this is
+ * a "use client" component (needs the useState pickers below); the
+ * parent page resolves the real dictionary and passes the matching
+ * `carHireForm` section down as a plain object instead. Defaults to
+ * English so every other caller of this component keeps working
+ * unchanged. */
+export interface CarHireFormDict {
+  carLabel: string;
+  seatsLabel: (n: number) => string;
+  passengersLabel: string;
+  capacityWarning: (carName: string, maxPax: number) => string;
+  durationLabel: string;
+  noDurationsOption: string;
+  hoursLabel: (n: number) => string;
+  pickupAreaLabel: string;
+  askForPriceSuffix: string;
+  otherOption: string;
+  tellUsPickupLabel: string;
+  exactPickupLabel: string;
+  otherPickupPlaceholder: string;
+  normalPickupPlaceholder: string;
+  pickupAreaHint: string;
+  passengerNameLabel: string;
+  passengerNamePlaceholder: string;
+  whatsappLabel: string;
+  whatsappPlaceholder: string;
+  whatsappHint: string;
+  pickupDateLabel: string;
+  pickupTimeLabel: string;
+  flightLabel: string;
+  flightPlaceholder: string;
+  flightHint: string;
+  discountCodeLabel: string;
+  discountCodePlaceholder: string;
+  overtimeNotice: (rate: string) => string;
+  noPriceNotice: string;
+  messageUsOnWhatsapp: string;
+  forAQuote: string;
+  continueToCheckout: string;
+}
+
+const DEFAULT_DICT: CarHireFormDict = {
+  carLabel: "Car",
+  seatsLabel: (n) => `${n} seats`,
+  passengersLabel: "Number of passengers",
+  capacityWarning: (carName, maxPax) =>
+    `${carName} seats up to ${maxPax} — please choose a bigger car or fewer passengers.`,
+  durationLabel: "Duration",
+  noDurationsOption: "No durations set up yet",
+  hoursLabel: (n) => `${n} hours`,
+  pickupAreaLabel: "Pickup area",
+  askForPriceSuffix: " (ask us for a price)",
+  otherOption: "Other — not on the list",
+  tellUsPickupLabel: "Tell us your pickup location",
+  exactPickupLabel: "Exact pickup spot (optional)",
+  otherPickupPlaceholder: "e.g. name of hotel/area",
+  normalPickupPlaceholder: "e.g. Sunset Hotel, lobby -- or Lombok Airport, domestic arrivals",
+  pickupAreaHint:
+    "The area above sets the price -- this is just so the driver finds you: hotel name and where to wait, or the exact airport terminal/gate.",
+  passengerNameLabel: "Passenger name",
+  passengerNamePlaceholder: "Who's traveling? (if not you, their full name)",
+  whatsappLabel: "WhatsApp number for pickup",
+  whatsappPlaceholder: "e.g. +62 812 3456 7890",
+  whatsappHint: "Your driver will message you here when they arrive.",
+  pickupDateLabel: "Pickup date",
+  pickupTimeLabel: "Pickup time",
+  flightLabel: "Flight number / arrival details (optional)",
+  flightPlaceholder: "e.g. Garuda GA402, arriving 14:30",
+  flightHint: "Picking up from the airport? This helps your driver track your flight and be there when you land.",
+  discountCodeLabel: "Discount code (optional)",
+  discountCodePlaceholder: "e.g. WELCOME10",
+  overtimeNotice: (rate) => `Running over? Overtime is ${rate}/hour, paid in cash to the driver.`,
+  noPriceNotice: "We don't have a set price for that combination yet.",
+  messageUsOnWhatsapp: "Message us on WhatsApp",
+  forAQuote: "for a quote.",
+  continueToCheckout: "Continue to checkout",
+};
+
 interface CarHireBookingFormProps {
   action: (formData: FormData) => void | Promise<void>;
   productTitle: string;
@@ -29,6 +109,7 @@ interface CarHireBookingFormProps {
    * features) stay in sync with the picker here, without duplicating
    * this form's own selection state. */
   onCarTypeChange?: (carType: CarType | undefined) => void;
+  dict?: CarHireFormDict;
 }
 
 export function CarHireBookingForm({
@@ -41,6 +122,7 @@ export function CarHireBookingForm({
   defaultDiscountCode,
   minPickupDate,
   onCarTypeChange,
+  dict = DEFAULT_DICT,
 }: CarHireBookingFormProps) {
   const [carTypeId, setCarTypeId] = useState(carTypes[0]?.id ?? "");
   const packagesForCarType = useMemo(
@@ -85,7 +167,7 @@ export function CarHireBookingForm({
   return (
     <form action={action} className="flex flex-col gap-3">
       <label className={labelClass}>
-        Car
+        {dict.carLabel}
         <select
           name="car_type_id"
           value={carTypeId}
@@ -99,14 +181,14 @@ export function CarHireBookingForm({
         >
           {carTypes.map((c) => (
             <option key={c.id} value={c.id}>
-              {c.name} — {c.capacity_tier} seats
+              {c.name} — {dict.seatsLabel(c.capacity_tier)}
             </option>
           ))}
         </select>
       </label>
 
       <label className={labelClass}>
-        Number of passengers
+        {dict.passengersLabel}
         <input
           type="number"
           name="pax_count"
@@ -119,31 +201,30 @@ export function CarHireBookingForm({
         />
         {paxTooMany && (
           <span className="mt-1 block text-[11px] font-normal normal-case text-coral-dark">
-            {selectedCarType?.name ?? "This car"} seats up to {maxPax} — please choose a bigger
-            car or fewer passengers.
+            {dict.capacityWarning(selectedCarType?.name ?? "This car", maxPax)}
           </span>
         )}
       </label>
 
       <label className={labelClass}>
-        Duration
+        {dict.durationLabel}
         <select
           name="car_package_id"
           value={effectivePackageId}
           onChange={(e) => setPackageId(e.target.value)}
           className={inputClass}
         >
-          {packagesForCarType.length === 0 && <option value="">No durations set up yet</option>}
+          {packagesForCarType.length === 0 && <option value="">{dict.noDurationsOption}</option>}
           {packagesForCarType.map((p) => (
             <option key={p.id} value={p.id}>
-              {p.duration_hours} hours
+              {dict.hoursLabel(p.duration_hours)}
             </option>
           ))}
         </select>
       </label>
 
       <label className={labelClass}>
-        Pickup area
+        {dict.pickupAreaLabel}
         <select
           name="meeting_point_id"
           value={meetingPointId}
@@ -153,91 +234,85 @@ export function CarHireBookingForm({
           {meetingPoints.map((mp) => (
             <option key={mp.id} value={mp.id}>
               {mp.name}
-              {!pricedMeetingPointIds.has(mp.id) ? " (ask us for a price)" : ""}
+              {!pricedMeetingPointIds.has(mp.id) ? dict.askForPriceSuffix : ""}
             </option>
           ))}
-          <option value={OTHER_MEETING_POINT_VALUE}>Other — not on the list</option>
+          <option value={OTHER_MEETING_POINT_VALUE}>{dict.otherOption}</option>
         </select>
       </label>
 
       <label className={labelClass}>
-        {isOther ? "Tell us your pickup location" : "Exact pickup spot (optional)"}
+        {isOther ? dict.tellUsPickupLabel : dict.exactPickupLabel}
         <input
           type="text"
           name="meeting_point_custom"
           required={isOther}
-          placeholder={
-            isOther
-              ? "e.g. name of hotel/area"
-              : "e.g. Sunset Hotel, lobby -- or Lombok Airport, domestic arrivals"
-          }
+          placeholder={isOther ? dict.otherPickupPlaceholder : dict.normalPickupPlaceholder}
           className={inputClass}
         />
         {!isOther && (
           <span className="mt-1 block text-[11px] font-normal normal-case text-ink-soft">
-            The area above sets the price -- this is just so the driver finds you: hotel name and
-            where to wait, or the exact airport terminal/gate.
+            {dict.pickupAreaHint}
           </span>
         )}
       </label>
 
       <label className={labelClass}>
-        Passenger name
+        {dict.passengerNameLabel}
         <input
           type="text"
           name="passenger_name"
           required
-          placeholder="Who's traveling? (if not you, their full name)"
+          placeholder={dict.passengerNamePlaceholder}
           className={inputClass}
         />
       </label>
 
       <label className={labelClass}>
-        WhatsApp number for pickup
+        {dict.whatsappLabel}
         <input
           type="tel"
           name="pickup_whatsapp_number"
           required
-          placeholder="e.g. +62 812 3456 7890"
+          placeholder={dict.whatsappPlaceholder}
           className={inputClass}
         />
         <span className="mt-1 block text-[11px] font-normal normal-case text-ink-soft">
-          Your driver will message you here when they arrive.
+          {dict.whatsappHint}
         </span>
       </label>
 
       <div className="grid grid-cols-2 gap-3">
         <label className={labelClass}>
-          Pickup date
+          {dict.pickupDateLabel}
           <input type="date" name="pickup_date" required min={minPickupDate} defaultValue={minPickupDate} className={inputClass} />
         </label>
         <label className={labelClass}>
-          Pickup time
+          {dict.pickupTimeLabel}
           <input type="time" name="pickup_time" required defaultValue="08:00" className={inputClass} />
         </label>
       </div>
 
       <label className={labelClass}>
-        Flight number / arrival details (optional)
+        {dict.flightLabel}
         <input
           type="text"
           name="flight_details"
-          placeholder="e.g. Garuda GA402, arriving 14:30"
+          placeholder={dict.flightPlaceholder}
           className={inputClass}
         />
         <span className="mt-1 block text-[11px] font-normal normal-case text-ink-soft">
-          Picking up from the airport? This helps your driver track your flight and be there when
-          you land.
+          {dict.flightHint}
         </span>
       </label>
 
       <label className={labelClass}>
-        Discount code (optional)
+        {dict.discountCodeLabel}
         <input
           type="text"
           name="discount_code"
           defaultValue={defaultDiscountCode ?? ""}
-          placeholder="e.g. WELCOME10"
+          placeholder={dict.discountCodePlaceholder}
           className={`${inputClass} uppercase`}
         />
       </label>
@@ -251,23 +326,22 @@ export function CarHireBookingForm({
             <div className="mt-1 font-serif text-xl font-bold text-ocean">{formatIdr(price.price_idr)}</div>
             {selectedPackage && selectedPackage.overtime_rate_per_hour_idr > 0 && (
               <p className="mt-1 text-xs text-ink-soft">
-                Running over? Overtime is {formatIdr(selectedPackage.overtime_rate_per_hour_idr)}/hour, paid
-                in cash to the driver.
+                {dict.overtimeNotice(formatIdr(selectedPackage.overtime_rate_per_hour_idr))}
               </p>
             )}
           </>
         ) : (
           <p className="text-ink-soft">
-            We don&apos;t have a set price for that combination yet.{" "}
+            {dict.noPriceNotice}{" "}
             <a
               href={whatsappLink(`Hi, I'd like a quote for hiring a car for ${productTitle}.`) ?? undefined}
               target="_blank"
               rel="noreferrer"
               className="font-semibold text-teal underline"
             >
-              Message us on WhatsApp
+              {dict.messageUsOnWhatsapp}
             </a>{" "}
-            for a quote.
+            {dict.forAQuote}
           </p>
         )}
       </div>
@@ -277,7 +351,7 @@ export function CarHireBookingForm({
         disabled={!price || packagesForCarType.length === 0 || paxTooMany}
         className="mt-2 rounded-lg bg-coral px-4 py-3 text-sm font-semibold text-white disabled:opacity-50"
       >
-        Continue to checkout
+        {dict.continueToCheckout}
       </button>
     </form>
   );

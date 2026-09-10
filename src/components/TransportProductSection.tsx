@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { TransportBookingForm } from "@/components/TransportBookingForm";
+import { TransportBookingForm, type TransportFormDict } from "@/components/TransportBookingForm";
 import { VehicleDetailPanel } from "@/components/VehicleDetailPanel";
 import type { MeetingPoint, TransportPrice, TransportVehicleType } from "@/lib/cars/types";
 
@@ -24,6 +24,9 @@ interface TransportProductSectionProps {
    * identical priceLabel prop for why this stays a plain string prop
    * rather than locale/getDictionary plumbing. */
   priceLabel?: string;
+  /** Same "optional, defaults to English inside the form itself" story
+   * as priceLabel -- passed straight through to TransportBookingForm. */
+  formDict?: TransportFormDict;
 }
 
 /** Transport's product-page layout -- same reasoning as
@@ -43,6 +46,7 @@ export function TransportProductSection({
   minPickupDate,
   error,
   priceLabel = "Price by pickup area — pick your options below",
+  formDict,
 }: TransportProductSectionProps) {
   const [selectedVehicleType, setSelectedVehicleType] = useState<TransportVehicleType | undefined>(
     vehicleTypes[0]
@@ -102,6 +106,7 @@ export function TransportProductSection({
           defaultDiscountCode={defaultDiscountCode}
           minPickupDate={minPickupDate}
           onVehicleTypeChange={setSelectedVehicleType}
+          dict={formDict}
         />
       </div>
     </div>

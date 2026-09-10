@@ -13,6 +13,75 @@ import {
 const labelClass = "text-xs font-semibold uppercase tracking-wide text-ink-soft";
 const inputClass = "mt-1 w-full rounded-lg border border-sand-deep px-3 py-2 text-sm";
 
+/** This form's own fixed text -- same "plain object, not getDictionary,
+ * since this is a client component" reasoning as CarHireBookingForm's
+ * identical CarHireFormDict. */
+export interface TransportFormDict {
+  vehicleLabel: string;
+  noOptionsOption: string;
+  passengersLabel: string;
+  pickupFromLabel: string;
+  dropoffAtLabel: string;
+  otherOption: string;
+  sameAreaError: string;
+  tellUsPickupLabel: string;
+  exactPickupLabel: string;
+  otherPickupPlaceholder: string;
+  normalPickupPlaceholder: string;
+  tellUsDropoffLabel: string;
+  exactDropoffLabel: string;
+  normalDropoffPlaceholder: string;
+  passengerNameLabel: string;
+  passengerNamePlaceholder: string;
+  whatsappLabel: string;
+  whatsappPlaceholder: string;
+  whatsappHint: string;
+  pickupDateLabel: string;
+  pickupTimeLabel: string;
+  flightLabel: string;
+  flightPlaceholder: string;
+  flightHint: string;
+  discountCodeLabel: string;
+  discountCodePlaceholder: string;
+  noPriceNotice: string;
+  messageUsOnWhatsapp: string;
+  forAQuote: string;
+  continueToCheckout: string;
+}
+
+const DEFAULT_DICT: TransportFormDict = {
+  vehicleLabel: "Vehicle / service",
+  noOptionsOption: "No options set up yet",
+  passengersLabel: "Number of passengers",
+  pickupFromLabel: "Pick up from",
+  dropoffAtLabel: "Drop off at",
+  otherOption: "Other — not on the list",
+  sameAreaError: "Pickup and drop-off can't be the same area.",
+  tellUsPickupLabel: "Tell us your pickup location",
+  exactPickupLabel: "Exact pickup spot (optional)",
+  otherPickupPlaceholder: "e.g. name of hotel/area",
+  normalPickupPlaceholder: "e.g. Sunset Hotel, lobby -- or Lombok Airport, domestic arrivals",
+  tellUsDropoffLabel: "Tell us your drop-off location",
+  exactDropoffLabel: "Exact drop-off spot (optional)",
+  normalDropoffPlaceholder: "e.g. The Oberoi, Gili Trawangan -- or Tete Batu, The Sira Resort",
+  passengerNameLabel: "Passenger name",
+  passengerNamePlaceholder: "Who's traveling? (if not you, their full name)",
+  whatsappLabel: "WhatsApp number for pickup",
+  whatsappPlaceholder: "e.g. +62 812 3456 7890",
+  whatsappHint: "Your driver will message you here when they arrive.",
+  pickupDateLabel: "Pickup date",
+  pickupTimeLabel: "Pickup time",
+  flightLabel: "Flight number / arrival details (optional)",
+  flightPlaceholder: "e.g. Garuda GA402, arriving 14:30",
+  flightHint: "Picking up from the airport? This helps your driver track your flight and be there when you land.",
+  discountCodeLabel: "Discount code (optional)",
+  discountCodePlaceholder: "e.g. WELCOME10",
+  noPriceNotice: "We don't have a set price for that route yet.",
+  messageUsOnWhatsapp: "Message us on WhatsApp",
+  forAQuote: "for a quote.",
+  continueToCheckout: "Continue to checkout",
+};
+
 interface TransportBookingFormProps {
   action: (formData: FormData) => void | Promise<void>;
   productTitle: string;
@@ -27,6 +96,7 @@ interface TransportBookingFormProps {
    * features) stay in sync with the picker here, without duplicating
    * this form's own selection state. */
   onVehicleTypeChange?: (vehicleType: TransportVehicleType | undefined) => void;
+  dict?: TransportFormDict;
 }
 
 export function TransportBookingForm({
@@ -38,6 +108,7 @@ export function TransportBookingForm({
   defaultDiscountCode,
   minPickupDate,
   onVehicleTypeChange,
+  dict = DEFAULT_DICT,
 }: TransportBookingFormProps) {
   const [vehicleTypeId, setVehicleTypeId] = useState(vehicleTypes[0]?.id ?? "");
   const [pickupId, setPickupId] = useState(meetingPoints[0]?.id ?? OTHER_MEETING_POINT_VALUE);
@@ -66,7 +137,7 @@ export function TransportBookingForm({
   return (
     <form action={action} className="flex flex-col gap-3">
       <label className={labelClass}>
-        Vehicle / service
+        {dict.vehicleLabel}
         <select
           name="vehicle_type_id"
           value={vehicleTypeId}
@@ -77,7 +148,7 @@ export function TransportBookingForm({
           }}
           className={inputClass}
         >
-          {vehicleTypes.length === 0 && <option value="">No options set up yet</option>}
+          {vehicleTypes.length === 0 && <option value="">{dict.noOptionsOption}</option>}
           {vehicleTypes.map((v) => (
             <option key={v.id} value={v.id}>
               {v.name}
@@ -88,7 +159,7 @@ export function TransportBookingForm({
       </label>
 
       <label className={labelClass}>
-        Number of passengers
+        {dict.passengersLabel}
         <input
           type="number"
           name="pax_count"
@@ -102,7 +173,7 @@ export function TransportBookingForm({
 
       <div className="grid grid-cols-2 gap-3">
         <label className={labelClass}>
-          Pick up from
+          {dict.pickupFromLabel}
           <select
             name="meeting_point_id"
             value={pickupId}
@@ -114,11 +185,11 @@ export function TransportBookingForm({
                 {mp.name}
               </option>
             ))}
-            <option value={OTHER_MEETING_POINT_VALUE}>Other — not on the list</option>
+            <option value={OTHER_MEETING_POINT_VALUE}>{dict.otherOption}</option>
           </select>
         </label>
         <label className={labelClass}>
-          Drop off at
+          {dict.dropoffAtLabel}
           <select
             name="dropoff_meeting_point_id"
             value={dropoffId}
@@ -130,33 +201,31 @@ export function TransportBookingForm({
                 {mp.name}
               </option>
             ))}
-            <option value={OTHER_MEETING_POINT_VALUE}>Other — not on the list</option>
+            <option value={OTHER_MEETING_POINT_VALUE}>{dict.otherOption}</option>
           </select>
         </label>
       </div>
-      {sameArea && (
-        <p className="text-xs text-coral-dark">Pickup and drop-off can&apos;t be the same area.</p>
-      )}
+      {sameArea && <p className="text-xs text-coral-dark">{dict.sameAreaError}</p>}
 
       {isPickupOther && (
         <label className={labelClass}>
-          Tell us your pickup location
+          {dict.tellUsPickupLabel}
           <input
             type="text"
             name="meeting_point_custom"
             required
-            placeholder="e.g. name of hotel/area"
+            placeholder={dict.otherPickupPlaceholder}
             className={inputClass}
           />
         </label>
       )}
       {!isPickupOther && (
         <label className={labelClass}>
-          Exact pickup spot (optional)
+          {dict.exactPickupLabel}
           <input
             type="text"
             name="meeting_point_custom"
-            placeholder="e.g. Sunset Hotel, lobby -- or Lombok Airport, domestic arrivals"
+            placeholder={dict.normalPickupPlaceholder}
             className={inputClass}
           />
         </label>
@@ -164,85 +233,84 @@ export function TransportBookingForm({
 
       {isDropoffOther && (
         <label className={labelClass}>
-          Tell us your drop-off location
+          {dict.tellUsDropoffLabel}
           <input
             type="text"
             name="dropoff_location_custom"
             required
-            placeholder="e.g. name of hotel/area"
+            placeholder={dict.otherPickupPlaceholder}
             className={inputClass}
           />
         </label>
       )}
       {!isDropoffOther && (
         <label className={labelClass}>
-          Exact drop-off spot (optional)
+          {dict.exactDropoffLabel}
           <input
             type="text"
             name="dropoff_location_custom"
-            placeholder="e.g. The Oberoi, Gili Trawangan -- or Tete Batu, The Sira Resort"
+            placeholder={dict.normalDropoffPlaceholder}
             className={inputClass}
           />
         </label>
       )}
 
       <label className={labelClass}>
-        Passenger name
+        {dict.passengerNameLabel}
         <input
           type="text"
           name="passenger_name"
           required
-          placeholder="Who's traveling? (if not you, their full name)"
+          placeholder={dict.passengerNamePlaceholder}
           className={inputClass}
         />
       </label>
 
       <label className={labelClass}>
-        WhatsApp number for pickup
+        {dict.whatsappLabel}
         <input
           type="tel"
           name="pickup_whatsapp_number"
           required
-          placeholder="e.g. +62 812 3456 7890"
+          placeholder={dict.whatsappPlaceholder}
           className={inputClass}
         />
         <span className="mt-1 block text-[11px] font-normal normal-case text-ink-soft">
-          Your driver will message you here when they arrive.
+          {dict.whatsappHint}
         </span>
       </label>
 
       <div className="grid grid-cols-2 gap-3">
         <label className={labelClass}>
-          Pickup date
+          {dict.pickupDateLabel}
           <input type="date" name="pickup_date" required min={minPickupDate} defaultValue={minPickupDate} className={inputClass} />
         </label>
         <label className={labelClass}>
-          Pickup time
+          {dict.pickupTimeLabel}
           <input type="time" name="pickup_time" required defaultValue="08:00" className={inputClass} />
         </label>
       </div>
 
       <label className={labelClass}>
-        Flight number / arrival details (optional)
+        {dict.flightLabel}
         <input
           type="text"
           name="flight_details"
-          placeholder="e.g. Garuda GA402, arriving 14:30"
+          placeholder={dict.flightPlaceholder}
           className={inputClass}
         />
         <span className="mt-1 block text-[11px] font-normal normal-case text-ink-soft">
-          Picking up from the airport? This helps your driver track your flight and be there when
-          you land.
+          {dict.flightHint}
         </span>
       </label>
 
       <label className={labelClass}>
-        Discount code (optional)
+        {dict.discountCodeLabel}
         <input
           type="text"
           name="discount_code"
           defaultValue={defaultDiscountCode ?? ""}
-          placeholder="e.g. WELCOME10"
+          placeholder={dict.discountCodePlaceholder}
           className={`${inputClass} uppercase`}
         />
       </label>
@@ -260,16 +328,16 @@ export function TransportBookingForm({
           </>
         ) : (
           <p className="text-ink-soft">
-            We don&apos;t have a set price for that route yet.{" "}
+            {dict.noPriceNotice}{" "}
             <a
               href={whatsappLink(`Hi, I'd like a quote for ${productTitle}.`) ?? undefined}
               target="_blank"
               rel="noreferrer"
               className="font-semibold text-teal underline"
             >
-              Message us on WhatsApp
+              {dict.messageUsOnWhatsapp}
             </a>{" "}
-            for a quote.
+            {dict.forAQuote}
           </p>
         )}
       </div>
@@ -279,7 +347,7 @@ export function TransportBookingForm({
         disabled={!price || vehicleTypes.length === 0 || sameArea}
         className="mt-2 rounded-lg bg-coral px-4 py-3 text-sm font-semibold text-white disabled:opacity-50"
       >
-        Continue to checkout
+        {dict.continueToCheckout}
       </button>
     </form>
   );

@@ -29,10 +29,9 @@ import type { Locale } from "@/lib/i18n/locales";
  *
  * The Car Hire and Transport booking forms themselves (CarHireBookingForm
  * / TransportBookingForm, reached through CarHireProductSection /
- * TransportProductSection below) are NOT translated yet -- only their
- * one-line price heading is. Those are large standalone form
- * components; translating them is follow-up work, flagged rather than
- * silently left in English.
+ * TransportProductSection below) are translated too, via the
+ * carHireForm / transportForm dictionary sections passed down as
+ * formDict.
  */
 export async function ProductPage({
   params,
@@ -50,7 +49,8 @@ export async function ProductPage({
   }>;
   locale: Locale;
 }) {
-  const dict = getDictionary(locale).product;
+  const fullDict = getDictionary(locale);
+  const dict = fullDict.product;
   const { slug } = await params;
   const {
     date,
@@ -196,6 +196,7 @@ export async function ProductPage({
           minPickupDate={minDate}
           error={error}
           priceLabel={dict.carHirePriceLabel}
+          formDict={fullDict.carHireForm}
         />
       ) : isTransport ? (
         <TransportProductSection
@@ -211,6 +212,7 @@ export async function ProductPage({
           minPickupDate={minDate}
           error={error}
           priceLabel={dict.transportPriceLabel}
+          formDict={fullDict.transportForm}
         />
       ) : (
       <div className="grid gap-8 md:grid-cols-[1.4fr_1fr]">

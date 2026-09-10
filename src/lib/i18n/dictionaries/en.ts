@@ -195,6 +195,82 @@ export const en = {
       `A receipt with sharing instructions is on its way to your email. Pass the code along to ${recipientName} whenever you're ready.`,
     browseMore: "Browse more trips",
   },
+  // Shapes matching CarHireFormDict/TransportFormDict
+  // (src/components/CarHireBookingForm.tsx, TransportBookingForm.tsx) --
+  // those two "use client" forms can't import getDictionary() (server-
+  // only), so ProductPage passes these sections down as plain objects
+  // instead. Keep both in sync with the component's own default English
+  // copy if either ever changes.
+  carHireForm: {
+    carLabel: "Car",
+    seatsLabel: (n: number) => `${n} seats`,
+    passengersLabel: "Number of passengers",
+    capacityWarning: (carName: string, maxPax: number) =>
+      `${carName} seats up to ${maxPax} — please choose a bigger car or fewer passengers.`,
+    durationLabel: "Duration",
+    noDurationsOption: "No durations set up yet",
+    hoursLabel: (n: number) => `${n} hours`,
+    pickupAreaLabel: "Pickup area",
+    askForPriceSuffix: " (ask us for a price)",
+    otherOption: "Other — not on the list",
+    tellUsPickupLabel: "Tell us your pickup location",
+    exactPickupLabel: "Exact pickup spot (optional)",
+    otherPickupPlaceholder: "e.g. name of hotel/area",
+    normalPickupPlaceholder: "e.g. Sunset Hotel, lobby -- or Lombok Airport, domestic arrivals",
+    pickupAreaHint:
+      "The area above sets the price -- this is just so the driver finds you: hotel name and where to wait, or the exact airport terminal/gate.",
+    passengerNameLabel: "Passenger name",
+    passengerNamePlaceholder: "Who's traveling? (if not you, their full name)",
+    whatsappLabel: "WhatsApp number for pickup",
+    whatsappPlaceholder: "e.g. +62 812 3456 7890",
+    whatsappHint: "Your driver will message you here when they arrive.",
+    pickupDateLabel: "Pickup date",
+    pickupTimeLabel: "Pickup time",
+    flightLabel: "Flight number / arrival details (optional)",
+    flightPlaceholder: "e.g. Garuda GA402, arriving 14:30",
+    flightHint:
+      "Picking up from the airport? This helps your driver track your flight and be there when you land.",
+    discountCodeLabel: "Discount code (optional)",
+    discountCodePlaceholder: "e.g. WELCOME10",
+    overtimeNotice: (rate: string) => `Running over? Overtime is ${rate}/hour, paid in cash to the driver.`,
+    noPriceNotice: "We don't have a set price for that combination yet.",
+    messageUsOnWhatsapp: "Message us on WhatsApp",
+    forAQuote: "for a quote.",
+    continueToCheckout: "Continue to checkout",
+  },
+  transportForm: {
+    vehicleLabel: "Vehicle / service",
+    noOptionsOption: "No options set up yet",
+    passengersLabel: "Number of passengers",
+    pickupFromLabel: "Pick up from",
+    dropoffAtLabel: "Drop off at",
+    otherOption: "Other — not on the list",
+    sameAreaError: "Pickup and drop-off can't be the same area.",
+    tellUsPickupLabel: "Tell us your pickup location",
+    exactPickupLabel: "Exact pickup spot (optional)",
+    otherPickupPlaceholder: "e.g. name of hotel/area",
+    normalPickupPlaceholder: "e.g. Sunset Hotel, lobby -- or Lombok Airport, domestic arrivals",
+    tellUsDropoffLabel: "Tell us your drop-off location",
+    exactDropoffLabel: "Exact drop-off spot (optional)",
+    normalDropoffPlaceholder: "e.g. The Oberoi, Gili Trawangan -- or Tete Batu, The Sira Resort",
+    passengerNameLabel: "Passenger name",
+    passengerNamePlaceholder: "Who's traveling? (if not you, their full name)",
+    whatsappLabel: "WhatsApp number for pickup",
+    whatsappPlaceholder: "e.g. +62 812 3456 7890",
+    whatsappHint: "Your driver will message you here when they arrive.",
+    pickupDateLabel: "Pickup date",
+    pickupTimeLabel: "Pickup time",
+    flightLabel: "Flight number / arrival details (optional)",
+    flightPlaceholder: "e.g. Garuda GA402, arriving 14:30",
+    flightHint:
+      "Picking up from the airport? This helps your driver track your flight and be there when you land.",
+    discountCodeLabel: "Discount code (optional)",
+    discountCodePlaceholder: "e.g. WELCOME10",
+    noPriceNotice: "We don't have a set price for that route yet.",
+    messageUsOnWhatsapp: "Message us on WhatsApp",
+    forAQuote: "for a quote.",
+    continueToCheckout: "Continue to checkout",
+  },
 };
 
 export type Dictionary = typeof en;

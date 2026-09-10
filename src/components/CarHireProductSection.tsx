@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { CarHireBookingForm } from "@/components/CarHireBookingForm";
+import { CarHireBookingForm, type CarHireFormDict } from "@/components/CarHireBookingForm";
 import { VehicleDetailPanel } from "@/components/VehicleDetailPanel";
 import type { CarType, CarPackage, CarPackagePrice, MeetingPoint } from "@/lib/cars/types";
 
@@ -27,6 +27,9 @@ interface CarHireProductSectionProps {
    * "use client" component) since it's the only string this component
    * owns that needs translating. */
   priceLabel?: string;
+  /** Same "optional, defaults to English inside the form itself" story
+   * as priceLabel -- passed straight through to CarHireBookingForm. */
+  formDict?: CarHireFormDict;
 }
 
 /**
@@ -51,6 +54,7 @@ export function CarHireProductSection({
   minPickupDate,
   error,
   priceLabel = "Price by car, duration & pickup area — pick your options below",
+  formDict,
 }: CarHireProductSectionProps) {
   const [selectedCarType, setSelectedCarType] = useState<CarType | undefined>(carTypes[0]);
 
@@ -109,6 +113,7 @@ export function CarHireProductSection({
           defaultDiscountCode={defaultDiscountCode}
           minPickupDate={minPickupDate}
           onCarTypeChange={setSelectedCarType}
+          dict={formDict}
         />
       </div>
     </div>
