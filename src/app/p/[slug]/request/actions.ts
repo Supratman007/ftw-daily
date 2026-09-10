@@ -13,6 +13,8 @@ import { sendBookingRequestReceivedEmail, sendNewBookingRequestStaffEmail } from
 import { hasEnoughLeadTime, tripStartFromDate } from "@/lib/products/leadTime";
 import type { Product } from "@/lib/products/types";
 import type { InsuranceType } from "@/lib/bookings/types";
+import { getDictionary } from "@/lib/i18n/getDictionary";
+import { recordReferralAttribution } from "@/lib/agents/referralAttribution";
 
 const MAX_PASSPORT_BYTES = 5 * 1024 * 1024; // 5MB
 const PASSPORT_EXT_BY_MIME: Record<string, string> = {
@@ -51,6 +53,7 @@ export async function submitBookingRequestAction(
   // comment for why.
   const locale = formData.get("locale") === "id" ? "id" : "en";
   const pathPrefix = locale === "id" ? "/id" : "";
+  const dict = getDictionary(locale).checkoutErrors;
 
   const returnTo = `${pathPrefix}/p/${slug}/request?date=${encodeURIComponent(date)}&pax=${pax}`;
   const customer = await requireCustomer(returnTo);
@@ -65,10 +68,10 @@ export async function submitBookingRequestAction(
   }
 
   if (!date || Number.isNaN(Date.parse(date))) {
-    fail("Please choose a valid date.");
+    fail(dict.invalidDate);
   }
   if (!pax || pax < 1 || pax > 20) {
-    fail("Please choose between 1 and 20 travelers.");
+    fail(dict.travelersRange);
   }
 
   const supabase = await createSupabaseServerClient();
@@ -80,19 +83,17 @@ export async function submitBookingRequestAction(
     .maybeSingle();
 
   if (!product) {
-    fail("This trip is no longer available.");
+    fail(dict.tripUnavailable);
   }
   const p = product as Product;
   if (p.is_bookable) {
-    fail("This trip is instantly bookable -- please use the regular booking form.");
+    fail(dict.tripBookableAlready);
   }
   if (p.adult_price_usd == null) {
-    fail("This trip doesn't have a price set yet — please contact us.");
+    fail(dict.noPriceSet);
   }
   if (!hasEnoughLeadTime(tripStartFromDate(date), p.min_lead_hours)) {
-    fail(
-      `We need at least ${p.min_lead_hours} hours' notice to review a request for this trip -- please choose a later date, or contact us directly for a last-minute request.`
-    );
+    fail(dict.needMoreLeadTimeRequest(p.min_lead_hours));
   }
 
   // Parse and validate every traveler before touching the database --
@@ -102,31 +103,29 @@ export async function submitBookingRequestAction(
   for (let i = 0; i < pax; i++) {
     const fullName = String(formData.get(`traveler_name_${i}`) ?? "").trim();
     if (!fullName) {
-      fail(`Please enter traveler ${i + 1}'s full name.`);
+      fail(dict.travelerFullNameRequired(i + 1));
     }
 
     const passportFile = formData.get(`passport_${i}`);
     if (!(passportFile instanceof File) || passportFile.size === 0) {
-      fail(`Please upload traveler ${i + 1}'s passport.`);
+      fail(dict.travelerPassportRequired(i + 1));
     }
     if (!(passportFile.type in PASSPORT_EXT_BY_MIME)) {
-      fail(`Traveler ${i + 1}'s passport must be a JPG, PNG, or PDF.`);
+      fail(dict.travelerPassportFileType(i + 1));
     }
     if (passportFile.size > MAX_PASSPORT_BYTES) {
-      fail(`Traveler ${i + 1}'s passport must be smaller than 5MB.`);
+      fail(dict.travelerPassportTooLarge(i + 1));
     }
 
     const insuranceTypeRaw = String(formData.get(`insurance_type_${i}`) ?? "");
     if (insuranceTypeRaw !== "self_provided" && insuranceTypeRaw !== "park_provided") {
-      fail(`Please choose insurance for traveler ${i + 1}.`);
+      fail(dict.travelerInsuranceRequired(i + 1));
     }
     const insuranceType = insuranceTypeRaw as InsuranceType;
     const insuranceNumber = String(formData.get(`insurance_number_${i}`) ?? "").trim();
     const insuranceCompany = String(formData.get(`insurance_company_${i}`) ?? "").trim();
     if (insuranceType === "self_provided" && (!insuranceNumber || !insuranceCompany)) {
-      fail(
-        `Please enter traveler ${i + 1}'s insurance policy number and company, or choose park insurance instead.`
-      );
+      fail(dict.travelerInsuranceDetailsRequired(i + 1));
     }
 
     travelers.push({
@@ -154,10 +153,10 @@ export async function submitBookingRequestAction(
   );
 
   if (reserveError) {
-    fail(`Couldn't check availability: ${reserveError.message}`);
+    fail(dict.couldntCheckAvailability(reserveError.message));
   }
   if (!reserved) {
-    fail("Sorry, that date is fully booked. Please try a different date.");
+    fail(dict.fullyBooked);
   }
 
   async function releaseCapacity() {
@@ -210,8 +209,14 @@ export async function submitBookingRequestAction(
 
   if (insertError) {
     await releaseCapacity();
-    fail(`Couldn't submit your request: ${insertError.message}`);
+    fail(dict.couldntSubmitRequest(insertError.message));
   }
+
+  await recordReferralAttribution(serviceClient, {
+    agentId: referredByAgentId,
+    referralCode: referralCodeInput,
+    bookingId,
+  });
 
   // Insert traveler rows first (so each gets an id to key its storage
   // path on), then upload passport files via the service-role client
@@ -246,8 +251,8 @@ export async function submitBookingRequestAction(
     // included temporarily while this is being diagnosed -- remove
     // once the real cause is confirmed and fixed.
     redirect(
-      `/account/booking/${bookingId}?notice=${encodeURIComponent(
-        `Request received, but we couldn't save your traveler details (${travelersError?.message ?? "unknown error"}). Please contact us and we'll help you finish.`
+      `${pathPrefix}/account/booking/${bookingId}?notice=${encodeURIComponent(
+        dict.requestReceivedTravelerSaveFailed(travelersError?.message ?? "unknown error")
       )}`
     );
   }
@@ -284,8 +289,8 @@ export async function submitBookingRequestAction(
     const failedLink = linkResults.find((r) => r.error);
     if (failedLink?.error) {
       redirect(
-        `/account/booking/${bookingId}?notice=${encodeURIComponent(
-          `Request received, but we couldn't finish linking your passport uploads (${failedLink.error.message}). Please contact us and we'll help you finish.`
+        `${pathPrefix}/account/booking/${bookingId}?notice=${encodeURIComponent(
+          dict.requestReceivedPassportLinkFailed(failedLink.error.message)
         )}`
       );
     }
@@ -320,9 +325,9 @@ export async function submitBookingRequestAction(
 
   redirect(
     failedUpload
-      ? `/account/booking/${bookingId}?notice=${encodeURIComponent(
-          "Request received, but one of your passport uploads failed. Please contact us and we'll help you finish."
+      ? `${pathPrefix}/account/booking/${bookingId}?notice=${encodeURIComponent(
+          dict.requestReceivedPassportUploadFailed
         )}`
-      : `/account/booking/${bookingId}`
+      : `${pathPrefix}/account/booking/${bookingId}`
   );
 }

@@ -10,6 +10,8 @@ import { generateVoucherCode } from "@/lib/cancellations/voucherCode";
 import { usdToIdr } from "@/lib/currency";
 import { REFERRAL_COOKIE_NAME } from "@/lib/agents/referralCookie";
 import type { Product } from "@/lib/products/types";
+import { getDictionary } from "@/lib/i18n/getDictionary";
+import { recordReferralAttribution } from "@/lib/agents/referralAttribution";
 
 /** Standalone gift-voucher purchase -- no capacity reservation (no
  * date is being claimed yet, only paid for), but otherwise the same
@@ -28,6 +30,7 @@ export async function startGiftCheckoutAction(productId: string, slug: string, f
   // approach as startCheckoutAction -- see that action's comment.
   const locale = formData.get("locale") === "id" ? "id" : "en";
   const pathPrefix = locale === "id" ? "/id" : "";
+  const dict = getDictionary(locale).checkoutErrors;
 
   // Same automatic, nothing-for-the-customer-to-see cookie as normal
   // checkout -- set by proxy.ts from a ?ref=CODE link.
@@ -48,10 +51,10 @@ export async function startGiftCheckoutAction(productId: string, slug: string, f
     redirect(`${returnTo}?${params.toString()}`);
   }
 
-  if (!recipientName) fail("Please enter who this gift is for.");
-  if (!recipientContact) fail("Please enter how we'd reach the recipient.");
+  if (!recipientName) fail(dict.recipientNameRequired);
+  if (!recipientContact) fail(dict.recipientContactRequired);
   if (!pax || pax < 1 || pax > 20) {
-    fail("Please choose between 1 and 20 travelers.");
+    fail(dict.travelersRange);
   }
 
   const supabase = await createSupabaseServerClient();
@@ -62,10 +65,10 @@ export async function startGiftCheckoutAction(productId: string, slug: string, f
     .eq("status", "active")
     .maybeSingle();
 
-  if (!product) fail("This trip is no longer available.");
+  if (!product) fail(dict.tripUnavailable);
   const p = product as Product;
-  if (!p.is_bookable) fail("This trip can't be gifted online yet -- please contact us.");
-  if (p.adult_price_usd == null) fail("This trip doesn't have a price set yet — please contact us.");
+  if (!p.is_bookable) fail(dict.tripNotGiftable);
+  if (p.adult_price_usd == null) fail(dict.noPriceSet);
 
   const subtotalUsd = p.adult_price_usd * pax;
   const serviceClient = createSupabaseServiceRoleClient();
@@ -80,10 +83,10 @@ export async function startGiftCheckoutAction(productId: string, slug: string, f
       { p_code: discountCodeInput }
     );
 
-    if (discountError) fail(`Couldn't check that discount code: ${discountError.message}`);
+    if (discountError) fail(dict.couldntCheckDiscount(discountError.message));
 
     const discountRow = discountRows?.[0];
-    if (!discountRow) fail("That discount code isn't valid, has expired, or has already been fully used.");
+    if (!discountRow) fail(dict.invalidDiscountCode);
 
     discountCodeId = discountRow.id;
     discountAmountUsd =
@@ -129,7 +132,7 @@ export async function startGiftCheckoutAction(productId: string, slug: string, f
     });
   } catch (err) {
     await releaseReservations();
-    fail(`Couldn't start payment: ${(err as Error).message}`);
+    fail(dict.couldntStartPayment((err as Error).message));
   }
 
   const { error: insertError } = await supabase.from("gift_vouchers").insert({
@@ -152,8 +155,14 @@ export async function startGiftCheckoutAction(productId: string, slug: string, f
 
   if (insertError) {
     await releaseReservations();
-    fail(`Couldn't create your gift voucher: ${insertError.message}`);
+    fail(dict.couldntCreateGiftVoucher(insertError.message));
   }
+
+  await recordReferralAttribution(serviceClient, {
+    agentId: referredByAgentId,
+    referralCode: referralCodeInput,
+    giftVoucherId: voucherId,
+  });
 
   redirect(invoice.invoice_url);
 }

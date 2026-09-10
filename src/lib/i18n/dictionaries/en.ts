@@ -327,6 +327,34 @@ export const en = {
     chooseVehicle: "Please choose a vehicle/service option.",
     dropoffAreaUnavailable: "That drop-off area isn't available anymore -- please pick another.",
     noPriceForRoute: "We don't have a set price for that route yet -- please contact us for a quote.",
+    // Rinjani-style manual-confirmation request flow
+    // (src/app/p/[slug]/request/actions.ts) -- reuses several keys
+    // above (invalidDate, travelersRange, tripUnavailable, noPriceSet,
+    // couldntCheckAvailability, fullyBooked).
+    tripBookableAlready: "This trip is instantly bookable -- please use the regular booking form.",
+    needMoreLeadTimeRequest: (hours: number) =>
+      `We need at least ${hours} hours' notice to review a request for this trip -- please choose a later date, or contact us directly for a last-minute request.`,
+    travelerFullNameRequired: (n: number) => `Please enter traveler ${n}'s full name.`,
+    travelerPassportRequired: (n: number) => `Please upload traveler ${n}'s passport.`,
+    travelerPassportFileType: (n: number) => `Traveler ${n}'s passport must be a JPG, PNG, or PDF.`,
+    travelerPassportTooLarge: (n: number) => `Traveler ${n}'s passport must be smaller than 5MB.`,
+    travelerInsuranceRequired: (n: number) => `Please choose insurance for traveler ${n}.`,
+    travelerInsuranceDetailsRequired: (n: number) =>
+      `Please enter traveler ${n}'s insurance policy number and company, or choose park insurance instead.`,
+    couldntSubmitRequest: (msg: string) => `Couldn't submit your request: ${msg}`,
+    requestReceivedTravelerSaveFailed: (msg: string) =>
+      `Request received, but we couldn't save your traveler details (${msg}). Please contact us and we'll help you finish.`,
+    requestReceivedPassportLinkFailed: (msg: string) =>
+      `Request received, but we couldn't finish linking your passport uploads (${msg}). Please contact us and we'll help you finish.`,
+    requestReceivedPassportUploadFailed:
+      "Request received, but one of your passport uploads failed. Please contact us and we'll help you finish.",
+    // Gift voucher purchase (src/app/p/[slug]/gift/actions.ts) --
+    // reuses travelersRange, tripUnavailable, noPriceSet,
+    // couldntCheckDiscount, invalidDiscountCode, couldntStartPayment.
+    recipientNameRequired: "Please enter who this gift is for.",
+    recipientContactRequired: "Please enter how we'd reach the recipient.",
+    tripNotGiftable: "This trip can't be gifted online yet -- please contact us.",
+    couldntCreateGiftVoucher: (msg: string) => `Couldn't create your gift voucher: ${msg}`,
   },
   // Shared by src/app/forgot-password + src/app/reset-password and
   // their /id counterparts. This flow is used by customers, staff, and

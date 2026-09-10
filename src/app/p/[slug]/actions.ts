@@ -13,6 +13,7 @@ import { OTHER_MEETING_POINT_VALUE, type CarPackage, type CarType, type MeetingP
 import { hasEnoughLeadTime, pickupDatetimeInBusinessTimezone, tripStartFromDate } from "@/lib/products/leadTime";
 import type { Product } from "@/lib/products/types";
 import { getDictionary } from "@/lib/i18n/getDictionary";
+import { recordReferralAttribution } from "@/lib/agents/referralAttribution";
 
 export async function startCheckoutAction(productId: string, slug: string, formData: FormData) {
   const date = String(formData.get("date") ?? "");
@@ -213,6 +214,12 @@ export async function startCheckoutAction(productId: string, slug: string, formD
     await releaseReservations();
     fail(dict.couldntCreateBooking(insertError.message));
   }
+
+  await recordReferralAttribution(serviceClient, {
+    agentId: referredByAgentId,
+    referralCode: referralCodeInput,
+    bookingId,
+  });
 
   redirect(invoice.invoice_url);
 }
@@ -466,6 +473,12 @@ export async function startCarHireCheckoutAction(productId: string, slug: string
     fail(dict.couldntCreateBooking(insertError.message));
   }
 
+  await recordReferralAttribution(serviceClient, {
+    agentId: referredByAgentId,
+    referralCode: referralCodeInput,
+    bookingId,
+  });
+
   redirect(invoice.invoice_url);
 }
 
@@ -712,6 +725,12 @@ export async function startTransportCheckoutAction(productId: string, slug: stri
     await releaseDiscount();
     fail(dict.couldntCreateBooking(insertError.message));
   }
+
+  await recordReferralAttribution(serviceClient, {
+    agentId: referredByAgentId,
+    referralCode: referralCodeInput,
+    bookingId,
+  });
 
   redirect(invoice.invoice_url);
 }

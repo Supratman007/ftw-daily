@@ -299,6 +299,27 @@ export const id = {
     chooseVehicle: "Silakan pilih kendaraan/layanan.",
     dropoffAreaUnavailable: "Area tujuan itu sudah tidak tersedia — silakan pilih area lain.",
     noPriceForRoute: "Kami belum memiliki harga tetap untuk rute itu — silakan hubungi kami untuk penawaran.",
+    tripBookableAlready: "Perjalanan ini bisa langsung dipesan — silakan gunakan formulir pemesanan biasa.",
+    needMoreLeadTimeRequest: (hours: number) =>
+      `Kami memerlukan pemberitahuan minimal ${hours} jam untuk meninjau permintaan untuk perjalanan ini — silakan pilih tanggal yang lebih lambat, atau hubungi kami langsung untuk permintaan mendadak.`,
+    travelerFullNameRequired: (n: number) => `Silakan masukkan nama lengkap wisatawan ${n}.`,
+    travelerPassportRequired: (n: number) => `Silakan unggah paspor wisatawan ${n}.`,
+    travelerPassportFileType: (n: number) => `Paspor wisatawan ${n} harus berupa JPG, PNG, atau PDF.`,
+    travelerPassportTooLarge: (n: number) => `Paspor wisatawan ${n} harus lebih kecil dari 5MB.`,
+    travelerInsuranceRequired: (n: number) => `Silakan pilih asuransi untuk wisatawan ${n}.`,
+    travelerInsuranceDetailsRequired: (n: number) =>
+      `Silakan masukkan nomor polis asuransi dan perusahaan untuk wisatawan ${n}, atau pilih asuransi taman sebagai gantinya.`,
+    couldntSubmitRequest: (msg: string) => `Tidak dapat mengirim permintaan Anda: ${msg}`,
+    requestReceivedTravelerSaveFailed: (msg: string) =>
+      `Permintaan diterima, tetapi kami tidak dapat menyimpan detail wisatawan Anda (${msg}). Silakan hubungi kami dan kami akan membantu Anda menyelesaikannya.`,
+    requestReceivedPassportLinkFailed: (msg: string) =>
+      `Permintaan diterima, tetapi kami tidak dapat menyelesaikan penautan unggahan paspor Anda (${msg}). Silakan hubungi kami dan kami akan membantu Anda menyelesaikannya.`,
+    requestReceivedPassportUploadFailed:
+      "Permintaan diterima, tetapi salah satu unggahan paspor Anda gagal. Silakan hubungi kami dan kami akan membantu Anda menyelesaikannya.",
+    recipientNameRequired: "Silakan masukkan untuk siapa hadiah ini.",
+    recipientContactRequired: "Silakan masukkan cara kami menghubungi penerima.",
+    tripNotGiftable: "Perjalanan ini belum bisa dihadiahkan secara online — silakan hubungi kami.",
+    couldntCreateGiftVoucher: (msg: string) => `Tidak dapat membuat voucher hadiah Anda: ${msg}`,
   },
   passwordReset: {
     siteName: "Adventure Lombok Booking",

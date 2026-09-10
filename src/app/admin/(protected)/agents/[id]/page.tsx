@@ -51,6 +51,27 @@ export default async function AdminAgentDetailPage({
       : null,
   ]);
 
+  // Spec §13's audit log -- "which booking, which agent, which cookie,
+  // timestamped, so disputes are resolvable." Every row here was
+  // written the moment a booking/gift voucher carrying this agent's
+  // referral was actually created (src/lib/agents/referralAttribution.ts);
+  // nothing in this app ever edits or deletes one afterward.
+  const { data: attributionRows } = await serviceClient
+    .from("referral_attributions")
+    .select(
+      "id, referral_code, created_at, bookings(booking_code, products(title)), gift_vouchers(redemption_code, products(title))"
+    )
+    .eq("agent_id", id)
+    .order("created_at", { ascending: false })
+    .limit(50);
+  const attributions = (attributionRows ?? []) as unknown as Array<{
+    id: string;
+    referral_code: string;
+    created_at: string;
+    bookings: { booking_code: string; products: { title: string } | null } | null;
+    gift_vouchers: { redemption_code: string; products: { title: string } | null } | null;
+  }>;
+
   return (
     <div>
       <Link href="/admin/agents" className="text-sm font-semibold text-teal hover:underline">
@@ -198,6 +219,46 @@ export default async function AdminAgentDetailPage({
           ) : (
             <p className="text-sm text-ink-soft">No business license on file.</p>
           ))}
+      </div>
+
+      <h2 className="mt-8 font-serif text-lg font-semibold text-ink">Attribution log</h2>
+      <p className="mt-1 text-xs text-ink-soft">
+        Every booking or gift voucher this agent has been credited for, timestamped, for resolving a
+        commission dispute. Most recent 50.
+      </p>
+      <div className="mt-2 overflow-x-auto rounded-lg border border-sand-deep bg-white">
+        <table className="w-full min-w-[500px] text-left text-sm">
+          <thead className="bg-sand text-xs uppercase text-ink-soft">
+            <tr>
+              <th className="px-4 py-2">When</th>
+              <th className="px-4 py-2">Referral code used</th>
+              <th className="px-4 py-2">Booking / voucher</th>
+              <th className="px-4 py-2">Trip</th>
+            </tr>
+          </thead>
+          <tbody>
+            {attributions.length === 0 ? (
+              <tr>
+                <td colSpan={4} className="px-4 py-6 text-center text-ink-soft">
+                  No attributions recorded yet.
+                </td>
+              </tr>
+            ) : (
+              attributions.map((a) => (
+                <tr key={a.id} className="border-t border-sand-deep">
+                  <td className="px-4 py-2 text-ink-soft">{new Date(a.created_at).toLocaleString()}</td>
+                  <td className="px-4 py-2 font-mono text-xs text-ink">{a.referral_code}</td>
+                  <td className="px-4 py-2 text-ink">
+                    {a.bookings?.booking_code ?? a.gift_vouchers?.redemption_code ?? "—"}
+                  </td>
+                  <td className="px-4 py-2 text-ink-soft">
+                    {a.bookings?.products?.title ?? a.gift_vouchers?.products?.title ?? "—"}
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
       </div>
     </div>
   );
