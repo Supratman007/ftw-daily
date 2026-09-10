@@ -12,6 +12,7 @@ import { REFERRAL_COOKIE_NAME } from "@/lib/agents/referralCookie";
 import { OTHER_MEETING_POINT_VALUE, type CarPackage, type CarType, type MeetingPoint } from "@/lib/cars/types";
 import { hasEnoughLeadTime, pickupDatetimeInBusinessTimezone, tripStartFromDate } from "@/lib/products/leadTime";
 import type { Product } from "@/lib/products/types";
+import { getDictionary } from "@/lib/i18n/getDictionary";
 
 export async function startCheckoutAction(productId: string, slug: string, formData: FormData) {
   const date = String(formData.get("date") ?? "");
@@ -28,6 +29,7 @@ export async function startCheckoutAction(productId: string, slug: string, formD
   // instead of dropping them back to English mid-checkout.
   const locale = formData.get("locale") === "id" ? "id" : "en";
   const pathPrefix = locale === "id" ? "/id" : "";
+  const dict = getDictionary(locale).checkoutErrors;
 
   // No visible/editable field for this -- it's entirely automatic, off
   // the 30-day cookie proxy.ts sets from ?ref=CODE, same as any other
@@ -47,10 +49,10 @@ export async function startCheckoutAction(productId: string, slug: string, formD
   }
 
   if (!date || Number.isNaN(Date.parse(date))) {
-    fail("Please choose a valid date.");
+    fail(dict.invalidDate);
   }
   if (!pax || pax < 1 || pax > 20) {
-    fail("Please choose between 1 and 20 travelers.");
+    fail(dict.travelersRange);
   }
 
   const supabase = await createSupabaseServerClient();
@@ -62,19 +64,17 @@ export async function startCheckoutAction(productId: string, slug: string, formD
     .maybeSingle();
 
   if (!product) {
-    fail("This trip is no longer available.");
+    fail(dict.tripUnavailable);
   }
   const p = product as Product;
   if (!p.is_bookable) {
-    fail("This trip needs manual confirmation and can't be booked online yet.");
+    fail(dict.needsManualConfirmation);
   }
   if (p.adult_price_usd == null) {
-    fail("This trip doesn't have a price set yet — please contact us.");
+    fail(dict.noPriceSet);
   }
   if (!hasEnoughLeadTime(tripStartFromDate(date), p.min_lead_hours)) {
-    fail(
-      `We need at least ${p.min_lead_hours} hours' notice to book this trip -- please choose a later date, or contact us directly for a last-minute request.`
-    );
+    fail(dict.needMoreLeadTimeTrip(p.min_lead_hours));
   }
 
   // The atomic, race-safe capacity check (spec §13) -- must run before
@@ -92,10 +92,10 @@ export async function startCheckoutAction(productId: string, slug: string, formD
   );
 
   if (reserveError) {
-    fail(`Couldn't check availability: ${reserveError.message}`);
+    fail(dict.couldntCheckAvailability(reserveError.message));
   }
   if (!reserved) {
-    fail("Sorry, that date is fully booked. Please try a different date.");
+    fail(dict.fullyBooked);
   }
 
   const subtotalUsd = p.adult_price_usd * pax;
@@ -116,7 +116,7 @@ export async function startCheckoutAction(productId: string, slug: string, formD
         p_slot_date: date,
         p_pax: pax,
       });
-      fail(`Couldn't check that discount code: ${discountError.message}`);
+      fail(dict.couldntCheckDiscount(discountError.message));
     }
 
     const discountRow = discountRows?.[0];
@@ -126,7 +126,7 @@ export async function startCheckoutAction(productId: string, slug: string, formD
         p_slot_date: date,
         p_pax: pax,
       });
-      fail("That discount code isn't valid, has expired, or has already been fully used.");
+      fail(dict.invalidDiscountCode);
     }
 
     discountCodeId = discountRow.id;
@@ -185,7 +185,7 @@ export async function startCheckoutAction(productId: string, slug: string, formD
     });
   } catch (err) {
     await releaseReservations();
-    fail(`Couldn't start payment: ${(err as Error).message}`);
+    fail(dict.couldntStartPayment((err as Error).message));
   }
 
   const { error: insertError } = await supabase.from("bookings").insert({
@@ -211,7 +211,7 @@ export async function startCheckoutAction(productId: string, slug: string, formD
 
   if (insertError) {
     await releaseReservations();
-    fail(`Couldn't create your booking: ${insertError.message}`);
+    fail(dict.couldntCreateBooking(insertError.message));
   }
 
   redirect(invoice.invoice_url);
@@ -248,6 +248,7 @@ export async function startCarHireCheckoutAction(productId: string, slug: string
   // got bounced to the English login page and English error redirects.
   const locale = formData.get("locale") === "id" ? "id" : "en";
   const pathPrefix = locale === "id" ? "/id" : "";
+  const dict = getDictionary(locale).checkoutErrors;
 
   const cookieStore = await cookies();
   const referralCodeInput = cookieStore.get(REFERRAL_COOKIE_NAME)?.value?.trim() ?? "";
@@ -260,16 +261,16 @@ export async function startCarHireCheckoutAction(productId: string, slug: string
 
   const isOtherMeetingPoint = meetingPointIdInput === OTHER_MEETING_POINT_VALUE;
   if (!isOtherMeetingPoint && !meetingPointIdInput) {
-    fail("Please choose a pickup area.");
+    fail(dict.choosePickupArea);
   }
   if (isOtherMeetingPoint && !meetingPointCustom) {
-    fail("Please tell us your pickup location.");
+    fail(dict.tellUsPickupLocation);
   }
   if (!passengerName) {
-    fail("Please tell us who's traveling.");
+    fail(dict.tellUsWhosTraveling);
   }
   if (paxCount < 1) {
-    fail("Please choose how many passengers are traveling.");
+    fail(dict.choosePassengerCount);
   }
   // At least a few digits -- not a strict phone format check (customers
   // type these every possible way: spaces, dashes, with/without "+"),
@@ -277,15 +278,15 @@ export async function startCarHireCheckoutAction(productId: string, slug: string
   // driver messaging this number on arrival is the whole point of
   // asking for it.
   if (pickupWhatsappNumber.replace(/\D/g, "").length < 8) {
-    fail("Please enter a valid WhatsApp number so your driver can reach you.");
+    fail(dict.validWhatsapp);
   }
 
   if (!pickupDate || !pickupTime) {
-    fail("Please choose a valid pickup date and time.");
+    fail(dict.validPickupDateTime);
   }
   const pickupDatetime = pickupDatetimeInBusinessTimezone(pickupDate, pickupTime);
   if (Number.isNaN(pickupDatetime.getTime())) {
-    fail("Please choose a valid pickup date and time.");
+    fail(dict.validPickupDateTime);
   }
 
   const supabase = await createSupabaseServerClient();
@@ -296,13 +297,11 @@ export async function startCarHireCheckoutAction(productId: string, slug: string
     .eq("status", "active")
     .maybeSingle();
   if (!product || (product as Product).product_type !== "car_hire" || !(product as Product).is_bookable) {
-    fail("This car isn't available to book online right now.");
+    fail(dict.carUnavailable);
   }
   const p = product as Product;
   if (!hasEnoughLeadTime(pickupDatetime, p.min_lead_hours)) {
-    fail(
-      `We need at least ${p.min_lead_hours} hours' notice for pickup -- please choose a later time, or contact us directly for a last-minute request.`
-    );
+    fail(dict.needMoreLeadTimePickup(p.min_lead_hours));
   }
 
   const { data: carType } = await supabase
@@ -312,11 +311,11 @@ export async function startCarHireCheckoutAction(productId: string, slug: string
     .eq("product_id", p.id)
     .maybeSingle();
   if (!carType) {
-    fail("Please choose a car.");
+    fail(dict.chooseCar);
   }
   const ct = carType as CarType;
   if (paxCount > ct.capacity_tier) {
-    fail(`${ct.name} seats up to ${ct.capacity_tier} -- please choose a bigger car or fewer passengers.`);
+    fail(dict.capacityExceeded(ct.name, ct.capacity_tier));
   }
 
   const { data: carPackage } = await supabase
@@ -326,7 +325,7 @@ export async function startCarHireCheckoutAction(productId: string, slug: string
     .eq("car_type_id", ct.id)
     .maybeSingle();
   if (!carPackage) {
-    fail("Please choose a duration.");
+    fail(dict.chooseDuration);
   }
   const pkg = carPackage as CarPackage;
 
@@ -339,7 +338,7 @@ export async function startCarHireCheckoutAction(productId: string, slug: string
       .eq("status", "active")
       .maybeSingle();
     if (!meetingPointData) {
-      fail("That pickup area isn't available anymore -- please pick another.");
+      fail(dict.pickupAreaUnavailable);
     }
     meetingPoint = meetingPointData as MeetingPoint;
   }
@@ -361,7 +360,7 @@ export async function startCarHireCheckoutAction(productId: string, slug: string
     priceIdr = priceRow?.price_idr ?? null;
   }
   if (priceIdr === null) {
-    fail("We don't have a set price for that combination yet -- please contact us for a quote.");
+    fail(dict.noPriceForCombination);
   }
 
   const subtotalUsd = idrToUsd(priceIdr);
@@ -375,11 +374,11 @@ export async function startCarHireCheckoutAction(productId: string, slug: string
       { p_code: discountCodeInput }
     );
     if (discountError) {
-      fail(`Couldn't check that discount code: ${discountError.message}`);
+      fail(dict.couldntCheckDiscount(discountError.message));
     }
     const discountRow = discountRows?.[0];
     if (!discountRow) {
-      fail("That discount code isn't valid, has expired, or has already been fully used.");
+      fail(dict.invalidDiscountCode);
     }
     discountCodeId = discountRow.id;
     discountAmountUsd =
@@ -427,7 +426,7 @@ export async function startCarHireCheckoutAction(productId: string, slug: string
     });
   } catch (err) {
     await releaseDiscount();
-    fail(`Couldn't start payment: ${(err as Error).message}`);
+    fail(dict.couldntStartPayment((err as Error).message));
   }
 
   const { error: insertError } = await supabase.from("bookings").insert({
@@ -464,7 +463,7 @@ export async function startCarHireCheckoutAction(productId: string, slug: string
 
   if (insertError) {
     await releaseDiscount();
-    fail(`Couldn't create your booking: ${insertError.message}`);
+    fail(dict.couldntCreateBooking(insertError.message));
   }
 
   redirect(invoice.invoice_url);
@@ -494,6 +493,7 @@ export async function startTransportCheckoutAction(productId: string, slug: stri
   // above.
   const locale = formData.get("locale") === "id" ? "id" : "en";
   const pathPrefix = locale === "id" ? "/id" : "";
+  const dict = getDictionary(locale).checkoutErrors;
 
   const cookieStore = await cookies();
   const referralCodeInput = cookieStore.get(REFERRAL_COOKIE_NAME)?.value?.trim() ?? "";
@@ -506,37 +506,37 @@ export async function startTransportCheckoutAction(productId: string, slug: stri
 
   const isOtherMeetingPoint = meetingPointIdInput === OTHER_MEETING_POINT_VALUE;
   if (!isOtherMeetingPoint && !meetingPointIdInput) {
-    fail("Please choose a pickup area.");
+    fail(dict.choosePickupArea);
   }
   if (isOtherMeetingPoint && !meetingPointCustom) {
-    fail("Please tell us your pickup location.");
+    fail(dict.tellUsPickupLocation);
   }
   const isOtherDropoff = dropoffIdInput === OTHER_MEETING_POINT_VALUE;
   if (!isOtherDropoff && !dropoffIdInput) {
-    fail("Please choose a drop-off area.");
+    fail(dict.chooseDropoffArea);
   }
   if (isOtherDropoff && !dropoffCustom) {
-    fail("Please tell us your drop-off location.");
+    fail(dict.tellUsDropoffLocation);
   }
   if (!isOtherMeetingPoint && !isOtherDropoff && meetingPointIdInput === dropoffIdInput) {
-    fail("Pickup and drop-off can't be the same area.");
+    fail(dict.samePickupDropoff);
   }
   if (!passengerName) {
-    fail("Please tell us who's traveling.");
+    fail(dict.tellUsWhosTraveling);
   }
   if (paxCount < 1 || paxCount > 20) {
-    fail("Please choose between 1 and 20 passengers.");
+    fail(dict.passengersRange);
   }
   if (pickupWhatsappNumber.replace(/\D/g, "").length < 8) {
-    fail("Please enter a valid WhatsApp number so your driver can reach you.");
+    fail(dict.validWhatsapp);
   }
 
   if (!pickupDate || !pickupTime) {
-    fail("Please choose a valid pickup date and time.");
+    fail(dict.validPickupDateTime);
   }
   const pickupDatetime = pickupDatetimeInBusinessTimezone(pickupDate, pickupTime);
   if (Number.isNaN(pickupDatetime.getTime())) {
-    fail("Please choose a valid pickup date and time.");
+    fail(dict.validPickupDateTime);
   }
 
   const supabase = await createSupabaseServerClient();
@@ -547,13 +547,11 @@ export async function startTransportCheckoutAction(productId: string, slug: stri
     .eq("status", "active")
     .maybeSingle();
   if (!product || (product as Product).product_type !== "transport" || !(product as Product).is_bookable) {
-    fail("This isn't available to book online right now.");
+    fail(dict.transportUnavailable);
   }
   const p = product as Product;
   if (!hasEnoughLeadTime(pickupDatetime, p.min_lead_hours)) {
-    fail(
-      `We need at least ${p.min_lead_hours} hours' notice for pickup -- please choose a later time, or contact us directly for a last-minute request.`
-    );
+    fail(dict.needMoreLeadTimePickup(p.min_lead_hours));
   }
 
   const { data: vehicleType } = await supabase
@@ -563,7 +561,7 @@ export async function startTransportCheckoutAction(productId: string, slug: stri
     .eq("product_id", p.id)
     .maybeSingle();
   if (!vehicleType) {
-    fail("Please choose a vehicle/service option.");
+    fail(dict.chooseVehicle);
   }
 
   let meetingPoint: MeetingPoint | null = null;
@@ -575,7 +573,7 @@ export async function startTransportCheckoutAction(productId: string, slug: stri
       .eq("status", "active")
       .maybeSingle();
     if (!meetingPointData) {
-      fail("That pickup area isn't available anymore -- please pick another.");
+      fail(dict.pickupAreaUnavailable);
     }
     meetingPoint = meetingPointData as MeetingPoint;
   }
@@ -589,7 +587,7 @@ export async function startTransportCheckoutAction(productId: string, slug: stri
       .eq("status", "active")
       .maybeSingle();
     if (!dropoffData) {
-      fail("That drop-off area isn't available anymore -- please pick another.");
+      fail(dict.dropoffAreaUnavailable);
     }
     dropoffPoint = dropoffData as MeetingPoint;
   }
@@ -615,7 +613,7 @@ export async function startTransportCheckoutAction(productId: string, slug: stri
     priceIdr = exact?.price_idr ?? reverse?.price_idr ?? null;
   }
   if (priceIdr === null) {
-    fail("We don't have a set price for that route yet -- please contact us for a quote.");
+    fail(dict.noPriceForRoute);
   }
 
   const subtotalUsd = idrToUsd(priceIdr);
@@ -629,11 +627,11 @@ export async function startTransportCheckoutAction(productId: string, slug: stri
       { p_code: discountCodeInput }
     );
     if (discountError) {
-      fail(`Couldn't check that discount code: ${discountError.message}`);
+      fail(dict.couldntCheckDiscount(discountError.message));
     }
     const discountRow = discountRows?.[0];
     if (!discountRow) {
-      fail("That discount code isn't valid, has expired, or has already been fully used.");
+      fail(dict.invalidDiscountCode);
     }
     discountCodeId = discountRow.id;
     discountAmountUsd =
@@ -677,7 +675,7 @@ export async function startTransportCheckoutAction(productId: string, slug: stri
     });
   } catch (err) {
     await releaseDiscount();
-    fail(`Couldn't start payment: ${(err as Error).message}`);
+    fail(dict.couldntStartPayment((err as Error).message));
   }
 
   const { error: insertError } = await supabase.from("bookings").insert({
@@ -712,7 +710,7 @@ export async function startTransportCheckoutAction(productId: string, slug: stri
 
   if (insertError) {
     await releaseDiscount();
-    fail(`Couldn't create your booking: ${insertError.message}`);
+    fail(dict.couldntCreateBooking(insertError.message));
   }
 
   redirect(invoice.invoice_url);

@@ -271,6 +271,53 @@ export const en = {
     forAQuote: "for a quote.",
     continueToCheckout: "Continue to checkout",
   },
+  // Server-side validation messages for the three checkout Server
+  // Actions (startCheckoutAction, startCarHireCheckoutAction,
+  // startTransportCheckoutAction in src/app/p/[slug]/actions.ts) --
+  // each reads the visitor's own hidden `locale` field (same as every
+  // other checkout-style form) to pick the right language here. A few
+  // keys wrap a dynamic third-party/DB error message (couldntXxx) --
+  // only the wrapper text is translated; the embedded message itself
+  // stays whatever language it came in, same "no reliable way to
+  // translate that" reasoning as everywhere else in this app.
+  checkoutErrors: {
+    invalidDate: "Please choose a valid date.",
+    travelersRange: "Please choose between 1 and 20 travelers.",
+    tripUnavailable: "This trip is no longer available.",
+    needsManualConfirmation: "This trip needs manual confirmation and can't be booked online yet.",
+    noPriceSet: "This trip doesn't have a price set yet — please contact us.",
+    needMoreLeadTimeTrip: (hours: number) =>
+      `We need at least ${hours} hours' notice to book this trip -- please choose a later date, or contact us directly for a last-minute request.`,
+    couldntCheckAvailability: (msg: string) => `Couldn't check availability: ${msg}`,
+    fullyBooked: "Sorry, that date is fully booked. Please try a different date.",
+    couldntCheckDiscount: (msg: string) => `Couldn't check that discount code: ${msg}`,
+    invalidDiscountCode: "That discount code isn't valid, has expired, or has already been fully used.",
+    couldntStartPayment: (msg: string) => `Couldn't start payment: ${msg}`,
+    couldntCreateBooking: (msg: string) => `Couldn't create your booking: ${msg}`,
+    choosePickupArea: "Please choose a pickup area.",
+    tellUsPickupLocation: "Please tell us your pickup location.",
+    tellUsWhosTraveling: "Please tell us who's traveling.",
+    choosePassengerCount: "Please choose how many passengers are traveling.",
+    validWhatsapp: "Please enter a valid WhatsApp number so your driver can reach you.",
+    validPickupDateTime: "Please choose a valid pickup date and time.",
+    carUnavailable: "This car isn't available to book online right now.",
+    needMoreLeadTimePickup: (hours: number) =>
+      `We need at least ${hours} hours' notice for pickup -- please choose a later time, or contact us directly for a last-minute request.`,
+    chooseCar: "Please choose a car.",
+    capacityExceeded: (carName: string, capacity: number) =>
+      `${carName} seats up to ${capacity} -- please choose a bigger car or fewer passengers.`,
+    chooseDuration: "Please choose a duration.",
+    pickupAreaUnavailable: "That pickup area isn't available anymore -- please pick another.",
+    noPriceForCombination: "We don't have a set price for that combination yet -- please contact us for a quote.",
+    chooseDropoffArea: "Please choose a drop-off area.",
+    tellUsDropoffLocation: "Please tell us your drop-off location.",
+    samePickupDropoff: "Pickup and drop-off can't be the same area.",
+    passengersRange: "Please choose between 1 and 20 passengers.",
+    transportUnavailable: "This isn't available to book online right now.",
+    chooseVehicle: "Please choose a vehicle/service option.",
+    dropoffAreaUnavailable: "That drop-off area isn't available anymore -- please pick another.",
+    noPriceForRoute: "We don't have a set price for that route yet -- please contact us for a quote.",
+  },
   // Shared by src/app/forgot-password + src/app/reset-password and
   // their /id counterparts. This flow is used by customers, staff, and
   // Sales Agents alike (see reset-password/actions.ts's role check) --
