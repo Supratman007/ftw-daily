@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { customerLogoutAction } from "@/app/actions";
 import { getDictionary } from "@/lib/i18n/getDictionary";
@@ -47,11 +48,8 @@ export async function SiteHeader({ locale = DEFAULT_LOCALE }: { locale?: Locale 
 
   return (
     <header className="flex items-center justify-between border-b border-sand-deep bg-white px-6 py-4">
-      <Link
-        href={locale === "en" ? "/" : "/id"}
-        className="font-mono text-xs uppercase tracking-widest text-ink-soft hover:text-ink"
-      >
-        {dict.siteName}
+      <Link href={locale === "en" ? "/" : "/id"} className="flex items-center">
+        <Image src="/logo.jpg" alt={dict.siteName} width={120} height={36} preload />
       </Link>
       <div className="text-sm">
         {user ? (
