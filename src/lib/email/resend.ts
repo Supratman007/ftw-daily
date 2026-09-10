@@ -1794,6 +1794,52 @@ export async function sendAdminNewReviewEmail(params: AdminNewReviewEmailParams)
   });
 }
 
+interface ErrorAlertEmailParams {
+  toEmail: string;
+  source: "server" | "client";
+  message: string;
+  routePath?: string | null;
+  routeType?: string | null;
+  /** How many times this exact error has now happened (see
+   * error_alerts.occurrence_count) -- lets an admin tell "just
+   * happened once" apart from "been happening for a while and I'm
+   * only now hearing about it" (the cooldown in
+   * src/lib/alerts/errorAlerts.ts throttles the emails, not the
+   * count). */
+  occurrenceCount: number;
+  siteUrl: string;
+}
+
+/**
+ * Spec's "find out from an email, not from a customer" error alert --
+ * see src/lib/alerts/errorAlerts.ts for the throttling/dedup this is
+ * called from. Deliberately plain and technical (this is a bug report
+ * for the person fixing the bug, not a customer-facing email) rather
+ * than styled like the rest of this file's templates.
+ */
+export async function sendErrorAlertEmail(params: ErrorAlertEmailParams): Promise<void> {
+  const html = `
+    <div style="font-family: sans-serif; max-width: 560px; margin: 0 auto;">
+      <h1 style="color: #B3441E;">⚠️ Something broke on the site</h1>
+      <table style="width: 100%; border-collapse: collapse; margin: 16px 0;">
+        <tr><td style="padding: 6px 0; color: #4B5854;">Where</td><td style="padding: 6px 0; text-align: right;">${escapeHtml(params.routePath ?? "unknown page")}</td></tr>
+        <tr><td style="padding: 6px 0; color: #4B5854;">Type</td><td style="padding: 6px 0; text-align: right;">${escapeHtml(params.source)}${params.routeType ? ` / ${escapeHtml(params.routeType)}` : ""}</td></tr>
+        <tr><td style="padding: 6px 0; color: #4B5854;">Happened</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">${params.occurrenceCount} time${params.occurrenceCount === 1 ? "" : "s"} so far</td></tr>
+      </table>
+      <p style="color: #4B5854;">Error message:</p>
+      <pre style="background: #F5F1EA; padding: 12px; border-radius: 8px; white-space: pre-wrap; word-break: break-word; font-size: 13px; color: #1A231F;">${escapeHtml(params.message)}</pre>
+      <p style="color: #4B5854; font-size: 13px;">You won't get another email about this exact error for a while even if it keeps happening -- this just stops your inbox from being flooded by the same bug.</p>
+      <p><a href="${params.siteUrl}" style="color: #1E7A73;">${params.siteUrl}</a></p>
+    </div>
+  `;
+
+  await sendEmail({
+    to: params.toEmail,
+    subject: `⚠️ Site error — ${params.routePath ?? "unknown page"}`,
+    html,
+  });
+}
+
 function escapeHtml(input: string): string {
   return input
     .replace(/&/g, "&amp;")
