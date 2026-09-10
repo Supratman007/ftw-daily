@@ -101,69 +101,126 @@ export async function ProductPage({
   let transportPrices: TransportPrice[] = [];
   let meetingPoints: MeetingPoint[] = [];
 
-  if (isCarHire || isTransport) {
-    const { data: meetingPointsData } = await supabase
+  // Everything below only depends on p.id/p.product_type, never on each
+  // other's results, with one exception: car_packages needs the
+  // car_types it filters by, and car_package_prices needs the
+  // car_packages it filters by (same for transport_prices needing
+  // transport_vehicle_types) -- those stay a genuine sequential chain.
+  // Running the *independent* branches (meeting points, the pricing
+  // chain, and reviews) concurrently instead of one after another cuts
+  // several round trips to Supabase down to whichever one is slowest,
+  // same Promise.all pattern SiteHeader.tsx already uses for its own
+  // two independent lookups.
+  async function fetchMeetingPoints(): Promise<MeetingPoint[]> {
+    const { data } = await supabase
       .from("meeting_points")
       .select("*")
       .eq("status", "active")
       .order("name", { ascending: true });
-    meetingPoints = (meetingPointsData ?? []) as MeetingPoint[];
+    return (data ?? []) as MeetingPoint[];
+  }
 
-    if (isCarHire) {
-      const { data: carTypesData } = await supabase
-        .from("car_types")
-        .select("*")
-        .eq("product_id", p.id)
-        .eq("status", "active")
-        .order("name", { ascending: true });
-      carTypes = (carTypesData ?? []) as CarType[];
-      const carTypeIds = carTypes.map((c) => c.id);
+  async function fetchCarPricing(): Promise<{
+    carTypes: CarType[];
+    carPackages: CarPackage[];
+    carPrices: CarPackagePrice[];
+  }> {
+    const { data: carTypesData } = await supabase
+      .from("car_types")
+      .select("*")
+      .eq("product_id", p.id)
+      .eq("status", "active")
+      .order("name", { ascending: true });
+    const fetchedCarTypes = (carTypesData ?? []) as CarType[];
+    const carTypeIds = fetchedCarTypes.map((c) => c.id);
 
-      const { data: packagesData } =
-        carTypeIds.length > 0
-          ? await supabase
-              .from("car_packages")
-              .select("*")
-              .in("car_type_id", carTypeIds)
-              .eq("status", "active")
-              .order("duration_hours", { ascending: true })
-          : { data: [] as CarPackage[] };
-      carPackages = (packagesData ?? []) as CarPackage[];
-      const packageIds = carPackages.map((pkg) => pkg.id);
+    const { data: packagesData } =
+      carTypeIds.length > 0
+        ? await supabase
+            .from("car_packages")
+            .select("*")
+            .in("car_type_id", carTypeIds)
+            .eq("status", "active")
+            .order("duration_hours", { ascending: true })
+        : { data: [] as CarPackage[] };
+    const fetchedCarPackages = (packagesData ?? []) as CarPackage[];
+    const packageIds = fetchedCarPackages.map((pkg) => pkg.id);
 
-      const { data: pricesData } =
-        packageIds.length > 0
-          ? await supabase.from("car_package_prices").select("*").in("car_package_id", packageIds)
-          : { data: [] as CarPackagePrice[] };
-      carPrices = (pricesData ?? []) as CarPackagePrice[];
-    } else {
-      const { data: vehicleTypesData } = await supabase
-        .from("transport_vehicle_types")
-        .select("*")
-        .eq("product_id", p.id)
-        .eq("status", "active")
-        .order("name", { ascending: true });
-      transportVehicleTypes = (vehicleTypesData ?? []) as TransportVehicleType[];
-      const vehicleTypeIds = transportVehicleTypes.map((v) => v.id);
+    const { data: pricesData } =
+      packageIds.length > 0
+        ? await supabase.from("car_package_prices").select("*").in("car_package_id", packageIds)
+        : { data: [] as CarPackagePrice[] };
 
-      const { data: transportPricesData } =
-        vehicleTypeIds.length > 0
-          ? await supabase.from("transport_prices").select("*").in("vehicle_type_id", vehicleTypeIds)
-          : { data: [] as TransportPrice[] };
-      transportPrices = (transportPricesData ?? []) as TransportPrice[];
-    }
+    return {
+      carTypes: fetchedCarTypes,
+      carPackages: fetchedCarPackages,
+      carPrices: (pricesData ?? []) as CarPackagePrice[],
+    };
+  }
+
+  async function fetchTransportPricing(): Promise<{
+    transportVehicleTypes: TransportVehicleType[];
+    transportPrices: TransportPrice[];
+  }> {
+    const { data: vehicleTypesData } = await supabase
+      .from("transport_vehicle_types")
+      .select("*")
+      .eq("product_id", p.id)
+      .eq("status", "active")
+      .order("name", { ascending: true });
+    const fetchedVehicleTypes = (vehicleTypesData ?? []) as TransportVehicleType[];
+    const vehicleTypeIds = fetchedVehicleTypes.map((v) => v.id);
+
+    const { data: transportPricesData } =
+      vehicleTypeIds.length > 0
+        ? await supabase.from("transport_prices").select("*").in("vehicle_type_id", vehicleTypeIds)
+        : { data: [] as TransportPrice[] };
+
+    return {
+      transportVehicleTypes: fetchedVehicleTypes,
+      transportPrices: (transportPricesData ?? []) as TransportPrice[],
+    };
   }
 
   // Spec §6d: published reviews and the average rating, shown on every
   // product type -- Car Hire and Transport bookings can be reviewed
   // too, not just Tours/Activities.
-  const { data: reviewsData } = await supabase
-    .from("reviews")
-    .select("id, rating, title, body, published_at")
-    .eq("product_id", p.id)
-    .eq("status", "published")
-    .order("published_at", { ascending: false });
-  const reviews = (reviewsData ?? []) as ProductReviewSummary[];
+  async function fetchReviews(): Promise<ProductReviewSummary[]> {
+    const { data } = await supabase
+      .from("reviews")
+      .select("id, rating, title, body, published_at")
+      .eq("product_id", p.id)
+      .eq("status", "published")
+      .order("published_at", { ascending: false });
+    return (data ?? []) as ProductReviewSummary[];
+  }
+
+  let reviews: ProductReviewSummary[];
+  if (isCarHire) {
+    const [mp, carPricing, reviewsResult] = await Promise.all([
+      fetchMeetingPoints(),
+      fetchCarPricing(),
+      fetchReviews(),
+    ]);
+    meetingPoints = mp;
+    carTypes = carPricing.carTypes;
+    carPackages = carPricing.carPackages;
+    carPrices = carPricing.carPrices;
+    reviews = reviewsResult;
+  } else if (isTransport) {
+    const [mp, transportPricing, reviewsResult] = await Promise.all([
+      fetchMeetingPoints(),
+      fetchTransportPricing(),
+      fetchReviews(),
+    ]);
+    meetingPoints = mp;
+    transportVehicleTypes = transportPricing.transportVehicleTypes;
+    transportPrices = transportPricing.transportPrices;
+    reviews = reviewsResult;
+  } else {
+    reviews = await fetchReviews();
+  }
+
   const averageRating =
     reviews.length > 0 ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length : null;
 
