@@ -216,7 +216,19 @@ export async function HomePage({
                       />
                     </div>
                   ) : (
-                    <div className="h-40 w-full bg-sand" />
+                    // A plain sand-colored block here used to be
+                    // indistinguishable from "the photo is broken" --
+                    // this makes it obvious at a glance that it's just
+                    // waiting on a photo upload in the admin panel, not
+                    // a bug.
+                    <div className="flex h-40 w-full flex-col items-center justify-center gap-1 bg-sand text-ink-soft">
+                      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <rect x="3" y="6" width="18" height="14" rx="2" />
+                        <path d="M8 6l1.5-2.5h5L16 6" />
+                        <circle cx="12" cy="13" r="3.5" />
+                      </svg>
+                      <span className="text-[11px]">{dict.photoComingSoon}</span>
+                    </div>
                   )}
                   <div className="flex flex-1 flex-col gap-1 p-4">
                     <p className="font-mono text-[11px] uppercase tracking-widest text-ink-soft">

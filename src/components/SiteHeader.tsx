@@ -4,6 +4,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { customerLogoutAction } from "@/app/actions";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import { DEFAULT_LOCALE, type Locale } from "@/lib/i18n/locales";
+import { SiteNav, type SiteNavLink } from "@/components/SiteNav";
 
 /**
  * Compact top bar shared across every customer-facing page (homepage,
@@ -46,11 +47,35 @@ export async function SiteHeader({ locale = DEFAULT_LOCALE }: { locale?: Locale 
     }
   }
 
+  // Home/Daily Tours/Daily Activities map onto real, always-populated
+  // fields (the homepage itself, and the product_type filter it
+  // already supports). Extension Trip/Komodo Trip/Bali Tours don't
+  // have a dedicated field yet -- there's no "trip category" or
+  // "destination" column, just free-text location/category -- so
+  // those search by keyword instead via the homepage's existing `q`
+  // text search (which already matches title, location and category).
+  // They'll show "no trips found" until products with matching
+  // location/category/title text exist, which is honest today and
+  // starts working the moment that content is added, rather than a
+  // dead link or a filter UI for categories that don't exist yet.
+  const basePath = locale === "en" ? "/" : "/id";
+  const browseLinks: SiteNavLink[] = [
+    { href: basePath, label: dict.navHome },
+    { href: `${basePath}?type=tour`, label: dict.navDailyTours },
+    { href: `${basePath}?type=activity`, label: dict.navDailyActivities },
+    { href: `${basePath}?q=${encodeURIComponent("Extension")}`, label: dict.navExtensionTrip },
+    { href: `${basePath}?q=${encodeURIComponent("Komodo")}`, label: dict.navKomodoTrip },
+    { href: `${basePath}?q=${encodeURIComponent("Bali")}`, label: dict.navBaliTours },
+  ];
+
   return (
-    <header className="flex flex-col gap-3 border-b border-sand-deep bg-white px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
-      <Link href={locale === "en" ? "/" : "/id"} className="flex shrink-0 items-center">
-        <Image src="/logo.jpg" alt={dict.siteName} width={120} height={36} className="h-8 w-auto sm:h-9" preload />
-      </Link>
+    <header className="relative flex flex-col gap-3 border-b border-sand-deep bg-white px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex items-center justify-between gap-3 sm:justify-start sm:gap-6">
+        <Link href={locale === "en" ? "/" : "/id"} className="flex shrink-0 items-center">
+          <Image src="/logo.jpg" alt={dict.siteName} width={120} height={36} className="h-8 w-auto sm:h-9" preload />
+        </Link>
+        <SiteNav links={browseLinks} openLabel={dict.openMenu} closeLabel={dict.closeMenu} />
+      </div>
       <div className="text-sm">
         {user ? (
           <div className="flex flex-wrap items-center gap-3 text-ink-soft">

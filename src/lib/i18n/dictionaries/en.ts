@@ -25,6 +25,19 @@ export const en = {
     agentDashboard: "Agent dashboard",
     logout: "Log out",
     becomeAgent: "Become a Sales Agent",
+    // The header's browse-by-category menu (hamburger on mobile, an
+    // inline row on desktop -- see SiteNav.tsx). "Daily Tours"/"Daily
+    // Activities" filter by the existing product_type field; the rest
+    // don't have a dedicated field yet, so they search by keyword
+    // instead -- see the navLinks() comment in SiteHeader.tsx.
+    navHome: "Home",
+    navDailyTours: "Daily Tours",
+    navDailyActivities: "Daily Activities",
+    navExtensionTrip: "Extension Trips",
+    navKomodoTrip: "Komodo Trip",
+    navBaliTours: "Bali Tours",
+    openMenu: "Open menu",
+    closeMenu: "Close menu",
   },
   home: {
     heroBadge: "Local Lombok tour operator · since 2006",
@@ -43,6 +56,7 @@ export const en = {
     resultsFound: (count: number) => `${count} trip${count === 1 ? "" : "s"} found`,
     noProductsYet: "No trips published yet — check back soon.",
     noResults: "No trips match those filters — try clearing one and searching again.",
+    photoComingSoon: "Photo coming soon",
   },
   product: {
     perPerson: "/ person",
@@ -67,6 +81,7 @@ export const en = {
     tripNotesHeading: "Good to know",
     relatedHeading: "You may also like",
     mobileBookingCta: "Check availability",
+    photoComingSoon: "Photo coming soon",
     reviewsHeading: "Reviews",
     reviewCount: (count: number) => `${count} review${count === 1 ? "" : "s"}`,
   },

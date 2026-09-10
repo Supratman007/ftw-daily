@@ -592,7 +592,14 @@ export async function ProductPage({
                     />
                   </div>
                 ) : (
-                  <div className="h-32 w-full bg-sand" />
+                  <div className="flex h-32 w-full flex-col items-center justify-center gap-1 bg-sand text-ink-soft">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <rect x="3" y="6" width="18" height="14" rx="2" />
+                      <path d="M8 6l1.5-2.5h5L16 6" />
+                      <circle cx="12" cy="13" r="3.5" />
+                    </svg>
+                    <span className="text-[10px]">{dict.photoComingSoon}</span>
+                  </div>
                 )}
                 <div className="flex flex-1 flex-col gap-1 p-3">
                   <p className="font-mono text-[10px] uppercase tracking-widest text-ink-soft">
