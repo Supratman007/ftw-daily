@@ -27,6 +27,14 @@ export const en = {
     becomeAgent: "Become a Sales Agent",
   },
   home: {
+    heroBadge: "Local Lombok tour operator · since 2006",
+    heroHeadline: "Your Lombok adventure starts here",
+    heroSubheadline:
+      "Book tours, activities, and more with Adventure Lombok Tour — secure online booking, real availability, local since 2006.",
+    trustLocal: "Local Lombok operator, since 2006",
+    trustAvailability: "Real-time availability",
+    trustSecure: "Secure online payment",
+    popularTrips: "Popular trips",
     searchPlaceholder: "Search trips, activities, locations…",
     allTypes: "All types",
     allLocations: "All locations",

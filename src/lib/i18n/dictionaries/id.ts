@@ -14,6 +14,14 @@ export const id = {
     becomeAgent: "Jadi Agen Penjualan",
   },
   home: {
+    heroBadge: "Operator tur lokal Lombok · sejak 2006",
+    heroHeadline: "Petualangan Lombok Anda dimulai di sini",
+    heroSubheadline:
+      "Pesan tur, aktivitas, dan lainnya bersama Adventure Lombok Tour — booking online aman, ketersediaan real-time, lokal sejak 2006.",
+    trustLocal: "Operator lokal Lombok, sejak 2006",
+    trustAvailability: "Ketersediaan real-time",
+    trustSecure: "Pembayaran online aman",
+    popularTrips: "Trip populer",
     searchPlaceholder: "Cari trip, aktivitas, lokasi…",
     allTypes: "Semua jenis",
     allLocations: "Semua lokasi",
