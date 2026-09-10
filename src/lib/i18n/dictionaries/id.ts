@@ -199,13 +199,14 @@ export const id = {
   },
   carHireForm: {
     carLabel: "Mobil",
-    seatsLabel: (n: number) => `${n} kursi`,
+    // Templates, not functions -- same reasoning as en.ts's carHireForm
+    // (this object crosses the Server->Client boundary as a plain prop).
+    seatsLabel: "{n} kursi",
     passengersLabel: "Jumlah penumpang",
-    capacityWarning: (carName: string, maxPax: number) =>
-      `${carName} muat hingga ${maxPax} penumpang — silakan pilih mobil lebih besar atau kurangi jumlah penumpang.`,
+    capacityWarning: "{car} muat hingga {max} penumpang — silakan pilih mobil lebih besar atau kurangi jumlah penumpang.",
     durationLabel: "Durasi",
     noDurationsOption: "Belum ada durasi yang diatur",
-    hoursLabel: (n: number) => `${n} jam`,
+    hoursLabel: "{n} jam",
     pickupAreaLabel: "Area penjemputan",
     askForPriceSuffix: " (tanya kami untuk harga)",
     otherOption: "Lainnya — tidak ada di daftar",
@@ -228,7 +229,7 @@ export const id = {
       "Dijemput dari bandara? Ini membantu sopir Anda melacak penerbangan Anda dan hadir saat Anda mendarat.",
     discountCodeLabel: "Kode diskon (opsional)",
     discountCodePlaceholder: "misalnya WELCOME10",
-    overtimeNotice: (rate: string) => `Lebih dari waktu? Biaya lembur ${rate}/jam, dibayar tunai ke sopir.`,
+    overtimeNotice: "Lebih dari waktu? Biaya lembur {rate}/jam, dibayar tunai ke sopir.",
     noPriceNotice: "Kami belum memiliki harga tetap untuk kombinasi itu.",
     messageUsOnWhatsapp: "Hubungi kami di WhatsApp",
     forAQuote: "untuk mendapatkan penawaran.",

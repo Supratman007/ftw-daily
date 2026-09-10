@@ -218,13 +218,18 @@ export const en = {
   // copy if either ever changes.
   carHireForm: {
     carLabel: "Car",
-    seatsLabel: (n: number) => `${n} seats`,
+    // Templates, not functions -- this whole object is passed from a
+    // Server Component (ProductPage.tsx) down to a "use client" form as
+    // a prop, and React refuses to serialize a function across that
+    // boundary ("Functions cannot be passed directly to Client
+    // Components..."). CarHireBookingForm.tsx fills in "{n}"/"{car}"/
+    // "{max}"/"{rate}" itself once it has the real values.
+    seatsLabel: "{n} seats",
     passengersLabel: "Number of passengers",
-    capacityWarning: (carName: string, maxPax: number) =>
-      `${carName} seats up to ${maxPax} — please choose a bigger car or fewer passengers.`,
+    capacityWarning: "{car} seats up to {max} — please choose a bigger car or fewer passengers.",
     durationLabel: "Duration",
     noDurationsOption: "No durations set up yet",
-    hoursLabel: (n: number) => `${n} hours`,
+    hoursLabel: "{n} hours",
     pickupAreaLabel: "Pickup area",
     askForPriceSuffix: " (ask us for a price)",
     otherOption: "Other — not on the list",
@@ -247,7 +252,7 @@ export const en = {
       "Picking up from the airport? This helps your driver track your flight and be there when you land.",
     discountCodeLabel: "Discount code (optional)",
     discountCodePlaceholder: "e.g. WELCOME10",
-    overtimeNotice: (rate: string) => `Running over? Overtime is ${rate}/hour, paid in cash to the driver.`,
+    overtimeNotice: "Running over? Overtime is {rate}/hour, paid in cash to the driver.",
     noPriceNotice: "We don't have a set price for that combination yet.",
     messageUsOnWhatsapp: "Message us on WhatsApp",
     forAQuote: "for a quote.",

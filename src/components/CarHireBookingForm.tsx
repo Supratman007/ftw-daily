@@ -14,6 +14,20 @@ import {
 const labelClass = "text-xs font-semibold uppercase tracking-wide text-ink-soft";
 const inputClass = "mt-1 w-full rounded-lg border border-sand-deep px-3 py-2 text-sm";
 
+/** Fills in a "{token}" placeholder template with a real value. Kept as
+ * a plain string-replace (not a template function) so these entries
+ * can live in the Dictionary object that ProductPage.tsx (a Server
+ * Component) passes down to this "use client" form as a prop --
+ * React refuses to serialize a function across that boundary
+ * ("Functions cannot be passed directly to Client Components..."),
+ * which is exactly the crash this replaced. */
+function fillTemplate(template: string, values: Record<string, string | number>): string {
+  return Object.entries(values).reduce(
+    (text, [token, value]) => text.replaceAll(`{${token}}`, String(value)),
+    template
+  );
+}
+
 /** This form's own fixed text (labels, placeholders, hints) --
  * separate from the app-wide Dictionary type (src/lib/i18n/
  * dictionaries/en.ts) since getDictionary() is server-only and this is
@@ -24,12 +38,15 @@ const inputClass = "mt-1 w-full rounded-lg border border-sand-deep px-3 py-2 tex
  * unchanged. */
 export interface CarHireFormDict {
   carLabel: string;
-  seatsLabel: (n: number) => string;
+  /** Template with a "{n}" token -- see fillTemplate. */
+  seatsLabel: string;
   passengersLabel: string;
-  capacityWarning: (carName: string, maxPax: number) => string;
+  /** Template with "{car}" and "{max}" tokens -- see fillTemplate. */
+  capacityWarning: string;
   durationLabel: string;
   noDurationsOption: string;
-  hoursLabel: (n: number) => string;
+  /** Template with a "{n}" token -- see fillTemplate. */
+  hoursLabel: string;
   pickupAreaLabel: string;
   askForPriceSuffix: string;
   otherOption: string;
@@ -50,7 +67,8 @@ export interface CarHireFormDict {
   flightHint: string;
   discountCodeLabel: string;
   discountCodePlaceholder: string;
-  overtimeNotice: (rate: string) => string;
+  /** Template with a "{rate}" token -- see fillTemplate. */
+  overtimeNotice: string;
   noPriceNotice: string;
   messageUsOnWhatsapp: string;
   forAQuote: string;
@@ -59,13 +77,12 @@ export interface CarHireFormDict {
 
 const DEFAULT_DICT: CarHireFormDict = {
   carLabel: "Car",
-  seatsLabel: (n) => `${n} seats`,
+  seatsLabel: "{n} seats",
   passengersLabel: "Number of passengers",
-  capacityWarning: (carName, maxPax) =>
-    `${carName} seats up to ${maxPax} — please choose a bigger car or fewer passengers.`,
+  capacityWarning: "{car} seats up to {max} — please choose a bigger car or fewer passengers.",
   durationLabel: "Duration",
   noDurationsOption: "No durations set up yet",
-  hoursLabel: (n) => `${n} hours`,
+  hoursLabel: "{n} hours",
   pickupAreaLabel: "Pickup area",
   askForPriceSuffix: " (ask us for a price)",
   otherOption: "Other — not on the list",
@@ -87,7 +104,7 @@ const DEFAULT_DICT: CarHireFormDict = {
   flightHint: "Picking up from the airport? This helps your driver track your flight and be there when you land.",
   discountCodeLabel: "Discount code (optional)",
   discountCodePlaceholder: "e.g. WELCOME10",
-  overtimeNotice: (rate) => `Running over? Overtime is ${rate}/hour, paid in cash to the driver.`,
+  overtimeNotice: "Running over? Overtime is {rate}/hour, paid in cash to the driver.",
   noPriceNotice: "We don't have a set price for that combination yet.",
   messageUsOnWhatsapp: "Message us on WhatsApp",
   forAQuote: "for a quote.",
@@ -188,7 +205,7 @@ export function CarHireBookingForm({
         >
           {carTypes.map((c) => (
             <option key={c.id} value={c.id}>
-              {c.name} — {dict.seatsLabel(c.capacity_tier)}
+              {c.name} — {fillTemplate(dict.seatsLabel, { n: c.capacity_tier })}
             </option>
           ))}
         </select>
@@ -208,7 +225,7 @@ export function CarHireBookingForm({
         />
         {paxTooMany && (
           <span className="mt-1 block text-[11px] font-normal normal-case text-coral-dark">
-            {dict.capacityWarning(selectedCarType?.name ?? "This car", maxPax)}
+            {fillTemplate(dict.capacityWarning, { car: selectedCarType?.name ?? "This car", max: maxPax })}
           </span>
         )}
       </label>
@@ -224,7 +241,7 @@ export function CarHireBookingForm({
           {packagesForCarType.length === 0 && <option value="">{dict.noDurationsOption}</option>}
           {packagesForCarType.map((p) => (
             <option key={p.id} value={p.id}>
-              {dict.hoursLabel(p.duration_hours)}
+              {fillTemplate(dict.hoursLabel, { n: p.duration_hours })}
             </option>
           ))}
         </select>
@@ -333,7 +350,7 @@ export function CarHireBookingForm({
             <div className="mt-1 font-serif text-xl font-bold text-ocean">{formatIdr(price.price_idr)}</div>
             {selectedPackage && selectedPackage.overtime_rate_per_hour_idr > 0 && (
               <p className="mt-1 text-xs text-ink-soft">
-                {dict.overtimeNotice(formatIdr(selectedPackage.overtime_rate_per_hour_idr))}
+                {fillTemplate(dict.overtimeNotice, { rate: formatIdr(selectedPackage.overtime_rate_per_hour_idr) })}
               </p>
             )}
           </>
