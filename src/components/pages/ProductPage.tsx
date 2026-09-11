@@ -267,14 +267,13 @@ export async function ProductPage({
   // the earlier icon-square pass on Highlights/Includes/Trip notes
   // further down the page didn't actually cover -- that upgraded
   // existing single-line bullet lists, this is a new summary block.
-  // On GetYourGuide it sits in the LEFT column, under the description,
+  // Sits in the LEFT column, ABOVE the description ("About this tour"),
   // running alongside the floating booking card on the right -- not as
-  // its own full-width band -- so this is built as a plain value here
-  // and dropped into each layout branch's left column below, right
-  // after the description paragraph, instead of being its own
-  // full-width section between the gallery and the two-column grid.
-  // Only ever shows facts that are genuinely true for THIS product
-  // from real fields already on it (duration, capacity, instant vs.
+  // its own full-width band between the gallery and this section, and
+  // not below the description either. Built as a plain value here and
+  // dropped into each layout branch's left column below, before the
+  // description paragraph. Only ever shows facts that are genuinely
+  // true for THIS product from real fields already on it (duration, capacity, instant vs.
   // manual confirmation, whether it's giftable) -- never a generic
   // claim like GYG's own "Reserve now & pay later" or a named tour
   // guide language we have no per-product data for. Hotel pickup is
@@ -368,7 +367,7 @@ export async function ProductPage({
     }
     if (facts.length === 0) return null;
     return (
-      <div className="mt-6 rounded-2xl border border-sand-deep bg-white p-6">
+      <div className="rounded-2xl border border-sand-deep bg-white p-6">
         <h2 className="font-serif text-lg font-semibold text-ink">{dict.tripEssentialsHeading}</h2>
         <div className="mt-4 grid gap-x-6 gap-y-4 sm:grid-cols-2">
           {facts.map((f, i) => (
@@ -456,12 +455,12 @@ export async function ProductPage({
       ) : (
       <div className="grid gap-8 md:grid-cols-[1.4fr_1fr]">
         <div>
+          {tripEssentialsPanel}
           {displayDescription && (
-            <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-ink-soft">
+            <p className={`whitespace-pre-wrap break-words text-sm leading-relaxed text-ink-soft ${tripEssentialsPanel ? "mt-6" : ""}`}>
               {displayDescription}
             </p>
           )}
-          {tripEssentialsPanel}
         </div>
 
         <div id="booking" className="h-fit rounded-2xl border border-sand-deep bg-white p-6">

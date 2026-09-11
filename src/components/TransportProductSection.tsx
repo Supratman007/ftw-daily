@@ -10,9 +10,10 @@ interface TransportProductSectionProps {
   description: string | null;
   /** The "Trip essentials" quick-facts panel, built by the parent page
    * (it needs product fields the parent already has) -- rendered here,
-   * in the left column right under the description, so it sits next
-   * to the floating booking card the same way GetYourGuide's does,
-   * instead of spanning the full page width above this section. */
+   * in the left column ABOVE the description, so it sits next to the
+   * floating booking card the same way GetYourGuide's does, instead of
+   * spanning the full page width above this section or sitting below
+   * the description. */
   essentialsPanel?: React.ReactNode;
   action: (formData: FormData) => void | Promise<void>;
   vehicleTypes: TransportVehicleType[];
@@ -62,12 +63,12 @@ export function TransportProductSection({
   return (
     <div className="grid gap-8 md:grid-cols-[1.4fr_1fr]">
       <div>
+        {essentialsPanel}
         {description && (
-          <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-ink-soft">
+          <p className={`whitespace-pre-wrap break-words text-sm leading-relaxed text-ink-soft ${essentialsPanel ? "mt-6" : ""}`}>
             {description}
           </p>
         )}
-        {essentialsPanel}
 
         {selectedVehicleType && (
           <div className="mt-6">
