@@ -9,12 +9,13 @@ import {
 } from "@/lib/i18n/locales";
 
 // Bare (English) path patterns that also have a translated version at
-// /id + the same path -- only these are eligible for the auto-detect
-// redirect below. Redirecting a path with no /id counterpart yet would
-// just 404, so this list is deliberately explicit and grows as more
-// customer pages get an Indonesian version. The admin/agent panels are
-// never in here -- staff stay on English regardless of browser
-// language.
+// /id + the same path -- only these are eligible for the locale
+// redirect below (a visitor who has previously chosen Indonesian gets
+// bounced to the /id version of the page they're on). Redirecting a
+// path with no /id counterpart yet would just 404, so this list is
+// deliberately explicit and grows as more customer pages get an
+// Indonesian version. The admin/agent panels are never in here --
+// staff always stay on English.
 const LOCALIZED_PATH_PATTERNS: RegExp[] = [
   /^\/$/, // homepage
   /^\/p\/[^/]+$/, // /p/[slug] -- the trip/product page
@@ -44,11 +45,6 @@ function parseLocaleCookie(value: string | undefined): Locale | undefined {
   return value === "en" || value === "id" ? value : undefined;
 }
 
-function detectLocaleFromAcceptLanguage(header: string | null): Locale {
-  if (header && header.toLowerCase().includes("id")) return "id";
-  return DEFAULT_LOCALE;
-}
-
 function parseExplicitLocaleParam(value: string | null): Locale | undefined {
   return value === "en" || value === "id" ? value : undefined;
 }
@@ -65,18 +61,17 @@ function parseExplicitLocaleParam(value: string | null): Locale | undefined {
  *    up and decides whether it's real). Cheap -- just reading a query
  *    param, no DB round trip -- so it runs on every non-admin request.
  *
- * 2. Indonesian language auto-detect: a first-time visitor on a page
- *    matching LOCALIZED_PATH_PATTERNS gets redirected straight to its /id
- *    version if their browser's Accept-Language says Indonesian.
- *    Whatever they land on (by detection, by an explicit switcher
- *    click, or by opening an /id link directly) gets remembered in a
- *    1-year cookie, so a later visit to the bare English path respects
- *    their actual preference instead of re-detecting every time.
- *    LocaleSwitcher's links carry a `?lang=en`/`?lang=id` override so
- *    switching *to* English actually works -- without it, a visitor
- *    whose cookie already says "id" clicking "English" would land back
- *    on "/", see the stored "id" preference, and get bounced straight
- *    back to /id before the English page ever rendered.
+ * 2. Language choice: every first-time visitor lands on English --
+ *    there's no browser Accept-Language auto-detect into Indonesian
+ *    (there used to be; the site's language is English by default,
+ *    full stop). Indonesian only ever happens when a visitor actually
+ *    picks it via LocaleSwitcher (or opens an /id link directly), and
+ *    that choice then gets remembered in a 1-year cookie so it sticks
+ *    across visits. LocaleSwitcher's links carry a `?lang=en`/`?lang=id`
+ *    override so switching *to* English actually works -- without it,
+ *    a visitor whose cookie already says "id" clicking "English" would
+ *    land back on "/", see the stored "id" preference, and get bounced
+ *    straight back to /id before the English page ever rendered.
  *
  * 3. The *fast* "is someone logged in at all" check for /admin routes,
  *    using Supabase's own session cookie. It deliberately does NOT
@@ -108,8 +103,12 @@ export async function proxy(request: NextRequest) {
     const cookieLocale = explicitLocale ?? storedLocale;
 
     if (!isIdPath && isLocalizedPath(pathname)) {
-      const preferredLocale =
-        cookieLocale ?? detectLocaleFromAcceptLanguage(request.headers.get("accept-language"));
+      // No browser-language auto-detect -- a first-time visitor with
+      // no stored/explicit preference always gets DEFAULT_LOCALE
+      // (English). Indonesian only happens once someone has actually
+      // chosen it (LocaleSwitcher, or a remembered cookie from a past
+      // choice).
+      const preferredLocale = cookieLocale ?? DEFAULT_LOCALE;
       if (preferredLocale === "id") {
         const url = request.nextUrl.clone();
         url.pathname = `/id${pathname === "/" ? "" : pathname}`;
