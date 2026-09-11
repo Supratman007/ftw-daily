@@ -7,15 +7,20 @@ import { PhotoPlaceholder } from "@/components/PhotoPlaceholder";
 /**
  * A card's cover photo -- falls back to the same "Photo coming soon"
  * placeholder both when there's no URL at all AND when the URL is
- * there but the image itself fails to load (a broken/expired Storage
- * link, say). Before this, a broken load just rendered as a blank
- * white box (next/image with `alt=""` shows nothing on error, not
- * even a broken-image icon), which looked identical to "the photos
- * aren't showing" being a real bug even on cards that DO have a photo
- * set -- this makes the two cases (no photo yet vs. a real load
- * failure) at least LOOK the same known-placeholder way instead of an
- * unexplained blank, since telling them apart needs the actual URL
- * from the database, not something visible in the browser.
+ * there but the image itself fails to load. `unoptimized` is the real
+ * fix, not a fallback: admin-uploaded photos are the raw file the
+ * admin picked (ProductForm.tsx uploads it as-is, no client-side
+ * resizing), which can easily be several MB straight off a phone --
+ * Vercel's Image Optimization step (what next/image normally routes
+ * through to resize/recompress a remote image) has its own size/time
+ * limits and was silently failing on exactly these, even though the
+ * same URL loads fine as a plain, unprocessed <img> (confirmed by the
+ * admin form's own photo previews, and by VehicleDetailPanel's
+ * thumbnail strip, which already uses a plain <img> for the same
+ * reason). `unoptimized` skips that step and serves the original file
+ * directly, the same path that's already proven to work -- the
+ * onError fallback stays as a backstop for a genuinely broken/missing
+ * file, not the size issue this was actually hitting.
  */
 export function ProductCardImage({
   src,
@@ -38,7 +43,7 @@ export function ProductCardImage({
 
   return (
     <div className={`relative w-full ${className}`}>
-      <Image src={src} alt={alt} fill sizes={sizes} className="object-cover" onError={() => setFailed(true)} />
+      <Image src={src} alt={alt} fill sizes={sizes} unoptimized className="object-cover" onError={() => setFailed(true)} />
     </div>
   );
 }

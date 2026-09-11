@@ -35,12 +35,19 @@ export function VehicleDetailPanel({
   return (
     <div className="overflow-hidden rounded-2xl border border-sand-deep bg-white">
       {activePhoto ? (
+        // unoptimized -- same reasoning as ProductCardImage.tsx: this
+        // is the raw file an admin uploaded, and Vercel's Image
+        // Optimization step was silently failing on the larger ones.
+        // The thumbnail strip below already sidesteps this with a
+        // plain <img>; this does the same via next/image's own escape
+        // hatch instead, to keep fill/sizes.
         <div className="relative h-48 w-full">
           <Image
             src={activePhoto}
             alt={name}
             fill
             sizes="(max-width: 768px) 100vw, 400px"
+            unoptimized
             className="object-cover"
           />
         </div>

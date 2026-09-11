@@ -20,7 +20,13 @@ export function ProductGallery({ images, alt }: { images: string[]; alt: string 
     <div className="mb-6">
       {/* This is the product page's LCP element (the big above-the-fold
           hero photo), so preload tells the browser to start fetching it
-          from <head> instead of discovering it mid-page. */}
+          from <head> instead of discovering it mid-page.
+          unoptimized: these are the raw files an admin uploaded
+          (ProductForm.tsx doesn't resize them), which can be several
+          MB straight off a phone -- large enough that Vercel's Image
+          Optimization step was silently failing on some of them, even
+          though the same URL loads fine unprocessed. See
+          ProductCardImage.tsx for the full story. */}
       <div className="relative h-72 w-full overflow-hidden rounded-2xl sm:h-96">
         <Image
           src={active}
@@ -28,6 +34,7 @@ export function ProductGallery({ images, alt }: { images: string[]; alt: string 
           fill
           sizes="(max-width: 1024px) 100vw, 896px"
           preload
+          unoptimized
           className="object-cover"
         />
       </div>
@@ -43,7 +50,7 @@ export function ProductGallery({ images, alt }: { images: string[]; alt: string 
                 i === activeIndex ? "border-coral" : "border-transparent opacity-70"
               }`}
             >
-              <Image src={url} alt="" fill sizes="96px" className="object-cover" />
+              <Image src={url} alt="" fill sizes="96px" unoptimized className="object-cover" />
             </button>
           ))}
         </div>
