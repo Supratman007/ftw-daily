@@ -46,6 +46,19 @@
   --color-canvas: var(--color-canvas);
 }
 
+/* Chrome on Android has a "font boosting" heuristic that can inflate
+   small text (found live: the hero badge's 11px label wrapped onto two
+   lines and looked stretched-wide on a Huawei phone, while the exact
+   same markup rendered as one tidy line on an iPhone) to make it more
+   legible in a wide column -- it's inconsistent across devices/screen
+   widths and not something any of our sizing already accounts for.
+   This is the standard way to opt every page out of that heuristic so
+   text renders at the size the CSS actually asked for, everywhere. */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
 /* Belt-and-suspenders against the phone-width horizontal-scroll bug
    (found live on an iPhone 6s at 375px wide -- a flex row that doesn't
    fit pushes the whole page wider than the viewport, and every

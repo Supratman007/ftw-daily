@@ -463,13 +463,15 @@ export async function ProductPage({
           {p.highlights.length > 0 && (
             <div>
               <h2 className="font-serif text-xl font-semibold text-ink">{dict.highlightsHeading}</h2>
-              <ul className="mt-3 flex flex-col gap-2">
+              <ul className="mt-3 flex flex-col gap-3">
                 {p.highlights.map((line, i) => (
-                  <li key={i} className="flex items-start gap-2 text-sm text-ink-soft">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#166e73" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mt-0.5 flex-shrink-0" aria-hidden="true">
-                      <path d="M5 12l5 5L20 7" />
-                    </svg>
-                    {line}
+                  <li key={i} className="flex items-start gap-3 text-sm text-ink-soft">
+                    <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-teal-light text-teal">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <path d="M5 12l5 5L20 7" />
+                      </svg>
+                    </span>
+                    <span className="pt-2 leading-relaxed">{line}</span>
                   </li>
                 ))}
               </ul>
@@ -514,13 +516,15 @@ export async function ProductPage({
               {p.includes.length > 0 && (
                 <div>
                   <h2 className="font-serif text-xl font-semibold text-ink">{dict.includesHeading}</h2>
-                  <ul className="mt-3 flex flex-col gap-2">
+                  <ul className="mt-3 flex flex-col gap-3">
                     {p.includes.map((line, i) => (
-                      <li key={i} className="flex items-start gap-2 text-sm text-ink-soft">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6e8f45" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mt-0.5 flex-shrink-0" aria-hidden="true">
-                          <path d="M5 12l5 5L20 7" />
-                        </svg>
-                        {line}
+                      <li key={i} className="flex items-start gap-3 text-sm text-ink-soft">
+                        <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-[#eaf1e1] text-rice">
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                            <path d="M5 12l5 5L20 7" />
+                          </svg>
+                        </span>
+                        <span className="pt-2 leading-relaxed">{line}</span>
                       </li>
                     ))}
                   </ul>
@@ -529,13 +533,15 @@ export async function ProductPage({
               {p.excludes.length > 0 && (
                 <div>
                   <h2 className="font-serif text-xl font-semibold text-ink">{dict.excludesHeading}</h2>
-                  <ul className="mt-3 flex flex-col gap-2">
+                  <ul className="mt-3 flex flex-col gap-3">
                     {p.excludes.map((line, i) => (
-                      <li key={i} className="flex items-start gap-2 text-sm text-ink-soft">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#b8471f" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mt-0.5 flex-shrink-0" aria-hidden="true">
-                          <path d="M6 6l12 12M18 6L6 18" />
-                        </svg>
-                        {line}
+                      <li key={i} className="flex items-start gap-3 text-sm text-ink-soft">
+                        <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-[#fce6dd] text-coral-dark">
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                            <path d="M6 6l12 12M18 6L6 18" />
+                          </svg>
+                        </span>
+                        <span className="pt-2 leading-relaxed">{line}</span>
                       </li>
                     ))}
                   </ul>
@@ -547,14 +553,16 @@ export async function ProductPage({
           {p.trip_notes.length > 0 && (
             <div>
               <h2 className="font-serif text-xl font-semibold text-ink">{dict.tripNotesHeading}</h2>
-              <ul className="mt-3 flex flex-col gap-2">
+              <ul className="mt-3 flex flex-col gap-3">
                 {p.trip_notes.map((line, i) => (
-                  <li key={i} className="flex items-start gap-2 text-sm text-ink-soft">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4b5854" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="mt-0.5 flex-shrink-0" aria-hidden="true">
-                      <circle cx="12" cy="12" r="9" />
-                      <path d="M12 11v5M12 8v.01" />
-                    </svg>
-                    {line}
+                  <li key={i} className="flex items-start gap-3 text-sm text-ink-soft">
+                    <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-sand text-ink-soft">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <circle cx="12" cy="12" r="9" />
+                        <path d="M12 11v5M12 8v.01" />
+                      </svg>
+                    </span>
+                    <span className="pt-2 leading-relaxed">{line}</span>
                   </li>
                 ))}
               </ul>
