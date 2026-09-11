@@ -41,7 +41,7 @@ export default async function AgentLoginPage({
         />
         <button
           type="submit"
-          className="mt-2 rounded-lg bg-coral px-4 py-2 text-sm font-semibold text-white"
+          className="mt-2 rounded-lg bg-coral px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-coral-dark"
         >
           Sign in
         </button>

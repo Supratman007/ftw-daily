@@ -220,7 +220,7 @@ export default async function AdminAnalyticsPage({
             className="rounded-lg border border-sand-deep px-3 py-2 text-sm outline-none focus:border-teal"
           />
         </div>
-        <button type="submit" className="rounded-lg bg-coral px-4 py-2 text-sm font-semibold text-white">
+        <button type="submit" className="rounded-lg bg-coral px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-coral-dark">
           Custom range
         </button>
       </form>
@@ -250,7 +250,7 @@ export default async function AdminAnalyticsPage({
       <h3 className="mt-6 font-serif text-base font-semibold text-ink">Top pages</h3>
       <div className="mt-2 overflow-x-auto rounded-lg border border-sand-deep bg-white">
         <table className="w-full min-w-[500px] text-left text-sm">
-          <thead className="bg-sand text-xs uppercase text-ink-soft">
+          <thead className="bg-canvas text-xs uppercase text-ink-soft">
             <tr>
               <th className="px-4 py-2">Page</th>
               <th className="px-4 py-2">Views</th>
@@ -266,7 +266,7 @@ export default async function AdminAnalyticsPage({
               </tr>
             ) : (
               topPages.map((p) => (
-                <tr key={p.path} className="border-t border-sand-deep">
+                <tr key={p.path} className="border-t border-sand-deep transition-colors hover:bg-sand">
                   <td className="px-4 py-2 text-ink">{p.label}</td>
                   <td className="px-4 py-2">{p.views}</td>
                   <td className="px-4 py-2 text-ink-soft">{p.visitors}</td>
@@ -280,19 +280,19 @@ export default async function AdminAnalyticsPage({
       <h3 className="mt-6 font-serif text-base font-semibold text-ink">Where visitors came from</h3>
       <div className="mt-2 overflow-x-auto rounded-lg border border-sand-deep bg-white">
         <table className="w-full min-w-[400px] text-left text-sm">
-          <thead className="bg-sand text-xs uppercase text-ink-soft">
+          <thead className="bg-canvas text-xs uppercase text-ink-soft">
             <tr>
               <th className="px-4 py-2">Source</th>
               <th className="px-4 py-2">Views</th>
             </tr>
           </thead>
           <tbody>
-            <tr className="border-t border-sand-deep">
+            <tr className="border-t border-sand-deep transition-colors hover:bg-sand">
               <td className="px-4 py-2 text-ink">Direct / unknown</td>
               <td className="px-4 py-2">{directViewCount}</td>
             </tr>
             {topReferrers.map(([host, count]) => (
-              <tr key={host} className="border-t border-sand-deep">
+              <tr key={host} className="border-t border-sand-deep transition-colors hover:bg-sand">
                 <td className="px-4 py-2 text-ink">{host}</td>
                 <td className="px-4 py-2">{count}</td>
               </tr>
@@ -325,7 +325,7 @@ export default async function AdminAnalyticsPage({
       <h2 className="mt-8 font-serif text-lg font-semibold text-ink">Top trips</h2>
       <div className="mt-2 overflow-x-auto rounded-lg border border-sand-deep bg-white">
         <table className="w-full min-w-[500px] text-left text-sm">
-          <thead className="bg-sand text-xs uppercase text-ink-soft">
+          <thead className="bg-canvas text-xs uppercase text-ink-soft">
             <tr>
               <th className="px-4 py-2">Trip</th>
               <th className="px-4 py-2">Bookings</th>
@@ -342,7 +342,7 @@ export default async function AdminAnalyticsPage({
               </tr>
             ) : (
               topProducts.map((r) => (
-                <tr key={r.title} className="border-t border-sand-deep">
+                <tr key={r.title} className="border-t border-sand-deep transition-colors hover:bg-sand">
                   <td className="px-4 py-2 text-ink">{r.title}</td>
                   <td className="px-4 py-2">{r.count}</td>
                   <td className="px-4 py-2 font-semibold text-ink">{formatIdr(r.revenue)}</td>
@@ -360,7 +360,7 @@ export default async function AdminAnalyticsPage({
       </p>
       <div className="mt-2 overflow-x-auto rounded-lg border border-sand-deep bg-white">
         <table className="w-full min-w-[560px] text-left text-sm">
-          <thead className="bg-sand text-xs uppercase text-ink-soft">
+          <thead className="bg-canvas text-xs uppercase text-ink-soft">
             <tr>
               <th className="px-4 py-2">Agent</th>
               <th className="px-4 py-2">Referred bookings</th>
@@ -377,7 +377,7 @@ export default async function AdminAnalyticsPage({
               </tr>
             ) : (
               topAgents.map((a) => (
-                <tr key={a.referralCode} className="border-t border-sand-deep">
+                <tr key={a.referralCode} className="border-t border-sand-deep transition-colors hover:bg-sand">
                   <td className="px-4 py-2 text-ink">
                     {a.name} <span className="font-mono text-xs text-ink-soft">({a.referralCode})</span>
                   </td>

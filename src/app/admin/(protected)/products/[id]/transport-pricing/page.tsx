@@ -82,7 +82,7 @@ export default async function TransportPricingPage({
         <h2 className="font-serif text-lg font-semibold text-ink">Vehicle / service types</h2>
         <Link
           href={`/admin/products/${productId}/transport-pricing/vehicle-types/new`}
-          className="rounded-lg bg-coral px-4 py-2 text-sm font-semibold text-white"
+          className="rounded-lg bg-coral px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-coral-dark"
         >
           + Add vehicle/service type
         </Link>
@@ -96,7 +96,7 @@ export default async function TransportPricingPage({
       ) : (
         <div className="mt-4 overflow-hidden rounded-lg border border-sand-deep bg-white">
           <table className="w-full text-left text-sm">
-            <thead className="bg-sand text-xs uppercase text-ink-soft">
+            <thead className="bg-canvas text-xs uppercase text-ink-soft">
               <tr>
                 <th className="px-4 py-2">Name</th>
                 <th className="px-4 py-2">Capacity note</th>
@@ -106,7 +106,7 @@ export default async function TransportPricingPage({
             </thead>
             <tbody>
               {vehicleTypes.map((v) => (
-                <tr key={v.id} className="border-t border-sand-deep">
+                <tr key={v.id} className="border-t border-sand-deep transition-colors hover:bg-sand">
                   <td className="px-4 py-2 font-medium text-ink">{v.name}</td>
                   <td className="px-4 py-2 text-ink-soft">{v.capacity_note ?? "—"}</td>
                   <td className="px-4 py-2 text-ink-soft">{v.status}</td>
@@ -154,7 +154,7 @@ export default async function TransportPricingPage({
               </p>
               <div className="overflow-x-auto">
                 <table className="min-w-full border-collapse text-left text-sm">
-                  <thead className="bg-sand text-xs uppercase text-ink-soft">
+                  <thead className="bg-canvas text-xs uppercase text-ink-soft">
                     <tr>
                       <th className="border border-sand-deep px-3 py-2">From \ To</th>
                       {meetingPoints.map((to) => (
@@ -194,7 +194,7 @@ export default async function TransportPricingPage({
           ))}
           <button
             type="submit"
-            className="self-start rounded-lg bg-coral px-4 py-2 text-sm font-semibold text-white"
+            className="self-start rounded-lg bg-coral px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-coral-dark"
           >
             Save all prices
           </button>

@@ -7,6 +7,9 @@ export interface Product {
   slug: string;
   title: string;
   excerpt: string | null;
+  // Rich text (HTML), edited via RichTextEditor in the admin and
+  // sanitized on the way in -- see sanitizeDescriptionHtml.ts. Render
+  // with dangerouslySetInnerHTML, never as plain text.
   description: string | null;
   location: string | null;
   category: string | null;
@@ -23,6 +26,15 @@ export interface Product {
   capacity_per_date: number | null;
   cover_image_url: string | null;
   gallery_urls: string[];
+  // Product-page detail content (spec-adjacent -- added per direct
+  // request to match the level of detail other booking sites show).
+  // All admin-entered, all optional -- an empty array/list just means
+  // that section doesn't render.
+  highlights: string[];
+  includes: string[];
+  excludes: string[];
+  trip_notes: string[];
+  itinerary: Array<{ title: string; description: string }>;
   source_url: string | null;
   is_bookable: boolean;
   // How many hours' notice we require before a trip/pickup start
@@ -37,6 +49,7 @@ export interface Product {
   // the edit page until an admin approves it.
   title_id: string | null;
   excerpt_id: string | null;
+  // Same "rich HTML, already sanitized" story as description above.
   description_id: string | null;
   translation_status: "none" | "draft" | "approved";
   translated_from_title: string | null;

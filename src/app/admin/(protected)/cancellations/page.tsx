@@ -73,7 +73,7 @@ export default async function AdminCancellationsPage({
         </select>
         <button
           type="submit"
-          className="rounded-lg bg-coral px-4 py-2 text-sm font-semibold text-white"
+          className="rounded-lg bg-coral px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-coral-dark"
         >
           Filter
         </button>
@@ -87,7 +87,7 @@ export default async function AdminCancellationsPage({
 
       <div className="mt-6 overflow-x-auto rounded-lg border border-sand-deep bg-white">
         <table className="w-full min-w-[800px] text-left text-sm">
-          <thead className="bg-sand text-xs uppercase text-ink-soft">
+          <thead className="bg-canvas text-xs uppercase text-ink-soft">
             <tr>
               <th className="px-4 py-2">Requested</th>
               <th className="px-4 py-2">Booking code</th>
@@ -101,7 +101,7 @@ export default async function AdminCancellationsPage({
           </thead>
           <tbody>
             {requests.map((r) => (
-              <tr key={r.id} className="border-t border-sand-deep">
+              <tr key={r.id} className="border-t border-sand-deep transition-colors hover:bg-sand">
                 <td className="px-4 py-2 text-xs text-ink-soft">
                   {new Date(r.requested_at).toLocaleString()}
                 </td>

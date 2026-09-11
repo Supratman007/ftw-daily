@@ -25,8 +25,29 @@ export const en = {
     agentDashboard: "Agent dashboard",
     logout: "Log out",
     becomeAgent: "Become a Sales Agent",
+    // The header's browse-by-category menu (hamburger on mobile, an
+    // inline row on desktop -- see SiteNav.tsx). "Daily Tours"/"Daily
+    // Activities" filter by the existing product_type field; the rest
+    // don't have a dedicated field yet, so they search by keyword
+    // instead -- see the navLinks() comment in SiteHeader.tsx.
+    navHome: "Home",
+    navDailyTours: "Daily Tours",
+    navDailyActivities: "Daily Activities",
+    navExtensionTrip: "Extension Trips",
+    navKomodoTrip: "Komodo Trip",
+    navBaliTours: "Bali Tours",
+    openMenu: "Open menu",
+    closeMenu: "Close menu",
   },
   home: {
+    heroBadge: "Local Lombok tour operator · since 2006",
+    heroHeadline: "Your Lombok adventure starts here",
+    heroSubheadline:
+      "Book tours, activities, and more with Adventure Lombok Tour — secure online booking, real availability, local since 2006.",
+    trustLocal: "Local Lombok operator, since 2006",
+    trustAvailability: "Real-time availability",
+    trustSecure: "Secure online payment",
+    popularTrips: "Popular trips",
     searchPlaceholder: "Search trips, activities, locations…",
     allTypes: "All types",
     allLocations: "All locations",
@@ -35,6 +56,7 @@ export const en = {
     resultsFound: (count: number) => `${count} trip${count === 1 ? "" : "s"} found`,
     noProductsYet: "No trips published yet — check back soon.",
     noResults: "No trips match those filters — try clearing one and searching again.",
+    photoComingSoon: "Photo coming soon",
   },
   product: {
     perPerson: "/ person",
@@ -52,6 +74,26 @@ export const en = {
     giftThisTrip: "🎁 Give this trip as a gift",
     carHirePriceLabel: "Price by car, duration & pickup area — pick your options below",
     transportPriceLabel: "Price by pickup area — pick your options below",
+    tripEssentialsHeading: "Trip essentials",
+    durationFactTitle: "Duration",
+    groupSizeFactTitle: "Group size",
+    groupSizeFactDesc: (n: number) => `Up to ${n} traveler${n === 1 ? "" : "s"} per date`,
+    instantConfirmFactTitle: "Instant confirmation",
+    instantConfirmFactDesc: "Book online — confirmed right away",
+    manualConfirmFactTitle: "Confirmed by our team",
+    manualConfirmFactDesc: "Usually within a day or two",
+    pickupFactTitle: "Hotel pickup",
+    pickupFactDesc: "Tell us where you're staying at checkout",
+    giftFactTitle: "Available as a gift",
+    giftFactDesc: "Send this trip to someone else",
+    highlightsHeading: "Trip highlights",
+    itineraryHeading: "Itinerary",
+    includesHeading: "What's included",
+    excludesHeading: "What's not included",
+    tripNotesHeading: "Good to know",
+    relatedHeading: "You may also like",
+    mobileBookingCta: "Check availability",
+    photoComingSoon: "Photo coming soon",
     reviewsHeading: "Reviews",
     reviewCount: (count: number) => `${count} review${count === 1 ? "" : "s"}`,
   },
@@ -203,13 +245,18 @@ export const en = {
   // copy if either ever changes.
   carHireForm: {
     carLabel: "Car",
-    seatsLabel: (n: number) => `${n} seats`,
+    // Templates, not functions -- this whole object is passed from a
+    // Server Component (ProductPage.tsx) down to a "use client" form as
+    // a prop, and React refuses to serialize a function across that
+    // boundary ("Functions cannot be passed directly to Client
+    // Components..."). CarHireBookingForm.tsx fills in "{n}"/"{car}"/
+    // "{max}"/"{rate}" itself once it has the real values.
+    seatsLabel: "{n} seats",
     passengersLabel: "Number of passengers",
-    capacityWarning: (carName: string, maxPax: number) =>
-      `${carName} seats up to ${maxPax} — please choose a bigger car or fewer passengers.`,
+    capacityWarning: "{car} seats up to {max} — please choose a bigger car or fewer passengers.",
     durationLabel: "Duration",
     noDurationsOption: "No durations set up yet",
-    hoursLabel: (n: number) => `${n} hours`,
+    hoursLabel: "{n} hours",
     pickupAreaLabel: "Pickup area",
     askForPriceSuffix: " (ask us for a price)",
     otherOption: "Other — not on the list",
@@ -232,7 +279,7 @@ export const en = {
       "Picking up from the airport? This helps your driver track your flight and be there when you land.",
     discountCodeLabel: "Discount code (optional)",
     discountCodePlaceholder: "e.g. WELCOME10",
-    overtimeNotice: (rate: string) => `Running over? Overtime is ${rate}/hour, paid in cash to the driver.`,
+    overtimeNotice: "Running over? Overtime is {rate}/hour, paid in cash to the driver.",
     noPriceNotice: "We don't have a set price for that combination yet.",
     messageUsOnWhatsapp: "Message us on WhatsApp",
     forAQuote: "for a quote.",

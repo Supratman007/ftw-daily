@@ -70,7 +70,7 @@ export async function RedeemPage({
             </div>
             <button
               type="submit"
-              className="self-start rounded-lg bg-coral px-6 py-3 text-sm font-semibold text-white"
+              className="self-start rounded-lg bg-coral px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-coral-dark"
             >
               {dict.lookupButton}
             </button>
@@ -270,7 +270,7 @@ export async function RedeemPage({
               </div>
               <button
                 type="submit"
-                className="self-start rounded-lg bg-coral px-6 py-3 text-sm font-semibold text-white"
+                className="self-start rounded-lg bg-coral px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-coral-dark"
               >
                 {dict.submit}
               </button>

@@ -152,7 +152,7 @@ export async function GiftPurchasePage({
 
           <button
             type="submit"
-            className="mt-2 rounded-lg bg-coral px-4 py-3 text-sm font-semibold text-white"
+            className="mt-2 rounded-lg bg-coral px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-coral-dark"
           >
             {dict.continueToPayment}
           </button>
