@@ -245,7 +245,7 @@ export default async function AdminAgentDetailPage({
               </tr>
             ) : (
               attributions.map((a) => (
-                <tr key={a.id} className="border-t border-sand-deep">
+                <tr key={a.id} className="border-t border-sand-deep transition-colors hover:bg-sand">
                   <td className="px-4 py-2 text-ink-soft">{new Date(a.created_at).toLocaleString()}</td>
                   <td className="px-4 py-2 font-mono text-xs text-ink">{a.referral_code}</td>
                   <td className="px-4 py-2 text-ink">

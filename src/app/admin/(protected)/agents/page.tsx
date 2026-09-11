@@ -64,7 +64,7 @@ export default async function AdminAgentsPage({
           </thead>
           <tbody>
             {agents.map((a) => (
-              <tr key={a.id} className="border-t border-sand-deep">
+              <tr key={a.id} className="border-t border-sand-deep transition-colors hover:bg-sand">
                 <td className="px-4 py-2 font-medium text-ink">
                   <Link href={`/admin/agents/${a.id}`} className="text-teal hover:underline">
                     {a.name}

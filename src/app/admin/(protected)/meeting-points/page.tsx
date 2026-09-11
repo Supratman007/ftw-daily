@@ -25,7 +25,7 @@ export default async function AdminMeetingPointsPage() {
         <h1 className="font-serif text-2xl font-semibold text-ink">Meeting points</h1>
         <Link
           href="/admin/meeting-points/new"
-          className="rounded-lg bg-coral px-4 py-2 text-sm font-semibold text-white"
+          className="rounded-lg bg-coral px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-coral-dark"
         >
           + Add meeting point
         </Link>
@@ -53,7 +53,7 @@ export default async function AdminMeetingPointsPage() {
           </thead>
           <tbody>
             {meetingPoints.map((m) => (
-              <tr key={m.id} className="border-t border-sand-deep">
+              <tr key={m.id} className="border-t border-sand-deep transition-colors hover:bg-sand">
                 <td className="px-4 py-2 font-medium text-ink">{m.name}</td>
                 <td className="px-4 py-2 text-ink-soft">{m.region ?? "—"}</td>
                 <td className="px-4 py-2 text-ink-soft">{m.status}</td>

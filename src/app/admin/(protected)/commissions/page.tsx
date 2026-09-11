@@ -214,7 +214,7 @@ export default async function AdminCommissionsPage({
               <form action={markAgentCommissionsPaidAction.bind(null, g.agentId)} className="mt-4">
                 <button
                   type="submit"
-                  className="rounded-lg bg-coral px-4 py-2 text-sm font-semibold text-white"
+                  className="rounded-lg bg-coral px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-coral-dark"
                 >
                   Mark all pending paid ({formatCommissionAmount(g.pendingUsd)})
                 </button>
@@ -236,7 +236,7 @@ export default async function AdminCommissionsPage({
                 </thead>
                 <tbody>
                   {g.rows.map((r) => (
-                    <tr key={`${r.source}-${r.id}`} className="border-t border-sand-deep">
+                    <tr key={`${r.source}-${r.id}`} className="border-t border-sand-deep transition-colors hover:bg-sand">
                       <td className="px-4 py-2 text-ink-soft">{r.created_at.slice(0, 10)}</td>
                       <td className="px-4 py-2 font-mono text-xs text-ink">{r.code}</td>
                       <td className="px-4 py-2 text-ink">{r.tripTitle}</td>

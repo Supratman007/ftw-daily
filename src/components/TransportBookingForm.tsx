@@ -352,7 +352,7 @@ export function TransportBookingForm({
       <button
         type="submit"
         disabled={!price || vehicleTypes.length === 0 || sameArea}
-        className="mt-2 rounded-lg bg-coral px-4 py-3 text-sm font-semibold text-white disabled:opacity-50"
+        className="mt-2 rounded-lg bg-coral px-4 py-3 text-sm font-semibold text-white disabled:opacity-50 transition-colors hover:bg-coral-dark disabled:hover:bg-coral"
       >
         {dict.continueToCheckout}
       </button>

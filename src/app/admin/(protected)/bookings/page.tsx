@@ -65,7 +65,7 @@ export default async function AdminBookingsPage({
         </select>
         <button
           type="submit"
-          className="rounded-lg bg-coral px-4 py-2 text-sm font-semibold text-white"
+          className="rounded-lg bg-coral px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-coral-dark"
         >
           Filter
         </button>
@@ -94,7 +94,7 @@ export default async function AdminBookingsPage({
           </thead>
           <tbody>
             {bookings.map((b) => (
-              <tr key={b.id} className="border-t border-sand-deep align-top">
+              <tr key={b.id} className="border-t border-sand-deep align-top transition-colors hover:bg-sand">
                 <td className="px-4 py-2 font-mono text-xs font-medium text-ink">
                   {b.booking_code}
                 </td>

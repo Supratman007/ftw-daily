@@ -34,7 +34,7 @@ export default async function AdminTeamPage({
         <h1 className="font-serif text-2xl font-semibold text-ink">Team</h1>
         <Link
           href="/admin/team/new"
-          className="rounded-lg bg-coral px-4 py-2 text-sm font-semibold text-white"
+          className="rounded-lg bg-coral px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-coral-dark"
         >
           + Invite staff
         </Link>
@@ -76,7 +76,7 @@ export default async function AdminTeamPage({
             {staff.map((s) => {
               const isSelf = s.id === currentAdmin.id;
               return (
-                <tr key={s.id} className="border-t border-sand-deep">
+                <tr key={s.id} className="border-t border-sand-deep transition-colors hover:bg-sand">
                   <td className="px-4 py-2 font-medium text-ink">
                     {s.name} {isSelf && <span className="text-xs text-ink-soft">(you)</span>}
                   </td>

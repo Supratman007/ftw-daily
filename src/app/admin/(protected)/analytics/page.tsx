@@ -220,7 +220,7 @@ export default async function AdminAnalyticsPage({
             className="rounded-lg border border-sand-deep px-3 py-2 text-sm outline-none focus:border-teal"
           />
         </div>
-        <button type="submit" className="rounded-lg bg-coral px-4 py-2 text-sm font-semibold text-white">
+        <button type="submit" className="rounded-lg bg-coral px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-coral-dark">
           Custom range
         </button>
       </form>
@@ -266,7 +266,7 @@ export default async function AdminAnalyticsPage({
               </tr>
             ) : (
               topPages.map((p) => (
-                <tr key={p.path} className="border-t border-sand-deep">
+                <tr key={p.path} className="border-t border-sand-deep transition-colors hover:bg-sand">
                   <td className="px-4 py-2 text-ink">{p.label}</td>
                   <td className="px-4 py-2">{p.views}</td>
                   <td className="px-4 py-2 text-ink-soft">{p.visitors}</td>
@@ -287,12 +287,12 @@ export default async function AdminAnalyticsPage({
             </tr>
           </thead>
           <tbody>
-            <tr className="border-t border-sand-deep">
+            <tr className="border-t border-sand-deep transition-colors hover:bg-sand">
               <td className="px-4 py-2 text-ink">Direct / unknown</td>
               <td className="px-4 py-2">{directViewCount}</td>
             </tr>
             {topReferrers.map(([host, count]) => (
-              <tr key={host} className="border-t border-sand-deep">
+              <tr key={host} className="border-t border-sand-deep transition-colors hover:bg-sand">
                 <td className="px-4 py-2 text-ink">{host}</td>
                 <td className="px-4 py-2">{count}</td>
               </tr>
@@ -342,7 +342,7 @@ export default async function AdminAnalyticsPage({
               </tr>
             ) : (
               topProducts.map((r) => (
-                <tr key={r.title} className="border-t border-sand-deep">
+                <tr key={r.title} className="border-t border-sand-deep transition-colors hover:bg-sand">
                   <td className="px-4 py-2 text-ink">{r.title}</td>
                   <td className="px-4 py-2">{r.count}</td>
                   <td className="px-4 py-2 font-semibold text-ink">{formatIdr(r.revenue)}</td>
@@ -377,7 +377,7 @@ export default async function AdminAnalyticsPage({
               </tr>
             ) : (
               topAgents.map((a) => (
-                <tr key={a.referralCode} className="border-t border-sand-deep">
+                <tr key={a.referralCode} className="border-t border-sand-deep transition-colors hover:bg-sand">
                   <td className="px-4 py-2 text-ink">
                     {a.name} <span className="font-mono text-xs text-ink-soft">({a.referralCode})</span>
                   </td>

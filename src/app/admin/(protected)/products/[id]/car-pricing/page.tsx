@@ -90,7 +90,7 @@ export default async function CarPricingPage({
         <h2 className="font-serif text-lg font-semibold text-ink">Car types</h2>
         <Link
           href={`/admin/products/${productId}/car-pricing/car-types/new`}
-          className="rounded-lg bg-coral px-4 py-2 text-sm font-semibold text-white"
+          className="rounded-lg bg-coral px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-coral-dark"
         >
           + Add car type
         </Link>
@@ -216,7 +216,7 @@ export default async function CarPricingPage({
           </table>
           <button
             type="submit"
-            className="mt-4 rounded-lg bg-coral px-4 py-2 text-sm font-semibold text-white"
+            className="mt-4 rounded-lg bg-coral px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-coral-dark"
           >
             Save all prices
           </button>

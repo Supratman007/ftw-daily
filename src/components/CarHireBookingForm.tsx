@@ -373,7 +373,7 @@ export function CarHireBookingForm({
       <button
         type="submit"
         disabled={!price || packagesForCarType.length === 0 || paxTooMany}
-        className="mt-2 rounded-lg bg-coral px-4 py-3 text-sm font-semibold text-white disabled:opacity-50"
+        className="mt-2 rounded-lg bg-coral px-4 py-3 text-sm font-semibold text-white disabled:opacity-50 transition-colors hover:bg-coral-dark disabled:hover:bg-coral"
       >
         {dict.continueToCheckout}
       </button>

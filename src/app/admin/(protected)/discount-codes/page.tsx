@@ -22,7 +22,7 @@ export default async function AdminDiscountCodesPage() {
         <h1 className="font-serif text-2xl font-semibold text-ink">Discount codes</h1>
         <Link
           href="/admin/discount-codes/new"
-          className="rounded-lg bg-coral px-4 py-2 text-sm font-semibold text-white"
+          className="rounded-lg bg-coral px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-coral-dark"
         >
           + Add code
         </Link>
@@ -49,7 +49,7 @@ export default async function AdminDiscountCodesPage() {
           </thead>
           <tbody>
             {(codes as DiscountCode[] | null)?.map((code) => (
-              <tr key={code.id} className="border-t border-sand-deep">
+              <tr key={code.id} className="border-t border-sand-deep transition-colors hover:bg-sand">
                 <td className="px-4 py-2 font-mono font-medium text-ink">{code.code}</td>
                 <td className="px-4 py-2">{DISCOUNT_TYPE_LABELS[code.discount_type]}</td>
                 <td className="px-4 py-2">{formatValue(code)}</td>

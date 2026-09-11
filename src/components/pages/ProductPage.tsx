@@ -372,7 +372,7 @@ export async function ProductPage({
                 </label>
                 <button
                   type="submit"
-                  className="mt-2 rounded-lg bg-coral px-4 py-3 text-sm font-semibold text-white"
+                  className="mt-2 rounded-lg bg-coral px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-coral-dark"
                 >
                   {dict.continueToRequest}
                 </button>
@@ -435,7 +435,7 @@ export async function ProductPage({
               </label>
               <button
                 type="submit"
-                className="mt-2 rounded-lg bg-coral px-4 py-3 text-sm font-semibold text-white"
+                className="mt-2 rounded-lg bg-coral px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-coral-dark"
               >
                 {dict.continueToCheckout}
               </button>
@@ -626,7 +626,7 @@ export async function ProductPage({
             </div>
             <a
               href="#booking"
-              className="flex-shrink-0 whitespace-nowrap rounded-lg bg-coral px-4 py-2.5 text-sm font-semibold text-white"
+              className="flex-shrink-0 whitespace-nowrap rounded-lg bg-coral px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-coral-dark"
             >
               {dict.mobileBookingCta}
             </a>

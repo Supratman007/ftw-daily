@@ -83,7 +83,7 @@ export function CommissionTierForm({ action, tier, error }: CommissionTierFormPr
 
       <button
         type="submit"
-        className="mt-2 self-start rounded-lg bg-coral px-4 py-2 text-sm font-semibold text-white"
+        className="mt-2 self-start rounded-lg bg-coral px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-coral-dark"
       >
         {tier ? "Save changes" : "Add tier"}
       </button>

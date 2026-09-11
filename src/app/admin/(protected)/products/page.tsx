@@ -19,7 +19,7 @@ export default async function AdminProductsPage() {
         <h1 className="font-serif text-2xl font-semibold text-ink">Products</h1>
         <Link
           href="/admin/products/new"
-          className="rounded-lg bg-coral px-4 py-2 text-sm font-semibold text-white"
+          className="rounded-lg bg-coral px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-coral-dark"
         >
           + Add product
         </Link>
@@ -45,7 +45,7 @@ export default async function AdminProductsPage() {
           </thead>
           <tbody>
             {(products as Product[] | null)?.map((product) => (
-              <tr key={product.id} className="border-t border-sand-deep">
+              <tr key={product.id} className="border-t border-sand-deep transition-colors hover:bg-sand">
                 <td className="px-4 py-2 font-medium text-ink">{product.title}</td>
                 <td className="px-4 py-2">{PRODUCT_TYPE_LABELS[product.product_type]}</td>
                 <td className="px-4 py-2">
