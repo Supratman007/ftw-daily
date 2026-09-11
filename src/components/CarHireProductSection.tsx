@@ -71,9 +71,10 @@ export function CarHireProductSection({
       <div>
         {essentialsPanel}
         {description && (
-          <p className={`whitespace-pre-wrap break-words text-sm leading-relaxed text-ink-soft ${essentialsPanel ? "mt-6" : ""}`}>
-            {description}
-          </p>
+          <div
+            className={`rich-content break-words text-sm text-ink-soft ${essentialsPanel ? "mt-6" : ""}`}
+            dangerouslySetInnerHTML={{ __html: description }}
+          />
         )}
 
         {selectedCarType && (

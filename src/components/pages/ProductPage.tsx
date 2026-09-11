@@ -99,6 +99,13 @@ export async function ProductPage({
   // covers all three layout branches below, including Car Hire/
   // Transport, whose booking *forms* stay English but whose title/
   // description here are just display text.
+  //
+  // displayDescription is rich-text HTML (from RichTextEditor in the
+  // admin, saved through sanitizeDescriptionHtml.ts) -- rendered below
+  // with dangerouslySetInnerHTML, safe because it was already run
+  // through that allowlist sanitizer on the way into the database, not
+  // because it's trusted here. Never pass raw admin input straight to
+  // dangerouslySetInnerHTML without that step happening first.
   const displayTitle = locale === "id" && p.translation_status === "approved" && p.title_id ? p.title_id : p.title;
   const displayDescription =
     locale === "id" && p.translation_status === "approved" && p.description_id ? p.description_id : p.description;
@@ -452,9 +459,10 @@ export async function ProductPage({
         <div>
           {tripEssentialsPanel}
           {displayDescription && (
-            <p className={`whitespace-pre-wrap break-words text-sm leading-relaxed text-ink-soft ${tripEssentialsPanel ? "mt-6" : ""}`}>
-              {displayDescription}
-            </p>
+            <div
+              className={`rich-content break-words text-sm text-ink-soft ${tripEssentialsPanel ? "mt-6" : ""}`}
+              dangerouslySetInnerHTML={{ __html: displayDescription }}
+            />
           )}
         </div>
 

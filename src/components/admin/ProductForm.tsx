@@ -5,6 +5,7 @@ import { useState } from "react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { PRODUCT_TYPE_LABELS, type Product, type ProductType } from "@/lib/products/types";
 import { DEFAULT_MIN_LEAD_HOURS } from "@/lib/products/leadTime";
+import { RichTextEditor } from "@/components/admin/RichTextEditor";
 
 const inputClass =
   "w-full rounded-lg border border-sand-deep px-3 py-2 text-sm outline-none focus:border-teal";
@@ -181,16 +182,8 @@ export function ProductForm({ action, product, error }: ProductFormProps) {
       </div>
 
       <div>
-        <label className={labelClass} htmlFor="description">
-          Full description
-        </label>
-        <textarea
-          id="description"
-          name="description"
-          rows={6}
-          defaultValue={product?.description ?? ""}
-          className={inputClass}
-        />
+        <label className={labelClass}>Full description</label>
+        <RichTextEditor name="description" defaultValue={product?.description ?? ""} />
       </div>
 
       <div>

@@ -9,12 +9,23 @@ import { DEFAULT_MIN_LEAD_HOURS } from "@/lib/products/leadTime";
 import type { ProductType } from "@/lib/products/types";
 import { maybeRetranslateProduct } from "@/lib/i18n/translateProduct";
 import { translateToIndonesian } from "@/lib/i18n/googleTranslate";
+import { sanitizeDescriptionHtmlOrNull } from "@/lib/products/sanitizeDescriptionHtml";
 
 const PRODUCT_TYPES: ProductType[] = ["tour", "activity", "car_hire", "transport"];
 
 function optionalText(formData: FormData, key: string): string | null {
   const value = decodeHtmlEntities(String(formData.get(key) ?? "")).trim();
   return value === "" ? null : value;
+}
+
+/** Like optionalText, but for a field that comes from RichTextEditor
+ * (src/components/admin/RichTextEditor.tsx) -- real HTML, not plain
+ * text, so it goes through the sanitizer allowlist instead of the
+ * WordPress-paste entity decoder (which would corrupt markup, not
+ * clean it). Used for "description" (below) and "description_id"
+ * (approveProductTranslationAction). */
+function optionalHtml(formData: FormData, key: string): string | null {
+  return sanitizeDescriptionHtmlOrNull(String(formData.get(key) ?? ""));
 }
 
 function optionalNumber(formData: FormData, key: string): number | null {
@@ -67,7 +78,7 @@ function toProductRow(formData: FormData, productType: ProductType, title: strin
     title,
     slug,
     excerpt: optionalText(formData, "excerpt"),
-    description: optionalText(formData, "description"),
+    description: optionalHtml(formData, "description"),
     location: optionalText(formData, "location"),
     category: optionalText(formData, "category"),
     duration_label: optionalText(formData, "duration_label"),
@@ -186,7 +197,7 @@ export async function approveProductTranslationAction(productId: string, formDat
   await requireAdminSection("products");
   const titleId = optionalText(formData, "title_id");
   const excerptId = optionalText(formData, "excerpt_id");
-  const descriptionId = optionalText(formData, "description_id");
+  const descriptionId = optionalHtml(formData, "description_id");
 
   if (!titleId) {
     redirect(
@@ -242,7 +253,7 @@ export async function retranslateProductAction(productId: string) {
       .update({
         title_id: titleId || null,
         excerpt_id: excerptId || null,
-        description_id: descriptionId || null,
+        description_id: sanitizeDescriptionHtmlOrNull(descriptionId),
         translation_status: "draft",
         translated_from_title: product.title,
         translated_from_excerpt: product.excerpt,
