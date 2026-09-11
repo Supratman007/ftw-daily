@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
+import { Suspense } from "react";
 import { Fraunces, Inter, IBM_Plex_Mono } from "next/font/google";
+import { TopProgressBar } from "@/components/TopProgressBar";
 import "./globals.css";
 
 const fraunces = Fraunces({
@@ -56,7 +58,20 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
           centering across pages -- the handful of pages that do center
           vertically set up "min-h-screen flex flex-col" on their own
           <main>, independent of this). */}
-      <body className="min-h-full">{children}</body>
+      <body className="min-h-full">
+        {/* Suspense: useSearchParams (inside TopProgressBar) requires
+            it -- without this, a page that's otherwise eligible for
+            static rendering would get de-opted into fully dynamic
+            rendering just to know the current query string.
+            (Every page here already renders dynamically for other
+            reasons -- SiteHeader's per-request auth check -- but this
+            is the correct, forward-compatible way to use the hook
+            regardless.) */}
+        <Suspense fallback={null}>
+          <TopProgressBar />
+        </Suspense>
+        {children}
+      </body>
     </html>
   );
 }
