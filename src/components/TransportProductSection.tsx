@@ -7,8 +7,6 @@ import type { MeetingPoint, TransportPrice, TransportVehicleType } from "@/lib/c
 
 interface TransportProductSectionProps {
   title: string;
-  location: string | null;
-  durationLabel: string | null;
   description: string | null;
   action: (formData: FormData) => void | Promise<void>;
   vehicleTypes: TransportVehicleType[];
@@ -38,8 +36,6 @@ interface TransportProductSectionProps {
  * the title, not stacked inside the booking card. */
 export function TransportProductSection({
   title,
-  location,
-  durationLabel,
   description,
   action,
   vehicleTypes,
@@ -59,12 +55,8 @@ export function TransportProductSection({
   return (
     <div className="grid gap-8 md:grid-cols-[1.4fr_1fr]">
       <div>
-        <p className="font-mono text-xs uppercase tracking-widest text-ink-soft">
-          {location} {durationLabel ? `· ${durationLabel}` : ""}
-        </p>
-        <h1 className="mt-1 font-serif text-3xl font-semibold text-ink">{title}</h1>
         {description && (
-          <p className="mt-4 whitespace-pre-wrap break-words text-sm leading-relaxed text-ink-soft">
+          <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-ink-soft">
             {description}
           </p>
         )}

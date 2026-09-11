@@ -7,8 +7,6 @@ import type { CarType, CarPackage, CarPackagePrice, MeetingPoint } from "@/lib/c
 
 interface CarHireProductSectionProps {
   title: string;
-  location: string | null;
-  durationLabel: string | null;
   description: string | null;
   action: (formData: FormData) => void | Promise<void>;
   carTypes: CarType[];
@@ -45,8 +43,6 @@ interface CarHireProductSectionProps {
  */
 export function CarHireProductSection({
   title,
-  location,
-  durationLabel,
   description,
   action,
   carTypes,
@@ -65,12 +61,8 @@ export function CarHireProductSection({
   return (
     <div className="grid gap-8 md:grid-cols-[1.4fr_1fr]">
       <div>
-        <p className="font-mono text-xs uppercase tracking-widest text-ink-soft">
-          {location} {durationLabel ? `· ${durationLabel}` : ""}
-        </p>
-        <h1 className="mt-1 font-serif text-3xl font-semibold text-ink">{title}</h1>
         {description && (
-          <p className="mt-4 whitespace-pre-wrap break-words text-sm leading-relaxed text-ink-soft">
+          <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-ink-soft">
             {description}
           </p>
         )}

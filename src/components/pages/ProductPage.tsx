@@ -274,10 +274,26 @@ export async function ProductPage({
       <div className="mb-4 flex justify-end">
         <LocaleSwitcher locale={locale} basePath={`/p/${p.slug}`} />
       </div>
-      <ProductGallery
-        images={p.gallery_urls.length > 0 ? p.gallery_urls : p.cover_image_url ? [p.cover_image_url] : []}
-        alt={displayTitle}
-      />
+
+      {/* Title + location/duration line, above the photo gallery --
+          GetYourGuide-style page order (title first, then the photo,
+          then the quick-facts strip, then the description/booking
+          section), per the user's request. Used to live inside each
+          of the three booking-layout branches below (default tour,
+          Car Hire, Transport) since each one wanted it in the same
+          spot; pulled up here once so it only renders once and always
+          sits above the photo no matter which product type this is. */}
+      <p className="font-mono text-xs uppercase tracking-widest text-ink-soft">
+        {p.location} {p.duration_label ? `· ${p.duration_label}` : ""}
+      </p>
+      <h1 className="mt-1 font-serif text-3xl font-semibold text-ink">{displayTitle}</h1>
+
+      <div className="mt-4">
+        <ProductGallery
+          images={p.gallery_urls.length > 0 ? p.gallery_urls : p.cover_image_url ? [p.cover_image_url] : []}
+          alt={displayTitle}
+        />
+      </div>
 
       {/* "Trip essentials" -- a GetYourGuide-style quick-facts panel
           (icon + bold title + one-line description, in a 2-column
@@ -285,8 +301,8 @@ export async function ProductPage({
           Includes/Trip notes further down the page didn't actually
           cover -- that upgraded existing single-line bullet lists,
           this is a new summary block. Placed right below the photo
-          gallery (and above the title/description/booking section)
-          per the user's request. Only ever shows facts that are
+          gallery (and above the description/booking section) per the
+          user's request. Only ever shows facts that are
           genuinely true for THIS product from real fields already on
           it (duration, capacity, instant vs. manual confirmation,
           whether it's giftable) -- never a generic claim like GYG's
@@ -404,8 +420,6 @@ export async function ProductPage({
       {isCarHire ? (
         <CarHireProductSection
           title={displayTitle}
-          location={p.location}
-          durationLabel={p.duration_label}
           description={displayDescription}
           action={startCarHireCheckoutAction.bind(null, p.id, p.slug)}
           carTypes={carTypes}
@@ -422,8 +436,6 @@ export async function ProductPage({
       ) : isTransport ? (
         <TransportProductSection
           title={displayTitle}
-          location={p.location}
-          durationLabel={p.duration_label}
           description={displayDescription}
           action={startTransportCheckoutAction.bind(null, p.id, p.slug)}
           vehicleTypes={transportVehicleTypes}
@@ -439,12 +451,8 @@ export async function ProductPage({
       ) : (
       <div className="grid gap-8 md:grid-cols-[1.4fr_1fr]">
         <div>
-          <p className="font-mono text-xs uppercase tracking-widest text-ink-soft">
-            {p.location} {p.duration_label ? `· ${p.duration_label}` : ""}
-          </p>
-          <h1 className="mt-1 font-serif text-3xl font-semibold text-ink">{displayTitle}</h1>
           {displayDescription && (
-            <p className="mt-4 whitespace-pre-wrap break-words text-sm leading-relaxed text-ink-soft">
+            <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-ink-soft">
               {displayDescription}
             </p>
           )}
