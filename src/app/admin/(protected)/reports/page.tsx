@@ -230,7 +230,7 @@ export default async function AdminReportsPage({
       <h2 className="mt-8 font-serif text-lg font-semibold text-ink">Revenue by trip</h2>
       <div className="mt-2 overflow-x-auto rounded-lg border border-sand-deep bg-white">
         <table className="w-full min-w-[500px] text-left text-sm">
-          <thead className="bg-sand text-xs uppercase text-ink-soft">
+          <thead className="bg-canvas text-xs uppercase text-ink-soft">
             <tr>
               <th className="px-4 py-2">Trip</th>
               <th className="px-4 py-2">Bookings</th>
@@ -261,7 +261,7 @@ export default async function AdminReportsPage({
       <p className="mt-1 text-xs text-ink-soft">Not scoped to the date range above -- every booking, as of now.</p>
       <div className="mt-2 overflow-x-auto rounded-lg border border-sand-deep bg-white">
         <table className="w-full min-w-[500px] text-left text-sm">
-          <thead className="bg-sand text-xs uppercase text-ink-soft">
+          <thead className="bg-canvas text-xs uppercase text-ink-soft">
             <tr>
               <th className="px-4 py-2">Status</th>
               <th className="px-4 py-2">Bookings</th>
@@ -325,7 +325,7 @@ export default async function AdminReportsPage({
       </div>
       <div className="mt-2 overflow-x-auto rounded-lg border border-sand-deep bg-white">
         <table className="w-full min-w-[800px] text-left text-sm">
-          <thead className="bg-sand text-xs uppercase text-ink-soft">
+          <thead className="bg-canvas text-xs uppercase text-ink-soft">
             <tr>
               <th className="px-4 py-2">Booking code</th>
               <th className="px-4 py-2">Trip</th>

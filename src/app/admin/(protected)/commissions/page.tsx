@@ -223,7 +223,7 @@ export default async function AdminCommissionsPage({
 
             <div className="mt-4 overflow-x-auto rounded-lg border border-sand-deep">
               <table className="w-full min-w-[560px] text-left text-sm">
-                <thead className="bg-sand text-xs uppercase text-ink-soft">
+                <thead className="bg-canvas text-xs uppercase text-ink-soft">
                   <tr>
                     <th className="px-4 py-2">Date</th>
                     <th className="px-4 py-2">Code</th>

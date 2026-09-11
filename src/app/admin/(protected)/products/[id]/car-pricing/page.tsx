@@ -178,7 +178,7 @@ export default async function CarPricingPage({
       ) : (
         <form action={saveCarPricesAction.bind(null, productId)} className="mt-4 overflow-x-auto">
           <table className="min-w-full border-collapse text-left text-sm">
-            <thead className="bg-sand text-xs uppercase text-ink-soft">
+            <thead className="bg-canvas text-xs uppercase text-ink-soft">
               <tr>
                 <th className="border border-sand-deep px-3 py-2">Car / duration</th>
                 {meetingPoints.map((mp) => (

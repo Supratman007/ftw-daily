@@ -196,7 +196,7 @@ export default async function ProtectedAdminLayout({
   ).map(({ href, label, icon }) => ({ href, label, icon }));
 
   return (
-    <div className="flex min-h-screen flex-col bg-sand md:flex-row">
+    <div className="flex min-h-screen flex-col bg-canvas md:flex-row">
       <AdminSidebar
         links={links}
         teamLink={admin.role === "super_admin" ? TEAM_LINK : null}

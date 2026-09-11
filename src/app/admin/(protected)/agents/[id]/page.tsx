@@ -228,7 +228,7 @@ export default async function AdminAgentDetailPage({
       </p>
       <div className="mt-2 overflow-x-auto rounded-lg border border-sand-deep bg-white">
         <table className="w-full min-w-[500px] text-left text-sm">
-          <thead className="bg-sand text-xs uppercase text-ink-soft">
+          <thead className="bg-canvas text-xs uppercase text-ink-soft">
             <tr>
               <th className="px-4 py-2">When</th>
               <th className="px-4 py-2">Referral code used</th>

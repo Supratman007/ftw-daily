@@ -12,6 +12,15 @@
   --color-coral-dark: #b8471f;
   --color-ink: #182421;
   --color-ink-soft: #4b5854;
+  /* Neutral canvas for the back-office screens (admin/agent/account) --
+     separate from --color-sand, which is warm/tan and stays exactly as
+     it is for the customer-facing, tropical-branded marketing pages
+     (small accents there too: table header rows, badges, hover tints).
+     The dashboards themselves want the clean white/light-gray canvas
+     that's the norm for this kind of daily-use tool (what the user
+     pointed at in Bookmundi's own dashboard) -- this is that color,
+     not a copy of Bookmundi's own palette. */
+  --color-canvas: #f6f6f4;
 
   --background: #ffffff;
   --foreground: var(--color-ink);
@@ -34,6 +43,7 @@
   --color-coral-dark: var(--color-coral-dark);
   --color-ink: var(--color-ink);
   --color-ink-soft: var(--color-ink-soft);
+  --color-canvas: var(--color-canvas);
 }
 
 /* Belt-and-suspenders against the phone-width horizontal-scroll bug

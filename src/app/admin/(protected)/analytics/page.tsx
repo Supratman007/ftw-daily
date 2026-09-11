@@ -250,7 +250,7 @@ export default async function AdminAnalyticsPage({
       <h3 className="mt-6 font-serif text-base font-semibold text-ink">Top pages</h3>
       <div className="mt-2 overflow-x-auto rounded-lg border border-sand-deep bg-white">
         <table className="w-full min-w-[500px] text-left text-sm">
-          <thead className="bg-sand text-xs uppercase text-ink-soft">
+          <thead className="bg-canvas text-xs uppercase text-ink-soft">
             <tr>
               <th className="px-4 py-2">Page</th>
               <th className="px-4 py-2">Views</th>
@@ -280,7 +280,7 @@ export default async function AdminAnalyticsPage({
       <h3 className="mt-6 font-serif text-base font-semibold text-ink">Where visitors came from</h3>
       <div className="mt-2 overflow-x-auto rounded-lg border border-sand-deep bg-white">
         <table className="w-full min-w-[400px] text-left text-sm">
-          <thead className="bg-sand text-xs uppercase text-ink-soft">
+          <thead className="bg-canvas text-xs uppercase text-ink-soft">
             <tr>
               <th className="px-4 py-2">Source</th>
               <th className="px-4 py-2">Views</th>
@@ -325,7 +325,7 @@ export default async function AdminAnalyticsPage({
       <h2 className="mt-8 font-serif text-lg font-semibold text-ink">Top trips</h2>
       <div className="mt-2 overflow-x-auto rounded-lg border border-sand-deep bg-white">
         <table className="w-full min-w-[500px] text-left text-sm">
-          <thead className="bg-sand text-xs uppercase text-ink-soft">
+          <thead className="bg-canvas text-xs uppercase text-ink-soft">
             <tr>
               <th className="px-4 py-2">Trip</th>
               <th className="px-4 py-2">Bookings</th>
@@ -360,7 +360,7 @@ export default async function AdminAnalyticsPage({
       </p>
       <div className="mt-2 overflow-x-auto rounded-lg border border-sand-deep bg-white">
         <table className="w-full min-w-[560px] text-left text-sm">
-          <thead className="bg-sand text-xs uppercase text-ink-soft">
+          <thead className="bg-canvas text-xs uppercase text-ink-soft">
             <tr>
               <th className="px-4 py-2">Agent</th>
               <th className="px-4 py-2">Referred bookings</th>

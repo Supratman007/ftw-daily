@@ -189,7 +189,7 @@ export default async function AgentBookingsPage({
       {/* Screen: condensed columns, one "View" per row for the rest. */}
       <div className="mt-6 overflow-x-auto rounded-lg border border-sand-deep bg-white print:hidden">
         <table className="w-full min-w-[720px] text-left text-sm">
-          <thead className="bg-sand text-xs uppercase text-ink-soft">
+          <thead className="bg-canvas text-xs uppercase text-ink-soft">
             <tr>
               <th className="px-4 py-2">Purchase date</th>
               <th className="px-4 py-2">Booking code</th>

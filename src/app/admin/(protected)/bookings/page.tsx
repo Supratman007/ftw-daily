@@ -79,7 +79,7 @@ export default async function AdminBookingsPage({
 
       <div className="mt-6 overflow-x-auto rounded-lg border border-sand-deep bg-white">
         <table className="w-full min-w-[900px] text-left text-sm">
-          <thead className="bg-sand text-xs uppercase text-ink-soft">
+          <thead className="bg-canvas text-xs uppercase text-ink-soft">
             <tr>
               <th className="px-4 py-2">Booking code</th>
               <th className="px-4 py-2">Trip</th>

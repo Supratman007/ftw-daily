@@ -57,7 +57,7 @@ export default async function AdminCancellationPolicyPage({
 
       <div className="mt-6 overflow-x-auto rounded-lg border border-sand-deep bg-white">
         <table className="w-full min-w-[480px] text-left text-sm">
-          <thead className="bg-sand text-xs uppercase text-ink-soft">
+          <thead className="bg-canvas text-xs uppercase text-ink-soft">
             <tr>
               <th className="px-4 py-2">Cancelled at least</th>
               <th className="px-4 py-2">Refund</th>
