@@ -7,7 +7,6 @@ import type { Product } from "@/lib/products/types";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteCookieNotice } from "@/components/SiteCookieNotice";
-import { LocaleSwitcher } from "@/components/LocaleSwitcher";
 import { PageViewTracker } from "@/components/PageViewTracker";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import type { Locale } from "@/lib/i18n/locales";
@@ -72,7 +71,7 @@ export async function HomePage({
   return (
     <>
       <PageViewTracker path={locale === "id" ? "/id" : "/"} locale={locale} />
-      <SiteHeader locale={locale} />
+      <SiteHeader locale={locale} localeSwitcherBasePath="/" />
 
       {/* Full-width hero -- the mountain/wave strip is pinned to the
           bottom edge at a fixed height rather than filling the whole
@@ -99,10 +98,7 @@ export async function HomePage({
         </svg>
 
         <div className="relative mx-auto max-w-5xl px-6 pb-20 pt-10 sm:pb-28 sm:pt-14">
-          <div className="flex justify-end">
-            <LocaleSwitcher locale={locale} basePath="/" />
-          </div>
-          <span className="mt-2 inline-block rounded-full bg-white/75 px-3 py-1 font-mono text-[11px] uppercase tracking-widest text-ocean">
+          <span className="inline-block rounded-full bg-white/75 px-3 py-1 font-mono text-[11px] uppercase tracking-widest text-ocean">
             {dict.heroBadge}
           </span>
           <h1 className="mt-4 max-w-xl font-serif text-3xl font-semibold leading-tight text-ocean sm:text-4xl md:text-5xl">

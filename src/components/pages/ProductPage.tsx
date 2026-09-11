@@ -22,7 +22,6 @@ import { TransportProductSection } from "@/components/TransportProductSection";
 import { startCheckoutAction, startCarHireCheckoutAction, startTransportCheckoutAction } from "@/app/p/[slug]/actions";
 import { earliestBookableDate } from "@/lib/products/leadTime";
 import { ProductReviews, type ProductReviewSummary } from "@/components/ProductReviews";
-import { LocaleSwitcher } from "@/components/LocaleSwitcher";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import type { Locale } from "@/lib/i18n/locales";
 
@@ -389,16 +388,12 @@ export async function ProductPage({
   return (
     <>
       <PageViewTracker path={locale === "en" ? `/p/${slug}` : `/id/p/${slug}`} locale={locale} />
-      <SiteHeader locale={locale} />
+      <SiteHeader locale={locale} localeSwitcherBasePath={`/p/${p.slug}`} />
       <main
         className={`mx-auto max-w-4xl px-6 py-10 ${
           !isCarHire && !isTransport ? "pb-24 md:pb-10" : ""
         }`}
       >
-      <div className="mb-4 flex justify-end">
-        <LocaleSwitcher locale={locale} basePath={`/p/${p.slug}`} />
-      </div>
-
       {/* Title + location/duration line, above the photo gallery --
           GetYourGuide-style page order (title first, then the photo,
           then the quick-facts strip, then the description/booking

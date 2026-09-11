@@ -42,6 +42,7 @@ export function SiteNav({
   links,
   accountLinks,
   logoutSlot,
+  localeSwitcherSlot,
   openLabel,
   closeLabel,
 }: {
@@ -55,6 +56,12 @@ export function SiteNav({
    * call) -- only present when a customer is signed in. Mobile-panel
    * only, same reasoning as accountLinks. */
   logoutSlot?: ReactNode;
+  /** The English/Indonesian LocaleSwitcher pill, pre-rendered by
+   * SiteHeader.tsx (it's the one that knows the page's own basePath).
+   * Mobile-panel only -- SiteHeader renders its own inline desktop
+   * copy separately, same split as logoutSlot/accountLinks. Absent
+   * entirely on a page that has no /id version to switch to. */
+  localeSwitcherSlot?: ReactNode;
   openLabel: string;
   closeLabel: string;
 }) {
@@ -128,6 +135,11 @@ export function SiteNav({
               </Link>
             ))}
             {logoutSlot && <div className="px-2">{logoutSlot}</div>}
+            {localeSwitcherSlot && (
+              <div className="mt-1 border-t border-sand-deep px-2 pt-3">
+                {localeSwitcherSlot}
+              </div>
+            )}
           </nav>
         </>
       )}

@@ -5,6 +5,7 @@ import { customerLogoutAction } from "@/app/actions";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import { DEFAULT_LOCALE, type Locale } from "@/lib/i18n/locales";
 import { SiteNav, type SiteNavLink } from "@/components/SiteNav";
+import { LocaleSwitcher } from "@/components/LocaleSwitcher";
 
 const accountLinkClass = "font-semibold text-teal hover:underline";
 const accentLinkClass = "font-semibold text-coral-dark hover:underline";
@@ -22,7 +23,22 @@ const accentLinkClass = "font-semibold text-coral-dark hover:underline";
  * those pages don't have /id versions yet -- only their *labels*
  * translate so far.
  */
-export async function SiteHeader({ locale = DEFAULT_LOCALE }: { locale?: Locale } = {}) {
+export async function SiteHeader({
+  locale = DEFAULT_LOCALE,
+  localeSwitcherBasePath,
+}: {
+  locale?: Locale;
+  /** The current page's own path with no locale prefix (e.g. "/" for
+   * the homepage, "/p/some-trip" for a product page) -- passed through
+   * to LocaleSwitcher unchanged. Only pages that actually have both an
+   * English and an Indonesian version pass this; when it's omitted, no
+   * language switcher renders at all (same "don't link to a page that
+   * doesn't exist yet" rule LocaleSwitcher itself already documents).
+   * On desktop it shows inline in this header; on phones it shows
+   * inside the hamburger menu (via SiteNav) instead, since the mobile
+   * header is deliberately just the logo and one button. */
+  localeSwitcherBasePath?: string;
+} = {}) {
   const dict = getDictionary(locale).common;
   const supabase = await createSupabaseServerClient();
   const {
@@ -102,6 +118,14 @@ export async function SiteHeader({ locale = DEFAULT_LOCALE }: { locale?: Locale 
     </form>
   ) : null;
 
+  // Desktop shows this inline in the header; phones get it inside the
+  // hamburger panel instead (passed into SiteNav below) -- same split
+  // as everything else in this header. Only renders at all when the
+  // page passed a basePath, i.e. it actually has both locale versions.
+  const localeSwitcher = localeSwitcherBasePath ? (
+    <LocaleSwitcher locale={locale} basePath={localeSwitcherBasePath} />
+  ) : null;
+
   return (
     <header className="relative flex flex-col gap-3 border-b border-sand-deep bg-white px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
       <div className="flex items-center justify-between gap-3 sm:justify-start sm:gap-6">
@@ -112,6 +136,7 @@ export async function SiteHeader({ locale = DEFAULT_LOCALE }: { locale?: Locale 
           links={browseLinks}
           accountLinks={accountLinks}
           logoutSlot={mobileLogoutSlot}
+          localeSwitcherSlot={localeSwitcher}
           openLabel={dict.openMenu}
           closeLabel={dict.closeMenu}
         />
@@ -119,7 +144,8 @@ export async function SiteHeader({ locale = DEFAULT_LOCALE }: { locale?: Locale 
       {/* Desktop only now -- phones reach these same links (and
           logout) through the hamburger panel above instead, so the
           mobile header is just the logo and one button. */}
-      <div className="hidden text-sm sm:block">
+      <div className="hidden items-center gap-4 text-sm sm:flex">
+        {localeSwitcher}
         <div className="flex flex-wrap items-center gap-3 text-ink-soft">
           {accountLinks.map((link) => (
             <Link key={link.href} href={link.href} className={link.variant === "accent" ? accentLinkClass : accountLinkClass}>
