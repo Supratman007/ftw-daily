@@ -8,6 +8,12 @@ import type { MeetingPoint, TransportPrice, TransportVehicleType } from "@/lib/c
 interface TransportProductSectionProps {
   title: string;
   description: string | null;
+  /** The "Trip essentials" quick-facts panel, built by the parent page
+   * (it needs product fields the parent already has) -- rendered here,
+   * in the left column right under the description, so it sits next
+   * to the floating booking card the same way GetYourGuide's does,
+   * instead of spanning the full page width above this section. */
+  essentialsPanel?: React.ReactNode;
   action: (formData: FormData) => void | Promise<void>;
   vehicleTypes: TransportVehicleType[];
   prices: TransportPrice[];
@@ -37,6 +43,7 @@ interface TransportProductSectionProps {
 export function TransportProductSection({
   title,
   description,
+  essentialsPanel,
   action,
   vehicleTypes,
   prices,
@@ -60,6 +67,7 @@ export function TransportProductSection({
             {description}
           </p>
         )}
+        {essentialsPanel}
 
         {selectedVehicleType && (
           <div className="mt-6">

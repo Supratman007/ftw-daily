@@ -8,6 +8,12 @@ import type { CarType, CarPackage, CarPackagePrice, MeetingPoint } from "@/lib/c
 interface CarHireProductSectionProps {
   title: string;
   description: string | null;
+  /** The "Trip essentials" quick-facts panel, built by the parent page
+   * (it needs product fields the parent already has) -- rendered here,
+   * in the left column right under the description, so it sits next
+   * to the floating booking card the same way GetYourGuide's does,
+   * instead of spanning the full page width above this section. */
+  essentialsPanel?: React.ReactNode;
   action: (formData: FormData) => void | Promise<void>;
   carTypes: CarType[];
   packages: CarPackage[];
@@ -44,6 +50,7 @@ interface CarHireProductSectionProps {
 export function CarHireProductSection({
   title,
   description,
+  essentialsPanel,
   action,
   carTypes,
   packages,
@@ -66,6 +73,7 @@ export function CarHireProductSection({
             {description}
           </p>
         )}
+        {essentialsPanel}
 
         {selectedCarType && (
           <div className="mt-6">

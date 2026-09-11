@@ -262,6 +262,131 @@ export async function ProductPage({
   const requestHref = locale === "en" ? `/p/${p.slug}/request` : `/id/p/${p.slug}/request`;
   const giftHref = locale === "en" ? `/p/${p.slug}/gift` : `/id/p/${p.slug}/gift`;
 
+  // "Trip essentials" -- a GetYourGuide-style quick-facts panel (icon +
+  // bold title + one-line description, in a 2-column grid), the piece
+  // the earlier icon-square pass on Highlights/Includes/Trip notes
+  // further down the page didn't actually cover -- that upgraded
+  // existing single-line bullet lists, this is a new summary block.
+  // On GetYourGuide it sits in the LEFT column, under the description,
+  // running alongside the floating booking card on the right -- not as
+  // its own full-width band -- so this is built as a plain value here
+  // and dropped into each layout branch's left column below, right
+  // after the description paragraph, instead of being its own
+  // full-width section between the gallery and the two-column grid.
+  // Only ever shows facts that are genuinely true for THIS product
+  // from real fields already on it (duration, capacity, instant vs.
+  // manual confirmation, whether it's giftable) -- never a generic
+  // claim like GYG's own "Reserve now & pay later" or a named tour
+  // guide language we have no per-product data for. Hotel pickup is
+  // skipped for Car Hire/Transport, which already have their own
+  // detailed pickup picker right in the booking form.
+  const tripEssentialsPanel = (() => {
+    const facts: Array<{ icon: React.ReactNode; bg: string; fg: string; title: string; desc: string }> = [];
+    if (p.duration_label) {
+      facts.push({
+        icon: (
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="9" />
+            <path d="M12 7v5l3 3" />
+          </svg>
+        ),
+        bg: "bg-teal-light",
+        fg: "text-teal",
+        title: dict.durationFactTitle,
+        desc: p.duration_label,
+      });
+    }
+    if (p.capacity_per_date) {
+      facts.push({
+        icon: (
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <circle cx="9" cy="8" r="3" />
+            <path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6" />
+            <circle cx="17" cy="9" r="2.3" />
+            <path d="M15.5 14.3c2.4.5 4.2 2.5 4.2 5.7" />
+          </svg>
+        ),
+        bg: "bg-[#eaf1e1]",
+        fg: "text-rice",
+        title: dict.groupSizeFactTitle,
+        desc: dict.groupSizeFactDesc(p.capacity_per_date),
+      });
+    }
+    facts.push(
+      p.is_bookable
+        ? {
+            icon: (
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M5 12l5 5L20 7" />
+              </svg>
+            ),
+            bg: "bg-teal-light",
+            fg: "text-teal",
+            title: dict.instantConfirmFactTitle,
+            desc: dict.instantConfirmFactDesc,
+          }
+        : {
+            icon: (
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="9" />
+                <path d="M12 7v5l3 3" />
+              </svg>
+            ),
+            bg: "bg-sand",
+            fg: "text-ink-soft",
+            title: dict.manualConfirmFactTitle,
+            desc: dict.manualConfirmFactDesc,
+          }
+    );
+    if (!isCarHire && !isTransport) {
+      facts.push({
+        icon: (
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M12 21s7-6.5 7-12a7 7 0 10-14 0c0 5.5 7 12 7 12z" />
+            <circle cx="12" cy="9" r="2.5" />
+          </svg>
+        ),
+        bg: "bg-[#eaf1e1]",
+        fg: "text-rice",
+        title: dict.pickupFactTitle,
+        desc: dict.pickupFactDesc,
+      });
+    }
+    if (p.is_bookable) {
+      facts.push({
+        icon: (
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <rect x="3" y="9" width="18" height="12" rx="1.5" />
+            <path d="M3 9V7a2 2 0 012-2h2m14 4V7a2 2 0 00-2-2h-2M12 5v16M8 5a2 2 0 110-4c1.5 0 4 2 4 4M16 5a2 2 0 100-4c-1.5 0-4 2-4 4" />
+          </svg>
+        ),
+        bg: "bg-[#fce6dd]",
+        fg: "text-coral-dark",
+        title: dict.giftFactTitle,
+        desc: dict.giftFactDesc,
+      });
+    }
+    if (facts.length === 0) return null;
+    return (
+      <div className="mt-6 rounded-2xl border border-sand-deep bg-white p-6">
+        <h2 className="font-serif text-lg font-semibold text-ink">{dict.tripEssentialsHeading}</h2>
+        <div className="mt-4 grid gap-x-6 gap-y-4 sm:grid-cols-2">
+          {facts.map((f, i) => (
+            <div key={i} className="flex items-start gap-3">
+              <span className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg ${f.bg} ${f.fg}`}>
+                {f.icon}
+              </span>
+              <div className="pt-1">
+                <p className="text-sm font-semibold text-ink">{f.title}</p>
+                <p className="text-xs text-ink-soft">{f.desc}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  })();
+
   return (
     <>
       <PageViewTracker path={locale === "en" ? `/p/${slug}` : `/id/p/${slug}`} locale={locale} />
@@ -295,132 +420,11 @@ export async function ProductPage({
         />
       </div>
 
-      {/* "Trip essentials" -- a GetYourGuide-style quick-facts panel
-          (icon + bold title + one-line description, in a 2-column
-          grid), the piece the earlier icon-square pass on Highlights/
-          Includes/Trip notes further down the page didn't actually
-          cover -- that upgraded existing single-line bullet lists,
-          this is a new summary block. Placed right below the photo
-          gallery (and above the description/booking section) per the
-          user's request. Only ever shows facts that are
-          genuinely true for THIS product from real fields already on
-          it (duration, capacity, instant vs. manual confirmation,
-          whether it's giftable) -- never a generic claim like GYG's
-          own "Reserve now & pay later" or a named tour guide language
-          we have no per-product data for. Hotel pickup is skipped for
-          Car Hire/Transport, which already have their own detailed
-          pickup picker right in the booking form below. */}
-      {(() => {
-        const facts: Array<{ icon: React.ReactNode; bg: string; fg: string; title: string; desc: string }> = [];
-        if (p.duration_label) {
-          facts.push({
-            icon: (
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <circle cx="12" cy="12" r="9" />
-                <path d="M12 7v5l3 3" />
-              </svg>
-            ),
-            bg: "bg-teal-light",
-            fg: "text-teal",
-            title: dict.durationFactTitle,
-            desc: p.duration_label,
-          });
-        }
-        if (p.capacity_per_date) {
-          facts.push({
-            icon: (
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <circle cx="9" cy="8" r="3" />
-                <path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6" />
-                <circle cx="17" cy="9" r="2.3" />
-                <path d="M15.5 14.3c2.4.5 4.2 2.5 4.2 5.7" />
-              </svg>
-            ),
-            bg: "bg-[#eaf1e1]",
-            fg: "text-rice",
-            title: dict.groupSizeFactTitle,
-            desc: dict.groupSizeFactDesc(p.capacity_per_date),
-          });
-        }
-        facts.push(
-          p.is_bookable
-            ? {
-                icon: (
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <path d="M5 12l5 5L20 7" />
-                  </svg>
-                ),
-                bg: "bg-teal-light",
-                fg: "text-teal",
-                title: dict.instantConfirmFactTitle,
-                desc: dict.instantConfirmFactDesc,
-              }
-            : {
-                icon: (
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <circle cx="12" cy="12" r="9" />
-                    <path d="M12 7v5l3 3" />
-                  </svg>
-                ),
-                bg: "bg-sand",
-                fg: "text-ink-soft",
-                title: dict.manualConfirmFactTitle,
-                desc: dict.manualConfirmFactDesc,
-              }
-        );
-        if (!isCarHire && !isTransport) {
-          facts.push({
-            icon: (
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <path d="M12 21s7-6.5 7-12a7 7 0 10-14 0c0 5.5 7 12 7 12z" />
-                <circle cx="12" cy="9" r="2.5" />
-              </svg>
-            ),
-            bg: "bg-[#eaf1e1]",
-            fg: "text-rice",
-            title: dict.pickupFactTitle,
-            desc: dict.pickupFactDesc,
-          });
-        }
-        if (p.is_bookable) {
-          facts.push({
-            icon: (
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <rect x="3" y="9" width="18" height="12" rx="1.5" />
-                <path d="M3 9V7a2 2 0 012-2h2m14 4V7a2 2 0 00-2-2h-2M12 5v16M8 5a2 2 0 110-4c1.5 0 4 2 4 4M16 5a2 2 0 100-4c-1.5 0-4 2-4 4" />
-              </svg>
-            ),
-            bg: "bg-[#fce6dd]",
-            fg: "text-coral-dark",
-            title: dict.giftFactTitle,
-            desc: dict.giftFactDesc,
-          });
-        }
-        if (facts.length === 0) return null;
-        return (
-          <div className="mt-6 rounded-2xl border border-sand-deep bg-white p-6">
-            <h2 className="font-serif text-lg font-semibold text-ink">{dict.tripEssentialsHeading}</h2>
-            <div className="mt-4 grid gap-x-6 gap-y-4 sm:grid-cols-2">
-              {facts.map((f, i) => (
-                <div key={i} className="flex items-start gap-3">
-                  <span className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg ${f.bg} ${f.fg}`}>
-                    {f.icon}
-                  </span>
-                  <div className="pt-1">
-                    <p className="text-sm font-semibold text-ink">{f.title}</p>
-                    <p className="text-xs text-ink-soft">{f.desc}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        );
-      })()}
-
       {isCarHire ? (
         <CarHireProductSection
           title={displayTitle}
           description={displayDescription}
+          essentialsPanel={tripEssentialsPanel}
           action={startCarHireCheckoutAction.bind(null, p.id, p.slug)}
           carTypes={carTypes}
           packages={carPackages}
@@ -437,6 +441,7 @@ export async function ProductPage({
         <TransportProductSection
           title={displayTitle}
           description={displayDescription}
+          essentialsPanel={tripEssentialsPanel}
           action={startTransportCheckoutAction.bind(null, p.id, p.slug)}
           vehicleTypes={transportVehicleTypes}
           prices={transportPrices}
@@ -456,6 +461,7 @@ export async function ProductPage({
               {displayDescription}
             </p>
           )}
+          {tripEssentialsPanel}
         </div>
 
         <div id="booking" className="h-fit rounded-2xl border border-sand-deep bg-white p-6">
