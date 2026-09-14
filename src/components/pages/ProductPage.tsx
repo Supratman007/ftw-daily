@@ -18,6 +18,7 @@ import { SiteFooter } from "@/components/SiteFooter";
 import { SiteCookieNotice } from "@/components/SiteCookieNotice";
 import { PageViewTracker } from "@/components/PageViewTracker";
 import { ProductGallery } from "@/components/ProductGallery";
+import { Recaptcha } from "@/components/Recaptcha";
 import { CarHireProductSection } from "@/components/CarHireProductSection";
 import { TransportProductSection } from "@/components/TransportProductSection";
 import { startCheckoutAction, startCarHireCheckoutAction, startTransportCheckoutAction } from "@/app/p/[slug]/actions";
@@ -574,6 +575,7 @@ export async function ProductPage({
                   style={{ textTransform: "uppercase" }}
                 />
               </label>
+              <Recaptcha />
               <button
                 type="submit"
                 className="mt-2 rounded-lg bg-coral px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-coral-dark"

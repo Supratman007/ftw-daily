@@ -8,6 +8,7 @@ import { createSupabaseServiceRoleClient } from "@/lib/supabase/service";
 import { generateBookingCode } from "@/lib/bookings/booking-code";
 import { usdToIdr } from "@/lib/currency";
 import { getUsdToIdrRate } from "@/lib/exchangeRate";
+import { verifyRecaptcha } from "@/lib/recaptchaVerify";
 import { PARK_INSURANCE_FEE_IDR } from "@/lib/bookings/types";
 import { REFERRAL_COOKIE_NAME } from "@/lib/agents/referralCookie";
 import { sendBookingRequestReceivedEmail, sendNewBookingRequestStaffEmail } from "@/lib/email/resend";
@@ -73,6 +74,9 @@ export async function submitBookingRequestAction(
   }
   if (!pax || pax < 1 || pax > 20) {
     fail(dict.travelersRange);
+  }
+  if (!(await verifyRecaptcha(formData.get("g-recaptcha-response") as string | null))) {
+    fail(dict.recaptchaFailed);
   }
 
   const supabase = await createSupabaseServerClient();

@@ -360,6 +360,7 @@ export const id = {
     recipientContactRequired: "Silakan masukkan cara kami menghubungi penerima.",
     tripNotGiftable: "Perjalanan ini belum bisa dihadiahkan secara online — silakan hubungi kami.",
     couldntCreateGiftVoucher: (msg: string) => `Tidak dapat membuat voucher hadiah Anda: ${msg}`,
+    recaptchaFailed: "Silakan selesaikan verifikasi \"Saya bukan robot\" sebelum mengirim.",
   },
   passwordReset: {
     siteName: "Adventure Lombok Booking",

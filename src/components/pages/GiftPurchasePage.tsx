@@ -9,6 +9,7 @@ import { SiteFooter } from "@/components/SiteFooter";
 import { SiteCookieNotice } from "@/components/SiteCookieNotice";
 import { PageViewTracker } from "@/components/PageViewTracker";
 import { startGiftCheckoutAction } from "@/app/p/[slug]/gift/actions";
+import { Recaptcha } from "@/components/Recaptcha";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import type { Locale } from "@/lib/i18n/locales";
 
@@ -151,6 +152,8 @@ export async function GiftPurchasePage({
               {formatUsd(totalUsd)} <span className="text-sm font-normal">({formatIdr(usdToIdr(totalUsd, exchangeRate))})</span>
             </span>
           </div>
+
+          <Recaptcha />
 
           <button
             type="submit"

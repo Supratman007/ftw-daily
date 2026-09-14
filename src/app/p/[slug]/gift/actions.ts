@@ -9,6 +9,7 @@ import { createXenditInvoice } from "@/lib/xendit/client";
 import { generateVoucherCode } from "@/lib/cancellations/voucherCode";
 import { usdToIdr } from "@/lib/currency";
 import { getUsdToIdrRate } from "@/lib/exchangeRate";
+import { verifyRecaptcha } from "@/lib/recaptchaVerify";
 import { REFERRAL_COOKIE_NAME } from "@/lib/agents/referralCookie";
 import type { Product } from "@/lib/products/types";
 import { getDictionary } from "@/lib/i18n/getDictionary";
@@ -56,6 +57,9 @@ export async function startGiftCheckoutAction(productId: string, slug: string, f
   if (!recipientContact) fail(dict.recipientContactRequired);
   if (!pax || pax < 1 || pax > 20) {
     fail(dict.travelersRange);
+  }
+  if (!(await verifyRecaptcha(formData.get("g-recaptcha-response") as string | null))) {
+    fail(dict.recaptchaFailed);
   }
 
   const supabase = await createSupabaseServerClient();

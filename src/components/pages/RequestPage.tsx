@@ -10,6 +10,7 @@ import { SiteFooter } from "@/components/SiteFooter";
 import { SiteCookieNotice } from "@/components/SiteCookieNotice";
 import { PageViewTracker } from "@/components/PageViewTracker";
 import { submitBookingRequestAction } from "@/app/p/[slug]/request/actions";
+import { Recaptcha } from "@/components/Recaptcha";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import type { Locale } from "@/lib/i18n/locales";
 
@@ -166,6 +167,8 @@ export async function RequestPage({
             </label>
             <input id="room_number" name="room_number" className={inputClass} />
           </div>
+
+          <Recaptcha />
 
           <button
             type="submit"

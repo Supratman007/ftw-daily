@@ -404,6 +404,9 @@ export const en = {
     recipientContactRequired: "Please enter how we'd reach the recipient.",
     tripNotGiftable: "This trip can't be gifted online yet -- please contact us.",
     couldntCreateGiftVoucher: (msg: string) => `Couldn't create your gift voucher: ${msg}`,
+    // Shared by every checkout/request/gift form that includes the
+    // Recaptcha widget (see lib/recaptchaVerify.ts).
+    recaptchaFailed: "Please complete the \"I'm not a robot\" check before submitting.",
   },
   // Shared by src/app/forgot-password + src/app/reset-password and
   // their /id counterparts. This flow is used by customers, staff, and

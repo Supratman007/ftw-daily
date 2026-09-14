@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { formatIdr } from "@/lib/currency";
 import { whatsappLink } from "@/lib/contact";
+import { Recaptcha } from "@/components/Recaptcha";
 import {
   OTHER_MEETING_POINT_VALUE,
   type CarType,
@@ -369,6 +370,8 @@ export function CarHireBookingForm({
           </p>
         )}
       </div>
+
+      <Recaptcha />
 
       <button
         type="submit"

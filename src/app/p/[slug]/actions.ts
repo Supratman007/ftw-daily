@@ -9,6 +9,7 @@ import { createXenditInvoice } from "@/lib/xendit/client";
 import { generateBookingCode } from "@/lib/bookings/booking-code";
 import { idrToUsd, usdToIdr } from "@/lib/currency";
 import { getUsdToIdrRate } from "@/lib/exchangeRate";
+import { verifyRecaptcha } from "@/lib/recaptchaVerify";
 import { REFERRAL_COOKIE_NAME } from "@/lib/agents/referralCookie";
 import { OTHER_MEETING_POINT_VALUE, type CarPackage, type CarType, type MeetingPoint } from "@/lib/cars/types";
 import { hasEnoughLeadTime, pickupDatetimeInBusinessTimezone, tripStartFromDate } from "@/lib/products/leadTime";
@@ -55,6 +56,9 @@ export async function startCheckoutAction(productId: string, slug: string, formD
   }
   if (!pax || pax < 1 || pax > 20) {
     fail(dict.travelersRange);
+  }
+  if (!(await verifyRecaptcha(formData.get("g-recaptcha-response") as string | null))) {
+    fail(dict.recaptchaFailed);
   }
 
   const supabase = await createSupabaseServerClient();
@@ -248,6 +252,7 @@ export async function startCarHireCheckoutAction(productId: string, slug: string
   const pickupDate = String(formData.get("pickup_date") ?? "");
   const pickupTime = String(formData.get("pickup_time") ?? "");
   const discountCodeInput = String(formData.get("discount_code") ?? "").trim();
+  const recaptchaToken = formData.get("g-recaptcha-response") as string | null;
 
   // Hidden field on the form (see CarHireBookingForm) -- same
   // "carries whichever locale the customer was already browsing in"
@@ -265,6 +270,10 @@ export async function startCarHireCheckoutAction(productId: string, slug: string
 
   function fail(message: string): never {
     redirect(`${pathPrefix}/p/${slug}?${new URLSearchParams({ error: message }).toString()}`);
+  }
+
+  if (!(await verifyRecaptcha(recaptchaToken))) {
+    fail(dict.recaptchaFailed);
   }
 
   const isOtherMeetingPoint = meetingPointIdInput === OTHER_MEETING_POINT_VALUE;
@@ -503,6 +512,7 @@ export async function startTransportCheckoutAction(productId: string, slug: stri
   const pickupDate = String(formData.get("pickup_date") ?? "");
   const pickupTime = String(formData.get("pickup_time") ?? "");
   const discountCodeInput = String(formData.get("discount_code") ?? "").trim();
+  const recaptchaToken = formData.get("g-recaptcha-response") as string | null;
 
   // Same previously-missing hidden-field fix as startCarHireCheckoutAction
   // above.
@@ -517,6 +527,10 @@ export async function startTransportCheckoutAction(productId: string, slug: stri
 
   function fail(message: string): never {
     redirect(`${pathPrefix}/p/${slug}?${new URLSearchParams({ error: message }).toString()}`);
+  }
+
+  if (!(await verifyRecaptcha(recaptchaToken))) {
+    fail(dict.recaptchaFailed);
   }
 
   const isOtherMeetingPoint = meetingPointIdInput === OTHER_MEETING_POINT_VALUE;
