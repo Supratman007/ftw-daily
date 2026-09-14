@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { requireCustomer } from "@/lib/customers/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { formatIdr, formatUsd, usdToIdr } from "@/lib/currency";
+import { getUsdToIdrRate } from "@/lib/exchangeRate";
 import { PARK_INSURANCE_FEE_IDR } from "@/lib/bookings/types";
 import type { Product } from "@/lib/products/types";
 import { SiteHeader } from "@/components/SiteHeader";
@@ -9,6 +10,7 @@ import { SiteFooter } from "@/components/SiteFooter";
 import { SiteCookieNotice } from "@/components/SiteCookieNotice";
 import { PageViewTracker } from "@/components/PageViewTracker";
 import { submitBookingRequestAction } from "@/app/p/[slug]/request/actions";
+import { Recaptcha } from "@/components/Recaptcha";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import type { Locale } from "@/lib/i18n/locales";
 
@@ -59,7 +61,7 @@ export async function RequestPage({
 
   const adultPriceUsd = p.adult_price_usd ?? 0;
   const subtotalUsd = adultPriceUsd * pax;
-  const estimate = `${formatUsd(subtotalUsd)} (${formatIdr(usdToIdr(subtotalUsd))})`;
+  const estimate = `${formatUsd(subtotalUsd)} (${formatIdr(usdToIdr(subtotalUsd, await getUsdToIdrRate()))})`;
 
   return (
     <>
@@ -166,9 +168,11 @@ export async function RequestPage({
             <input id="room_number" name="room_number" className={inputClass} />
           </div>
 
+          <Recaptcha />
+
           <button
             type="submit"
-            className="self-start rounded-lg bg-coral px-6 py-3 text-sm font-semibold text-white"
+            className="self-start rounded-lg bg-coral px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-coral-dark"
           >
             {dict.submit}
           </button>

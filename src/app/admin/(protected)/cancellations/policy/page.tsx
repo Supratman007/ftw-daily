@@ -29,7 +29,7 @@ export default async function AdminCancellationPolicyPage({
         <h1 className="font-serif text-2xl font-semibold text-ink">Cancellation refund policy</h1>
         <Link
           href="/admin/cancellations/policy/new"
-          className="rounded-lg bg-coral px-4 py-2 text-sm font-semibold text-white"
+          className="rounded-lg bg-coral px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-coral-dark"
         >
           + Add tier
         </Link>
@@ -57,7 +57,7 @@ export default async function AdminCancellationPolicyPage({
 
       <div className="mt-6 overflow-x-auto rounded-lg border border-sand-deep bg-white">
         <table className="w-full min-w-[480px] text-left text-sm">
-          <thead className="bg-sand text-xs uppercase text-ink-soft">
+          <thead className="bg-canvas text-xs uppercase text-ink-soft">
             <tr>
               <th className="px-4 py-2">Cancelled at least</th>
               <th className="px-4 py-2">Refund</th>
@@ -66,7 +66,7 @@ export default async function AdminCancellationPolicyPage({
           </thead>
           <tbody>
             {tiers.map((t) => (
-              <tr key={t.id} className="border-t border-sand-deep">
+              <tr key={t.id} className="border-t border-sand-deep transition-colors hover:bg-sand">
                 <td className="px-4 py-2 font-semibold text-ink">
                   {t.min_days_before_departure} day{t.min_days_before_departure === 1 ? "" : "s"}{" "}
                   before departure

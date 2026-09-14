@@ -2,12 +2,14 @@ import { notFound } from "next/navigation";
 import { requireCustomer } from "@/lib/customers/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { formatIdr, formatUsd, usdToIdr } from "@/lib/currency";
+import { getUsdToIdrRate } from "@/lib/exchangeRate";
 import type { Product } from "@/lib/products/types";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteCookieNotice } from "@/components/SiteCookieNotice";
 import { PageViewTracker } from "@/components/PageViewTracker";
 import { startGiftCheckoutAction } from "@/app/p/[slug]/gift/actions";
+import { Recaptcha } from "@/components/Recaptcha";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import type { Locale } from "@/lib/i18n/locales";
 
@@ -66,6 +68,7 @@ export async function GiftPurchasePage({
 
   const paxCount = Math.min(20, Math.max(1, Number(pax) || 2));
   const totalUsd = p.adult_price_usd * paxCount;
+  const exchangeRate = await getUsdToIdrRate();
 
   return (
     <>
@@ -146,13 +149,15 @@ export async function GiftPurchasePage({
           <div className="mt-2 flex items-center justify-between border-t border-sand-deep pt-4">
             <span className="text-sm text-ink-soft">{dict.totalLabel}</span>
             <span className="font-serif text-xl font-bold text-ocean">
-              {formatUsd(totalUsd)} <span className="text-sm font-normal">({formatIdr(usdToIdr(totalUsd))})</span>
+              {formatUsd(totalUsd)} <span className="text-sm font-normal">({formatIdr(usdToIdr(totalUsd, exchangeRate))})</span>
             </span>
           </div>
 
+          <Recaptcha />
+
           <button
             type="submit"
-            className="mt-2 rounded-lg bg-coral px-4 py-3 text-sm font-semibold text-white"
+            className="mt-2 rounded-lg bg-coral px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-coral-dark"
           >
             {dict.continueToPayment}
           </button>

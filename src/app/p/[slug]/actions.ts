@@ -8,6 +8,8 @@ import { createSupabaseServiceRoleClient } from "@/lib/supabase/service";
 import { createXenditInvoice } from "@/lib/xendit/client";
 import { generateBookingCode } from "@/lib/bookings/booking-code";
 import { idrToUsd, usdToIdr } from "@/lib/currency";
+import { getUsdToIdrRate } from "@/lib/exchangeRate";
+import { verifyRecaptcha } from "@/lib/recaptchaVerify";
 import { REFERRAL_COOKIE_NAME } from "@/lib/agents/referralCookie";
 import { OTHER_MEETING_POINT_VALUE, type CarPackage, type CarType, type MeetingPoint } from "@/lib/cars/types";
 import { hasEnoughLeadTime, pickupDatetimeInBusinessTimezone, tripStartFromDate } from "@/lib/products/leadTime";
@@ -54,6 +56,9 @@ export async function startCheckoutAction(productId: string, slug: string, formD
   }
   if (!pax || pax < 1 || pax > 20) {
     fail(dict.travelersRange);
+  }
+  if (!(await verifyRecaptcha(formData.get("g-recaptcha-response") as string | null))) {
+    fail(dict.recaptchaFailed);
   }
 
   const supabase = await createSupabaseServerClient();
@@ -154,7 +159,7 @@ export async function startCheckoutAction(productId: string, slug: string, formD
   }
 
   const finalSubtotalUsd = Math.max(0, subtotalUsd - discountAmountUsd);
-  const totalIdr = usdToIdr(finalSubtotalUsd);
+  const totalIdr = usdToIdr(finalSubtotalUsd, await getUsdToIdrRate());
   const bookingCode = generateBookingCode();
   const bookingId = crypto.randomUUID();
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
@@ -247,6 +252,7 @@ export async function startCarHireCheckoutAction(productId: string, slug: string
   const pickupDate = String(formData.get("pickup_date") ?? "");
   const pickupTime = String(formData.get("pickup_time") ?? "");
   const discountCodeInput = String(formData.get("discount_code") ?? "").trim();
+  const recaptchaToken = formData.get("g-recaptcha-response") as string | null;
 
   // Hidden field on the form (see CarHireBookingForm) -- same
   // "carries whichever locale the customer was already browsing in"
@@ -264,6 +270,10 @@ export async function startCarHireCheckoutAction(productId: string, slug: string
 
   function fail(message: string): never {
     redirect(`${pathPrefix}/p/${slug}?${new URLSearchParams({ error: message }).toString()}`);
+  }
+
+  if (!(await verifyRecaptcha(recaptchaToken))) {
+    fail(dict.recaptchaFailed);
   }
 
   const isOtherMeetingPoint = meetingPointIdInput === OTHER_MEETING_POINT_VALUE;
@@ -370,7 +380,8 @@ export async function startCarHireCheckoutAction(productId: string, slug: string
     fail(dict.noPriceForCombination);
   }
 
-  const subtotalUsd = idrToUsd(priceIdr);
+  const rate = await getUsdToIdrRate();
+  const subtotalUsd = idrToUsd(priceIdr, rate);
   const serviceClient = createSupabaseServiceRoleClient();
 
   let discountCodeId: string | null = null;
@@ -410,7 +421,7 @@ export async function startCarHireCheckoutAction(productId: string, slug: string
   // exact IDR price) when a discount actually changed the amount --
   // the common no-discount case charges precisely what the price grid
   // says.
-  const totalIdr = discountAmountUsd > 0 ? usdToIdr(finalSubtotalUsd) : priceIdr;
+  const totalIdr = discountAmountUsd > 0 ? usdToIdr(finalSubtotalUsd, rate) : priceIdr;
   const bookingCode = generateBookingCode();
   const bookingId = crypto.randomUUID();
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
@@ -501,6 +512,7 @@ export async function startTransportCheckoutAction(productId: string, slug: stri
   const pickupDate = String(formData.get("pickup_date") ?? "");
   const pickupTime = String(formData.get("pickup_time") ?? "");
   const discountCodeInput = String(formData.get("discount_code") ?? "").trim();
+  const recaptchaToken = formData.get("g-recaptcha-response") as string | null;
 
   // Same previously-missing hidden-field fix as startCarHireCheckoutAction
   // above.
@@ -515,6 +527,10 @@ export async function startTransportCheckoutAction(productId: string, slug: stri
 
   function fail(message: string): never {
     redirect(`${pathPrefix}/p/${slug}?${new URLSearchParams({ error: message }).toString()}`);
+  }
+
+  if (!(await verifyRecaptcha(recaptchaToken))) {
+    fail(dict.recaptchaFailed);
   }
 
   const isOtherMeetingPoint = meetingPointIdInput === OTHER_MEETING_POINT_VALUE;
@@ -629,7 +645,8 @@ export async function startTransportCheckoutAction(productId: string, slug: stri
     fail(dict.noPriceForRoute);
   }
 
-  const subtotalUsd = idrToUsd(priceIdr);
+  const rate = await getUsdToIdrRate();
+  const subtotalUsd = idrToUsd(priceIdr, rate);
   const serviceClient = createSupabaseServiceRoleClient();
 
   let discountCodeId: string | null = null;
@@ -665,7 +682,7 @@ export async function startTransportCheckoutAction(productId: string, slug: stri
   }
 
   const finalSubtotalUsd = Math.max(0, subtotalUsd - discountAmountUsd);
-  const totalIdr = discountAmountUsd > 0 ? usdToIdr(finalSubtotalUsd) : priceIdr;
+  const totalIdr = discountAmountUsd > 0 ? usdToIdr(finalSubtotalUsd, rate) : priceIdr;
   const bookingCode = generateBookingCode();
   const bookingId = crypto.randomUUID();
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";

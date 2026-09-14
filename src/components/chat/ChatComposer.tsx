@@ -25,7 +25,7 @@ export function ChatComposer({
       />
       <button
         type="submit"
-        className="rounded-lg bg-coral px-4 py-2 text-sm font-semibold text-white"
+        className="rounded-lg bg-coral px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-coral-dark"
       >
         {sendLabel}
       </button>

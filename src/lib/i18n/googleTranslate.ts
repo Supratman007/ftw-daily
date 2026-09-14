@@ -15,6 +15,14 @@ const TRANSLATE_ENDPOINT = "https://translation.googleapis.com/language/translat
  * work this time" should mean for them; here that's always "don't
  * block saving the English content, just leave the Indonesian draft
  * as it was and let the admin retry."
+ *
+ * Always sent with format: "html" -- the product description is now
+ * rich text (HTML from RichTextEditor, see sanitizeDescriptionHtml.ts),
+ * and "html" is what tells Google to translate the *text* inside tags
+ * while leaving the tags themselves alone, instead of mistranslating
+ * or mangling markup as if it were literal text. Plain strings without
+ * any tags (the title, the short summary) translate the same either
+ * way, so this one format works for the whole batch.
  */
 export async function translateToIndonesian(texts: string[]): Promise<string[]> {
   const apiKey = process.env.GOOGLE_TRANSLATE_API_KEY;
@@ -39,7 +47,7 @@ export async function translateToIndonesian(texts: string[]): Promise<string[]> 
   const response = await fetch(`${TRANSLATE_ENDPOINT}?key=${encodeURIComponent(apiKey)}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ q: toTranslate, target: "id", format: "text" }),
+    body: JSON.stringify({ q: toTranslate, target: "id", format: "html" }),
   });
 
   if (!response.ok) {

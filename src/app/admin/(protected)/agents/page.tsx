@@ -52,7 +52,7 @@ export default async function AdminAgentsPage({
 
       <div className="mt-6 overflow-x-auto rounded-lg border border-sand-deep bg-white">
         <table className="w-full min-w-[720px] text-left text-sm">
-          <thead className="bg-sand text-xs uppercase text-ink-soft">
+          <thead className="bg-canvas text-xs uppercase text-ink-soft">
             <tr>
               <th className="px-4 py-2">Name</th>
               <th className="px-4 py-2">Type</th>
@@ -64,7 +64,7 @@ export default async function AdminAgentsPage({
           </thead>
           <tbody>
             {agents.map((a) => (
-              <tr key={a.id} className="border-t border-sand-deep">
+              <tr key={a.id} className="border-t border-sand-deep transition-colors hover:bg-sand">
                 <td className="px-4 py-2 font-medium text-ink">
                   <Link href={`/admin/agents/${a.id}`} className="text-teal hover:underline">
                     {a.name}
