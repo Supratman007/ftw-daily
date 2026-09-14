@@ -105,7 +105,16 @@ export function SiteNav({
       {open && (
         <>
           <div
-            className="fixed inset-0 z-30 bg-ink/30 sm:hidden"
+            // cursor-pointer here isn't a visual affordance (nobody
+            // sees this as a link) -- it's required for iOS Safari to
+            // treat a plain, non-form <div> as tappable at all. iOS
+            // only fires click/touch events on an element added via
+            // addEventListener (what React's onClick compiles to, not
+            // an inline onclick="..." attribute) if that element is a
+            // naturally-clickable tag (a/button/input/...) or carries
+            // an explicit cursor:pointer -- otherwise the tap is
+            // silently swallowed instead of bubbling to this handler.
+            className="fixed inset-0 z-30 cursor-pointer bg-ink/30 sm:hidden"
             onClick={() => setOpen(false)}
             aria-hidden="true"
           />
