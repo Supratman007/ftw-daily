@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { requireCustomer } from "@/lib/customers/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { formatIdr, formatUsd, usdToIdr } from "@/lib/currency";
+import { getUsdToIdrRate } from "@/lib/exchangeRate";
 import { PARK_INSURANCE_FEE_IDR } from "@/lib/bookings/types";
 import type { Product } from "@/lib/products/types";
 import { SiteHeader } from "@/components/SiteHeader";
@@ -59,7 +60,7 @@ export async function RequestPage({
 
   const adultPriceUsd = p.adult_price_usd ?? 0;
   const subtotalUsd = adultPriceUsd * pax;
-  const estimate = `${formatUsd(subtotalUsd)} (${formatIdr(usdToIdr(subtotalUsd))})`;
+  const estimate = `${formatUsd(subtotalUsd)} (${formatIdr(usdToIdr(subtotalUsd, await getUsdToIdrRate()))})`;
 
   return (
     <>

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ProductCardImage } from "@/components/ProductCardImage";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { formatIdr, formatUsd, usdToIdr } from "@/lib/currency";
+import { getUsdToIdrRate } from "@/lib/exchangeRate";
 import { PRODUCT_TYPE_LABELS, type Product } from "@/lib/products/types";
 import type {
   CarType,
@@ -89,6 +90,8 @@ export async function ProductPage({
   if (!product) {
     notFound();
   }
+
+  const exchangeRate = await getUsdToIdrRate();
 
   const p = product as Product;
   const adultPriceUsd = p.adult_price_usd ?? 0;
@@ -470,7 +473,7 @@ export async function ProductPage({
           <div className="font-serif text-2xl font-bold text-ocean">
             {formatUsd(adultPriceUsd)}{" "}
             <span className="text-sm font-normal text-ink-soft">
-              ({formatIdr(usdToIdr(adultPriceUsd))}) {dict.perPerson}
+              ({formatIdr(usdToIdr(adultPriceUsd, exchangeRate))}) {dict.perPerson}
             </span>
           </div>
           <div className="my-4 h-px bg-sand-deep" />

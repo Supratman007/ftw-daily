@@ -8,6 +8,7 @@ import { createSupabaseServiceRoleClient } from "@/lib/supabase/service";
 import { createXenditInvoice } from "@/lib/xendit/client";
 import { generateVoucherCode } from "@/lib/cancellations/voucherCode";
 import { usdToIdr } from "@/lib/currency";
+import { getUsdToIdrRate } from "@/lib/exchangeRate";
 import { REFERRAL_COOKIE_NAME } from "@/lib/agents/referralCookie";
 import type { Product } from "@/lib/products/types";
 import { getDictionary } from "@/lib/i18n/getDictionary";
@@ -109,7 +110,7 @@ export async function startGiftCheckoutAction(productId: string, slug: string, f
   }
 
   const finalSubtotalUsd = Math.max(0, subtotalUsd - discountAmountUsd);
-  const totalIdr = usdToIdr(finalSubtotalUsd);
+  const totalIdr = usdToIdr(finalSubtotalUsd, await getUsdToIdrRate());
   const voucherCode = generateVoucherCode();
   const voucherId = crypto.randomUUID();
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";

@@ -8,6 +8,7 @@ import { createSupabaseServiceRoleClient } from "@/lib/supabase/service";
 import { createXenditInvoice } from "@/lib/xendit/client";
 import { generateBookingCode } from "@/lib/bookings/booking-code";
 import { idrToUsd, usdToIdr } from "@/lib/currency";
+import { getUsdToIdrRate } from "@/lib/exchangeRate";
 import { REFERRAL_COOKIE_NAME } from "@/lib/agents/referralCookie";
 import { OTHER_MEETING_POINT_VALUE, type CarPackage, type CarType, type MeetingPoint } from "@/lib/cars/types";
 import { hasEnoughLeadTime, pickupDatetimeInBusinessTimezone, tripStartFromDate } from "@/lib/products/leadTime";
@@ -154,7 +155,7 @@ export async function startCheckoutAction(productId: string, slug: string, formD
   }
 
   const finalSubtotalUsd = Math.max(0, subtotalUsd - discountAmountUsd);
-  const totalIdr = usdToIdr(finalSubtotalUsd);
+  const totalIdr = usdToIdr(finalSubtotalUsd, await getUsdToIdrRate());
   const bookingCode = generateBookingCode();
   const bookingId = crypto.randomUUID();
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
@@ -370,7 +371,8 @@ export async function startCarHireCheckoutAction(productId: string, slug: string
     fail(dict.noPriceForCombination);
   }
 
-  const subtotalUsd = idrToUsd(priceIdr);
+  const rate = await getUsdToIdrRate();
+  const subtotalUsd = idrToUsd(priceIdr, rate);
   const serviceClient = createSupabaseServiceRoleClient();
 
   let discountCodeId: string | null = null;
@@ -410,7 +412,7 @@ export async function startCarHireCheckoutAction(productId: string, slug: string
   // exact IDR price) when a discount actually changed the amount --
   // the common no-discount case charges precisely what the price grid
   // says.
-  const totalIdr = discountAmountUsd > 0 ? usdToIdr(finalSubtotalUsd) : priceIdr;
+  const totalIdr = discountAmountUsd > 0 ? usdToIdr(finalSubtotalUsd, rate) : priceIdr;
   const bookingCode = generateBookingCode();
   const bookingId = crypto.randomUUID();
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
@@ -629,7 +631,8 @@ export async function startTransportCheckoutAction(productId: string, slug: stri
     fail(dict.noPriceForRoute);
   }
 
-  const subtotalUsd = idrToUsd(priceIdr);
+  const rate = await getUsdToIdrRate();
+  const subtotalUsd = idrToUsd(priceIdr, rate);
   const serviceClient = createSupabaseServiceRoleClient();
 
   let discountCodeId: string | null = null;
@@ -665,7 +668,7 @@ export async function startTransportCheckoutAction(productId: string, slug: stri
   }
 
   const finalSubtotalUsd = Math.max(0, subtotalUsd - discountAmountUsd);
-  const totalIdr = discountAmountUsd > 0 ? usdToIdr(finalSubtotalUsd) : priceIdr;
+  const totalIdr = discountAmountUsd > 0 ? usdToIdr(finalSubtotalUsd, rate) : priceIdr;
   const bookingCode = generateBookingCode();
   const bookingId = crypto.randomUUID();
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";

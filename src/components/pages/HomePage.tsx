@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ProductCardImage } from "@/components/ProductCardImage";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { formatUsd, formatIdr, usdToIdr } from "@/lib/currency";
+import { getUsdToIdrRate } from "@/lib/exchangeRate";
 import { PRODUCT_TYPE_LABELS } from "@/lib/products/types";
 import type { Product } from "@/lib/products/types";
 import { SiteHeader } from "@/components/SiteHeader";
@@ -48,6 +49,7 @@ export async function HomePage({
     .order("created_at", { ascending: false });
 
   const allItems = (products ?? []) as Product[];
+  const exchangeRate = await getUsdToIdrRate();
 
   const locations = Array.from(new Set(allItems.map((p) => p.location).filter((l): l is string => !!l))).sort();
 
@@ -222,7 +224,7 @@ export async function HomePage({
                       <p className="mt-auto pt-2 text-sm font-semibold text-ocean">
                         {formatUsd(p.adult_price_usd)}{" "}
                         <span className="font-normal text-ink-soft">
-                          ({formatIdr(usdToIdr(p.adult_price_usd))})
+                          ({formatIdr(usdToIdr(p.adult_price_usd, exchangeRate))})
                         </span>
                       </p>
                     )}

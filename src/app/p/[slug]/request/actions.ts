@@ -6,7 +6,8 @@ import { requireCustomer } from "@/lib/customers/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/service";
 import { generateBookingCode } from "@/lib/bookings/booking-code";
-import { usdToIdr, USD_TO_IDR_RATE } from "@/lib/currency";
+import { usdToIdr } from "@/lib/currency";
+import { getUsdToIdrRate } from "@/lib/exchangeRate";
 import { PARK_INSURANCE_FEE_IDR } from "@/lib/bookings/types";
 import { REFERRAL_COOKIE_NAME } from "@/lib/agents/referralCookie";
 import { sendBookingRequestReceivedEmail, sendNewBookingRequestStaffEmail } from "@/lib/email/resend";
@@ -178,14 +179,15 @@ export async function submitBookingRequestAction(
     referredByAgentId = agentRow?.id ?? null;
   }
 
+  const rate = await getUsdToIdrRate();
   const subtotalUsd = p.adult_price_usd * pax;
   const parkInsuranceCount = travelers.filter((t) => t.insuranceType === "park_provided").length;
   const insuranceTotalIdr = PARK_INSURANCE_FEE_IDR * parkInsuranceCount;
-  const totalIdr = usdToIdr(subtotalUsd) + insuranceTotalIdr;
+  const totalIdr = usdToIdr(subtotalUsd, rate) + insuranceTotalIdr;
   // Reference figure only (spec §9: USD is "estimated," IDR is what's
   // actually charged) -- folds the flat IDR insurance fee back into an
   // approximate USD equivalent so the two totals stay consistent.
-  const totalUsd = subtotalUsd + insuranceTotalIdr / USD_TO_IDR_RATE;
+  const totalUsd = subtotalUsd + insuranceTotalIdr / rate;
 
   const bookingCode = generateBookingCode();
   const bookingId = crypto.randomUUID();
