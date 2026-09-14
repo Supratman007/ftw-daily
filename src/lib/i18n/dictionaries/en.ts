@@ -319,6 +319,8 @@ export const en = {
     continueToCheckout: "Continue to checkout",
   },
   footer: {
+    aboutUs: "About Us",
+    contactUs: "Contact Us",
     privacyPolicy: "Privacy Policy",
     termsOfService: "Terms of Service",
   },

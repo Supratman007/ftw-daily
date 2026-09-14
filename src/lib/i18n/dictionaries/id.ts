@@ -291,6 +291,8 @@ export const id = {
     continueToCheckout: "Lanjutkan ke pembayaran",
   },
   footer: {
+    aboutUs: "Tentang Kami",
+    contactUs: "Hubungi Kami",
     privacyPolicy: "Kebijakan Privasi",
     termsOfService: "Syarat & Ketentuan",
   },
