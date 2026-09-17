@@ -9,7 +9,6 @@ import { SiteFooter } from "@/components/SiteFooter";
 import { SiteCookieNotice } from "@/components/SiteCookieNotice";
 import { PageViewTracker } from "@/components/PageViewTracker";
 import { startGiftCheckoutAction } from "@/app/p/[slug]/gift/actions";
-import { Recaptcha } from "@/components/Recaptcha";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import type { Locale } from "@/lib/i18n/locales";
 
@@ -90,6 +89,13 @@ export async function GiftPurchasePage({
           className="mt-6 flex flex-col gap-4 rounded-2xl border border-sand-deep bg-white p-6"
         >
           <input type="hidden" name="locale" value={locale} />
+          {/* Honeypot -- hidden from real visitors, most bots fill it in
+              anyway; see startGiftCheckoutAction for what happens if
+              it's non-empty. Same pattern as the Contact form. */}
+          <div className="absolute left-[-9999px] top-auto h-px w-px overflow-hidden" aria-hidden="true">
+            <label htmlFor="website">Website</label>
+            <input id="website" name="website" type="text" tabIndex={-1} autoComplete="off" />
+          </div>
           <div>
             <label className={labelClass} htmlFor="recipient_name">
               {dict.recipientNameLabel}
@@ -152,8 +158,6 @@ export async function GiftPurchasePage({
               {formatUsd(totalUsd)} <span className="text-sm font-normal">({formatIdr(usdToIdr(totalUsd, exchangeRate))})</span>
             </span>
           </div>
-
-          <Recaptcha />
 
           <button
             type="submit"

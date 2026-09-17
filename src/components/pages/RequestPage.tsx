@@ -10,7 +10,6 @@ import { SiteFooter } from "@/components/SiteFooter";
 import { SiteCookieNotice } from "@/components/SiteCookieNotice";
 import { PageViewTracker } from "@/components/PageViewTracker";
 import { submitBookingRequestAction } from "@/app/p/[slug]/request/actions";
-import { Recaptcha } from "@/components/Recaptcha";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import type { Locale } from "@/lib/i18n/locales";
 
@@ -84,6 +83,13 @@ export async function RequestPage({
           className="mt-6 flex flex-col gap-8"
         >
           <input type="hidden" name="locale" value={locale} />
+          {/* Honeypot -- hidden from real visitors, most bots fill it in
+              anyway; see submitBookingRequestAction for what happens if
+              it's non-empty. Same pattern as the Contact form. */}
+          <div className="absolute left-[-9999px] top-auto h-px w-px overflow-hidden" aria-hidden="true">
+            <label htmlFor="website">Website</label>
+            <input id="website" name="website" type="text" tabIndex={-1} autoComplete="off" />
+          </div>
           {Array.from({ length: pax }).map((_, i) => (
             <fieldset key={i} className="rounded-2xl border border-sand-deep bg-white p-5">
               <legend className="px-1 font-serif text-lg font-semibold text-ink">
@@ -167,8 +173,6 @@ export async function RequestPage({
             </label>
             <input id="room_number" name="room_number" className={inputClass} />
           </div>
-
-          <Recaptcha />
 
           <button
             type="submit"

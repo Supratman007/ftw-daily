@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { formatIdr } from "@/lib/currency";
 import { whatsappLink } from "@/lib/contact";
-import { Recaptcha } from "@/components/Recaptcha";
 import {
   OTHER_MEETING_POINT_VALUE,
   type MeetingPoint,
@@ -144,6 +143,13 @@ export function TransportBookingForm({
   return (
     <form action={action} className="flex flex-col gap-3">
       <input type="hidden" name="locale" value={locale} />
+      {/* Honeypot -- hidden from real visitors, most bots fill it in
+          anyway; see startTransportCheckoutAction for what happens if
+          it's non-empty. Same pattern as the Contact form. */}
+      <div className="absolute left-[-9999px] top-auto h-px w-px overflow-hidden" aria-hidden="true">
+        <label htmlFor="website">Website</label>
+        <input id="website" name="website" type="text" tabIndex={-1} autoComplete="off" />
+      </div>
       <label className={labelClass}>
         {dict.vehicleLabel}
         <select
@@ -349,8 +355,6 @@ export function TransportBookingForm({
           </p>
         )}
       </div>
-
-      <Recaptcha />
 
       <button
         type="submit"

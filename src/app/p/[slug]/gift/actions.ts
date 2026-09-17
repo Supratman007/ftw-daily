@@ -9,7 +9,6 @@ import { createXenditInvoice } from "@/lib/xendit/client";
 import { generateVoucherCode } from "@/lib/cancellations/voucherCode";
 import { usdToIdr } from "@/lib/currency";
 import { getUsdToIdrRate } from "@/lib/exchangeRate";
-import { verifyRecaptcha } from "@/lib/recaptchaVerify";
 import { REFERRAL_COOKIE_NAME } from "@/lib/agents/referralCookie";
 import type { Product } from "@/lib/products/types";
 import { getDictionary } from "@/lib/i18n/getDictionary";
@@ -28,6 +27,7 @@ export async function startGiftCheckoutAction(productId: string, slug: string, f
   const paxRaw = Number(formData.get("pax") ?? "0");
   const pax = Number.isInteger(paxRaw) ? paxRaw : 0;
   const discountCodeInput = String(formData.get("discount_code") ?? "").trim();
+  const website = String(formData.get("website") ?? "").trim();
   // Same hidden-field, carry-the-visitor's-locale-through-every-redirect
   // approach as startCheckoutAction -- see that action's comment.
   const locale = formData.get("locale") === "id" ? "id" : "en";
@@ -40,6 +40,15 @@ export async function startGiftCheckoutAction(productId: string, slug: string, f
   const referralCodeInput = cookieStore.get(REFERRAL_COOKIE_NAME)?.value?.trim() ?? "";
 
   const returnTo = `${pathPrefix}/p/${slug}/gift`;
+
+  // Honeypot -- same pattern as the Contact form and
+  // startCheckoutAction: hidden from real visitors, drops the
+  // submission silently (no login redirect, no voucher, no Xendit
+  // invoice) if a bot filled it in.
+  if (website) {
+    redirect(returnTo);
+  }
+
   const customer = await requireCustomer(returnTo);
 
   function fail(message: string): never {
@@ -57,9 +66,6 @@ export async function startGiftCheckoutAction(productId: string, slug: string, f
   if (!recipientContact) fail(dict.recipientContactRequired);
   if (!pax || pax < 1 || pax > 20) {
     fail(dict.travelersRange);
-  }
-  if (!(await verifyRecaptcha(formData.get("g-recaptcha-response") as string | null))) {
-    fail(dict.recaptchaFailed);
   }
 
   const supabase = await createSupabaseServerClient();

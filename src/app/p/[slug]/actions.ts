@@ -9,7 +9,6 @@ import { createXenditInvoice } from "@/lib/xendit/client";
 import { generateBookingCode } from "@/lib/bookings/booking-code";
 import { idrToUsd, usdToIdr } from "@/lib/currency";
 import { getUsdToIdrRate } from "@/lib/exchangeRate";
-import { verifyRecaptcha } from "@/lib/recaptchaVerify";
 import { REFERRAL_COOKIE_NAME } from "@/lib/agents/referralCookie";
 import { OTHER_MEETING_POINT_VALUE, type CarPackage, type CarType, type MeetingPoint } from "@/lib/cars/types";
 import { hasEnoughLeadTime, pickupDatetimeInBusinessTimezone, tripStartFromDate } from "@/lib/products/leadTime";
@@ -24,6 +23,7 @@ export async function startCheckoutAction(productId: string, slug: string, formD
   const discountCodeInput = String(formData.get("discount_code") ?? "").trim();
   const hotelName = String(formData.get("hotel_name") ?? "").trim();
   const roomNumber = String(formData.get("room_number") ?? "").trim();
+  const website = String(formData.get("website") ?? "").trim();
   // A hidden field on the checkout form (see ProductPage.tsx) rather
   // than anything the customer picks here -- just carries forward
   // whichever locale they were already browsing in, so every redirect
@@ -41,6 +41,17 @@ export async function startCheckoutAction(productId: string, slug: string, formD
   const referralCodeInput = cookieStore.get(REFERRAL_COOKIE_NAME)?.value?.trim() ?? "";
 
   const returnTo = `${pathPrefix}/p/${slug}?date=${encodeURIComponent(date)}&pax=${pax}`;
+
+  // Honeypot -- hidden from real visitors with CSS (see the matching
+  // form in ProductPage.tsx) but visible to most bots that blindly
+  // fill in every field. A non-empty value here means it's very
+  // likely a bot, so this drops the submission silently -- no error,
+  // no login redirect, no Xendit invoice, no booking row -- rather
+  // than let it reach any of that. Same pattern as the Contact form.
+  if (website) {
+    redirect(returnTo);
+  }
+
   const customer = await requireCustomer(returnTo);
 
   function fail(message: string): never {
@@ -56,9 +67,6 @@ export async function startCheckoutAction(productId: string, slug: string, formD
   }
   if (!pax || pax < 1 || pax > 20) {
     fail(dict.travelersRange);
-  }
-  if (!(await verifyRecaptcha(formData.get("g-recaptcha-response") as string | null))) {
-    fail(dict.recaptchaFailed);
   }
 
   const supabase = await createSupabaseServerClient();
@@ -252,7 +260,7 @@ export async function startCarHireCheckoutAction(productId: string, slug: string
   const pickupDate = String(formData.get("pickup_date") ?? "");
   const pickupTime = String(formData.get("pickup_time") ?? "");
   const discountCodeInput = String(formData.get("discount_code") ?? "").trim();
-  const recaptchaToken = formData.get("g-recaptcha-response") as string | null;
+  const website = String(formData.get("website") ?? "").trim();
 
   // Hidden field on the form (see CarHireBookingForm) -- same
   // "carries whichever locale the customer was already browsing in"
@@ -266,14 +274,15 @@ export async function startCarHireCheckoutAction(productId: string, slug: string
   const cookieStore = await cookies();
   const referralCodeInput = cookieStore.get(REFERRAL_COOKIE_NAME)?.value?.trim() ?? "";
 
+  // Honeypot -- same pattern as startCheckoutAction above.
+  if (website) {
+    redirect(`${pathPrefix}/p/${slug}`);
+  }
+
   const customer = await requireCustomer(`${pathPrefix}/p/${slug}`);
 
   function fail(message: string): never {
     redirect(`${pathPrefix}/p/${slug}?${new URLSearchParams({ error: message }).toString()}`);
-  }
-
-  if (!(await verifyRecaptcha(recaptchaToken))) {
-    fail(dict.recaptchaFailed);
   }
 
   const isOtherMeetingPoint = meetingPointIdInput === OTHER_MEETING_POINT_VALUE;
@@ -512,7 +521,7 @@ export async function startTransportCheckoutAction(productId: string, slug: stri
   const pickupDate = String(formData.get("pickup_date") ?? "");
   const pickupTime = String(formData.get("pickup_time") ?? "");
   const discountCodeInput = String(formData.get("discount_code") ?? "").trim();
-  const recaptchaToken = formData.get("g-recaptcha-response") as string | null;
+  const website = String(formData.get("website") ?? "").trim();
 
   // Same previously-missing hidden-field fix as startCarHireCheckoutAction
   // above.
@@ -523,14 +532,15 @@ export async function startTransportCheckoutAction(productId: string, slug: stri
   const cookieStore = await cookies();
   const referralCodeInput = cookieStore.get(REFERRAL_COOKIE_NAME)?.value?.trim() ?? "";
 
+  // Honeypot -- same pattern as startCheckoutAction above.
+  if (website) {
+    redirect(`${pathPrefix}/p/${slug}`);
+  }
+
   const customer = await requireCustomer(`${pathPrefix}/p/${slug}`);
 
   function fail(message: string): never {
     redirect(`${pathPrefix}/p/${slug}?${new URLSearchParams({ error: message }).toString()}`);
-  }
-
-  if (!(await verifyRecaptcha(recaptchaToken))) {
-    fail(dict.recaptchaFailed);
   }
 
   const isOtherMeetingPoint = meetingPointIdInput === OTHER_MEETING_POINT_VALUE;

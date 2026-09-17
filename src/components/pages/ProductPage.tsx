@@ -18,7 +18,6 @@ import { SiteFooter } from "@/components/SiteFooter";
 import { SiteCookieNotice } from "@/components/SiteCookieNotice";
 import { PageViewTracker } from "@/components/PageViewTracker";
 import { ProductGallery } from "@/components/ProductGallery";
-import { Recaptcha } from "@/components/Recaptcha";
 import { CarHireProductSection } from "@/components/CarHireProductSection";
 import { TransportProductSection } from "@/components/TransportProductSection";
 import { startCheckoutAction, startCarHireCheckoutAction, startTransportCheckoutAction } from "@/app/p/[slug]/actions";
@@ -523,6 +522,13 @@ export async function ProductPage({
           ) : (
             <form action={startCheckoutAction.bind(null, p.id, p.slug)} className="flex flex-col gap-3">
               <input type="hidden" name="locale" value={locale} />
+              {/* Honeypot -- hidden from real visitors, most bots fill it
+                  in anyway; see startCheckoutAction for what happens if
+                  it's non-empty. Same pattern as the Contact form. */}
+              <div className="absolute left-[-9999px] top-auto h-px w-px overflow-hidden" aria-hidden="true">
+                <label htmlFor="website">Website</label>
+                <input id="website" name="website" type="text" tabIndex={-1} autoComplete="off" />
+              </div>
               <label className="text-xs font-semibold uppercase tracking-wide text-ink-soft">
                 {dict.dateLabel}
                 <input
@@ -575,7 +581,6 @@ export async function ProductPage({
                   style={{ textTransform: "uppercase" }}
                 />
               </label>
-              <Recaptcha />
               <button
                 type="submit"
                 className="mt-2 rounded-lg bg-coral px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-coral-dark"

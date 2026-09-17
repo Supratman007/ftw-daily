@@ -8,7 +8,6 @@ import { createSupabaseServiceRoleClient } from "@/lib/supabase/service";
 import { generateBookingCode } from "@/lib/bookings/booking-code";
 import { usdToIdr } from "@/lib/currency";
 import { getUsdToIdrRate } from "@/lib/exchangeRate";
-import { verifyRecaptcha } from "@/lib/recaptchaVerify";
 import { PARK_INSURANCE_FEE_IDR } from "@/lib/bookings/types";
 import { REFERRAL_COOKIE_NAME } from "@/lib/agents/referralCookie";
 import { sendBookingRequestReceivedEmail, sendNewBookingRequestStaffEmail } from "@/lib/email/resend";
@@ -58,10 +57,20 @@ export async function submitBookingRequestAction(
   const dict = getDictionary(locale).checkoutErrors;
 
   const returnTo = `${pathPrefix}/p/${slug}/request?date=${encodeURIComponent(date)}&pax=${pax}`;
-  const customer = await requireCustomer(returnTo);
 
   const hotelName = String(formData.get("hotel_name") ?? "").trim();
   const roomNumber = String(formData.get("room_number") ?? "").trim();
+  const website = String(formData.get("website") ?? "").trim();
+
+  // Honeypot -- hidden from real visitors with CSS (see RequestPage.tsx)
+  // but visible to most bots. Drops the submission silently -- no
+  // login redirect, no booking row, no passport upload -- same
+  // pattern as the Contact form and startCheckoutAction.
+  if (website) {
+    redirect(returnTo);
+  }
+
+  const customer = await requireCustomer(returnTo);
 
   function fail(message: string): never {
     redirect(
@@ -74,9 +83,6 @@ export async function submitBookingRequestAction(
   }
   if (!pax || pax < 1 || pax > 20) {
     fail(dict.travelersRange);
-  }
-  if (!(await verifyRecaptcha(formData.get("g-recaptcha-response") as string | null))) {
-    fail(dict.recaptchaFailed);
   }
 
   const supabase = await createSupabaseServerClient();
