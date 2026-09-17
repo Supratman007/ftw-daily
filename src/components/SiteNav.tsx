@@ -86,13 +86,27 @@ export function SiteNav({
           "relative" ancestor -- see SiteHeader.tsx), so it always
           spans the full header width and sits directly below it,
           regardless of where this button lands in the header's own
-          flex layout. */}
+          flex layout.
+
+          h-11 w-11 (44x44px) rather than the old h-9 w-9 (36px) --
+          Apple's Human Interface Guidelines call for a 44x44pt minimum
+          tap target, and a target smaller than that is the more likely
+          explanation for "the hamburger doesn't work" reports on an
+          actual phone than any click-handling bug: a mis-tap just
+          outside a too-small button hits nothing and does nothing,
+          which looks identical to a broken button. touch-manipulation
+          disables the browser's double-tap-to-zoom gesture on this
+          button specifically -- without it, Safari can wait to see if
+          a second tap is coming before committing to the first one,
+          which reads as an unresponsive/delayed button on a real
+          touchscreen even though a synthetic click in a test always
+          fires immediately. */}
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-label={open ? closeLabel : openLabel}
         aria-expanded={open}
-        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-sand-deep text-ink sm:hidden"
+        className="flex h-11 w-11 shrink-0 touch-manipulation items-center justify-center rounded-lg border border-sand-deep text-ink sm:hidden"
       >
         {open ? (
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
