@@ -7,13 +7,16 @@ export interface SiteNavLink {
   href: string;
   label: string;
   /** "accent" matches the existing coral "Become a Sales Agent" /
-   * logout styling; "default" is the teal used for everything else. */
-  variant?: "default" | "accent";
+   * logout styling; "muted" is the small staff/agent login links --
+   * present but visually secondary to the customer-facing ones;
+   * "default" is the teal used for everything else. */
+  variant?: "default" | "accent" | "muted";
 }
 
 const linkColorClass: Record<NonNullable<SiteNavLink["variant"]>, string> = {
   default: "hover:text-teal",
   accent: "text-coral-dark hover:text-coral-dark",
+  muted: "text-ink-soft hover:text-teal",
 };
 
 /**

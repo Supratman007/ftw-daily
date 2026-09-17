@@ -23,6 +23,14 @@ export const LOCALE_LABELS: Record<Locale, string> = {
   id: "Bahasa Indonesia",
 };
 
+/** Compact codes for the header's icon-style LocaleSwitcher -- the
+ * full names in LOCALE_LABELS above stay in use for aria-label/title
+ * text and anywhere else space isn't tight. */
+export const LOCALE_SHORT_LABELS: Record<Locale, string> = {
+  en: "EN",
+  id: "ID",
+};
+
 /** Remembers a visitor's explicit or detected language choice so it
  * sticks across visits -- 1 year, same "long-lived preference cookie"
  * shape as the referral cookie elsewhere in proxy.ts, just longer-lived

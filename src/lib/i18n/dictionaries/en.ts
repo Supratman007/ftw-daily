@@ -20,6 +20,8 @@ export const en = {
     siteName: "Adventure Lombok Booking",
     redeemVoucher: "Redeem a gift voucher",
     login: "Log in",
+    staffLogin: "Staff login",
+    agentLogin: "Agent login",
     myAccount: "My account",
     staffDashboard: "Staff dashboard",
     agentDashboard: "Agent dashboard",
@@ -27,15 +29,14 @@ export const en = {
     becomeAgent: "Become a Sales Agent",
     // The header's browse-by-category menu (hamburger on mobile, an
     // inline row on desktop -- see SiteNav.tsx). "Daily Tours"/"Daily
-    // Activities" filter by the existing product_type field; the rest
-    // don't have a dedicated field yet, so they search by keyword
-    // instead -- see the navLinks() comment in SiteHeader.tsx.
-    navHome: "Home",
+    // Activities"/"Car Hire" filter by the existing product_type field;
+    // "Extension Trip" doesn't have a dedicated field yet, so it
+    // searches by keyword instead -- see the navLinks() comment in
+    // SiteHeader.tsx.
     navDailyTours: "Daily Tours",
     navDailyActivities: "Daily Activities",
     navExtensionTrip: "Extension Trips",
-    navKomodoTrip: "Komodo Trip",
-    navBaliTours: "Bali Tours",
+    navCarHire: "Car Hire",
     openMenu: "Open menu",
     closeMenu: "Close menu",
   },

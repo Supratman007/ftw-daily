@@ -9,6 +9,7 @@ import { LocaleSwitcher } from "@/components/LocaleSwitcher";
 
 const accountLinkClass = "font-semibold text-teal hover:underline";
 const accentLinkClass = "font-semibold text-coral-dark hover:underline";
+const mutedLinkClass = "text-xs text-ink-soft hover:text-teal hover:underline";
 
 /**
  * Compact top bar shared across every customer-facing page (homepage,
@@ -66,25 +67,22 @@ export async function SiteHeader({
     }
   }
 
-  // Home/Daily Tours/Daily Activities map onto real, always-populated
-  // fields (the homepage itself, and the product_type filter it
-  // already supports). Extension Trip/Komodo Trip/Bali Tours don't
-  // have a dedicated field yet -- there's no "trip category" or
-  // "destination" column, just free-text location/category -- so
-  // those search by keyword instead via the homepage's existing `q`
-  // text search (which already matches title, location and category).
-  // They'll show "no trips found" until products with matching
-  // location/category/title text exist, which is honest today and
-  // starts working the moment that content is added, rather than a
-  // dead link or a filter UI for categories that don't exist yet.
+  // Daily Tours/Daily Activities/Car Hire map onto the existing
+  // product_type filter. Extension Trip doesn't have a dedicated field
+  // yet -- there's no "trip category" column, just free-text location/
+  // category -- so it searches by keyword instead via the homepage's
+  // existing `q` text search (which already matches title, location
+  // and category). It'll show "no trips found" until products with
+  // matching location/category/title text exist, which is honest today
+  // and starts working the moment that content is added, rather than a
+  // dead link or a filter UI for a category that doesn't exist yet.
+  // No separate "Home" link -- the logo already goes there.
   const basePath = locale === "en" ? "/" : "/id";
   const browseLinks: SiteNavLink[] = [
-    { href: basePath, label: dict.navHome },
     { href: `${basePath}?type=tour`, label: dict.navDailyTours },
     { href: `${basePath}?type=activity`, label: dict.navDailyActivities },
     { href: `${basePath}?q=${encodeURIComponent("Extension")}`, label: dict.navExtensionTrip },
-    { href: `${basePath}?q=${encodeURIComponent("Komodo")}`, label: dict.navKomodoTrip },
-    { href: `${basePath}?q=${encodeURIComponent("Bali")}`, label: dict.navBaliTours },
+    { href: `${basePath}?type=car_hire`, label: dict.navCarHire },
   ];
 
   // Login/redeem/become-an-agent (or, once signed in, account/
@@ -95,6 +93,10 @@ export async function SiteHeader({
   // logout *form* can't be one of these plain {href,label} links (it
   // needs the "use server" action, not a client-navigable href), so it
   // goes through its own render + a separate prop.
+  // Staff/agent login live at their own English-only addresses (same
+  // as dashboardHref/becomeAgent below) -- without these, a staff
+  // member or sales agent landing on the public site had no way to
+  // find their sign-in page at all, only customers did.
   const redeemLink: SiteNavLink = { href: locale === "en" ? "/redeem" : "/id/redeem", label: dict.redeemVoucher };
   const accountLinks: SiteNavLink[] = user
     ? [redeemLink, { href: dashboardHref, label: dashboardLabel }]
@@ -102,6 +104,8 @@ export async function SiteHeader({
         redeemLink,
         { href: locale === "en" ? "/login" : "/id/login", label: dict.login },
         { href: "/agent/register", label: dict.becomeAgent, variant: "accent" },
+        { href: "/admin/login", label: dict.staffLogin, variant: "muted" },
+        { href: "/agent/login", label: dict.agentLogin, variant: "muted" },
       ];
   const logoutForm = user ? (
     <form action={customerLogoutAction.bind(null, locale)}>
@@ -148,7 +152,17 @@ export async function SiteHeader({
         {localeSwitcher}
         <div className="flex flex-wrap items-center gap-3 text-ink-soft">
           {accountLinks.map((link) => (
-            <Link key={link.href} href={link.href} className={link.variant === "accent" ? accentLinkClass : accountLinkClass}>
+            <Link
+              key={link.href}
+              href={link.href}
+              className={
+                link.variant === "accent"
+                  ? accentLinkClass
+                  : link.variant === "muted"
+                    ? mutedLinkClass
+                    : accountLinkClass
+              }
+            >
               {link.label}
             </Link>
           ))}
