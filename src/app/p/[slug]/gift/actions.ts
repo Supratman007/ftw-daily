@@ -13,6 +13,7 @@ import { REFERRAL_COOKIE_NAME } from "@/lib/agents/referralCookie";
 import type { Product } from "@/lib/products/types";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import { recordReferralAttribution } from "@/lib/agents/referralAttribution";
+import { checkRateLimit } from "@/lib/rateLimit";
 
 /** Standalone gift-voucher purchase -- no capacity reservation (no
  * date is being claimed yet, only paid for), but otherwise the same
@@ -49,8 +50,6 @@ export async function startGiftCheckoutAction(productId: string, slug: string, f
     redirect(returnTo);
   }
 
-  const customer = await requireCustomer(returnTo);
-
   function fail(message: string): never {
     const params = new URLSearchParams({
       pax: String(pax),
@@ -61,6 +60,14 @@ export async function startGiftCheckoutAction(productId: string, slug: string, f
     if (discountCodeInput) params.set("discount_code", discountCodeInput);
     redirect(`${returnTo}?${params.toString()}`);
   }
+
+  // Caps how many gift-purchase attempts one IP can make against this
+  // product in a 10-minute window -- see src/lib/rateLimit.ts.
+  if (!(await checkRateLimit("gift_checkout", 8, 10))) {
+    fail(dict.tooManyAttempts);
+  }
+
+  const customer = await requireCustomer(returnTo);
 
   if (!recipientName) fail(dict.recipientNameRequired);
   if (!recipientContact) fail(dict.recipientContactRequired);

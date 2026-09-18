@@ -16,6 +16,7 @@ import type { Product } from "@/lib/products/types";
 import type { InsuranceType } from "@/lib/bookings/types";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import { recordReferralAttribution } from "@/lib/agents/referralAttribution";
+import { checkRateLimit } from "@/lib/rateLimit";
 
 const MAX_PASSPORT_BYTES = 5 * 1024 * 1024; // 5MB
 const PASSPORT_EXT_BY_MIME: Record<string, string> = {
@@ -70,13 +71,19 @@ export async function submitBookingRequestAction(
     redirect(returnTo);
   }
 
-  const customer = await requireCustomer(returnTo);
-
   function fail(message: string): never {
     redirect(
       `${pathPrefix}/p/${slug}/request?date=${encodeURIComponent(date)}&pax=${pax}&error=${encodeURIComponent(message)}`
     );
   }
+
+  // Caps how many request attempts one IP can make against this
+  // product in a 10-minute window -- see src/lib/rateLimit.ts.
+  if (!(await checkRateLimit("booking_request", 8, 10))) {
+    fail(dict.tooManyAttempts);
+  }
+
+  const customer = await requireCustomer(returnTo);
 
   if (!date || Number.isNaN(Date.parse(date))) {
     fail(dict.invalidDate);

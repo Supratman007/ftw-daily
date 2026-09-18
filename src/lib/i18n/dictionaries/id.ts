@@ -303,6 +303,7 @@ export const id = {
     accept: "Mengerti",
   },
   checkoutErrors: {
+    tooManyAttempts: "Terlalu banyak percobaan dari koneksi ini. Silakan tunggu beberapa menit lalu coba lagi.",
     invalidDate: "Silakan pilih tanggal yang valid.",
     travelersRange: "Silakan pilih antara 1 hingga 20 wisatawan.",
     tripUnavailable: "Perjalanan ini sudah tidak tersedia.",

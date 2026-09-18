@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { sendContactFormEmail } from "@/lib/email/resend";
 import { SUPPORT_EMAIL } from "@/lib/contact";
+import { checkRateLimit } from "@/lib/rateLimit";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -34,6 +35,19 @@ export async function submitContactFormAction(locale: "en" | "id", formData: For
   if (website) {
     // Honeypot tripped -- pretend it worked, send nothing.
     redirect(`${contactPath}?sent=1`);
+  }
+
+  // Caps how many messages one IP can send in a 15-minute window --
+  // catches a scripted flood that fills the real fields directly and
+  // so never trips the honeypot above. See src/lib/rateLimit.ts.
+  if (!(await checkRateLimit("contact", 5, 15))) {
+    redirect(
+      `${contactPath}?error=${encodeURIComponent(
+        locale === "id"
+          ? "Terlalu banyak pesan dari koneksi ini. Silakan tunggu beberapa menit lalu coba lagi."
+          : "Too many messages from this connection. Please wait a few minutes and try again."
+      )}`
+    );
   }
 
   const errors: string[] = [];

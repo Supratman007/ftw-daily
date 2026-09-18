@@ -2,6 +2,12 @@
 
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { checkRateLimit } from "@/lib/rateLimit";
+
+const RATE_LIMITED_MESSAGE = {
+  en: "Too many attempts from this connection. Please wait a few minutes and try again.",
+  id: "Terlalu banyak percobaan dari koneksi ini. Silakan tunggu beberapa menit lalu coba lagi.",
+} as const;
 
 function safeReturnTo(raw: FormDataEntryValue | null): string {
   const value = String(raw ?? "");
@@ -32,6 +38,19 @@ export async function signupAction(formData: FormData) {
   const phone = String(formData.get("phone") ?? "").trim();
   const returnTo = safeReturnTo(formData.get("return_to"));
   const loginPath = loginPathFor(formData);
+  const locale = formData.get("locale") === "id" ? "id" : "en";
+
+  // Signup is the one form this app has actually seen abused -- a
+  // flood of fake signups, each one firing a real "confirm your
+  // email" send. Stricter and longer-windowed than the other forms
+  // below on purpose. See src/lib/rateLimit.ts.
+  if (!(await checkRateLimit("signup", 5, 60))) {
+    redirect(
+      `${loginPath}?mode=signup&return_to=${encodeURIComponent(returnTo)}&error=${encodeURIComponent(
+        RATE_LIMITED_MESSAGE[locale]
+      )}`
+    );
+  }
 
   const supabase = await createSupabaseServerClient();
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
@@ -73,6 +92,17 @@ export async function loginAction(formData: FormData) {
   const password = String(formData.get("password") ?? "");
   const returnTo = safeReturnTo(formData.get("return_to"));
   const loginPath = loginPathFor(formData);
+  const locale = formData.get("locale") === "id" ? "id" : "en";
+
+  // Looser than signup (mistyped passwords are a normal occurrence)
+  // but still caps credential-stuffing floods. See rateLimit.ts.
+  if (!(await checkRateLimit("login", 10, 15))) {
+    redirect(
+      `${loginPath}?return_to=${encodeURIComponent(returnTo)}&error=${encodeURIComponent(
+        RATE_LIMITED_MESSAGE[locale]
+      )}`
+    );
+  }
 
   const supabase = await createSupabaseServerClient();
   const { error } = await supabase.auth.signInWithPassword({ email, password });

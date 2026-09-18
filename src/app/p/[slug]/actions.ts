@@ -15,6 +15,7 @@ import { hasEnoughLeadTime, pickupDatetimeInBusinessTimezone, tripStartFromDate 
 import type { Product } from "@/lib/products/types";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import { recordReferralAttribution } from "@/lib/agents/referralAttribution";
+import { checkRateLimit } from "@/lib/rateLimit";
 
 export async function startCheckoutAction(productId: string, slug: string, formData: FormData) {
   const date = String(formData.get("date") ?? "");
@@ -52,8 +53,6 @@ export async function startCheckoutAction(productId: string, slug: string, formD
     redirect(returnTo);
   }
 
-  const customer = await requireCustomer(returnTo);
-
   function fail(message: string): never {
     const params = new URLSearchParams({ date, pax: String(pax), error: message });
     if (discountCodeInput) params.set("discount_code", discountCodeInput);
@@ -61,6 +60,16 @@ export async function startCheckoutAction(productId: string, slug: string, formD
     if (roomNumber) params.set("room_number", roomNumber);
     redirect(`${pathPrefix}/p/${slug}?${params.toString()}`);
   }
+
+  // Caps how many checkout attempts one IP can make against this
+  // product in a 10-minute window -- catches a scripted flood that
+  // fills the real fields directly and so never trips the honeypot
+  // above. See src/lib/rateLimit.ts.
+  if (!(await checkRateLimit("checkout", 8, 10))) {
+    fail(dict.tooManyAttempts);
+  }
+
+  const customer = await requireCustomer(returnTo);
 
   if (!date || Number.isNaN(Date.parse(date))) {
     fail(dict.invalidDate);
@@ -279,11 +288,16 @@ export async function startCarHireCheckoutAction(productId: string, slug: string
     redirect(`${pathPrefix}/p/${slug}`);
   }
 
-  const customer = await requireCustomer(`${pathPrefix}/p/${slug}`);
-
   function fail(message: string): never {
     redirect(`${pathPrefix}/p/${slug}?${new URLSearchParams({ error: message }).toString()}`);
   }
+
+  // Same per-IP flood cap as startCheckoutAction -- see rateLimit.ts.
+  if (!(await checkRateLimit("car_hire_checkout", 8, 10))) {
+    fail(dict.tooManyAttempts);
+  }
+
+  const customer = await requireCustomer(`${pathPrefix}/p/${slug}`);
 
   const isOtherMeetingPoint = meetingPointIdInput === OTHER_MEETING_POINT_VALUE;
   if (!isOtherMeetingPoint && !meetingPointIdInput) {
@@ -537,11 +551,16 @@ export async function startTransportCheckoutAction(productId: string, slug: stri
     redirect(`${pathPrefix}/p/${slug}`);
   }
 
-  const customer = await requireCustomer(`${pathPrefix}/p/${slug}`);
-
   function fail(message: string): never {
     redirect(`${pathPrefix}/p/${slug}?${new URLSearchParams({ error: message }).toString()}`);
   }
+
+  // Same per-IP flood cap as startCheckoutAction -- see rateLimit.ts.
+  if (!(await checkRateLimit("transport_checkout", 8, 10))) {
+    fail(dict.tooManyAttempts);
+  }
+
+  const customer = await requireCustomer(`${pathPrefix}/p/${slug}`);
 
   const isOtherMeetingPoint = meetingPointIdInput === OTHER_MEETING_POINT_VALUE;
   if (!isOtherMeetingPoint && !meetingPointIdInput) {

@@ -341,6 +341,7 @@ export const en = {
   // stays whatever language it came in, same "no reliable way to
   // translate that" reasoning as everywhere else in this app.
   checkoutErrors: {
+    tooManyAttempts: "Too many attempts from this connection. Please wait a few minutes and try again.",
     invalidDate: "Please choose a valid date.",
     travelersRange: "Please choose between 1 and 20 travelers.",
     tripUnavailable: "This trip is no longer available.",
