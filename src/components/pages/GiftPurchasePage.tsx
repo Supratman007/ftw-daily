@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { requireCustomer } from "@/lib/customers/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { formatIdr, formatUsd, usdToIdr } from "@/lib/currency";
+import { getUsdToIdrRate } from "@/lib/exchangeRate";
 import type { Product } from "@/lib/products/types";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
@@ -66,6 +67,7 @@ export async function GiftPurchasePage({
 
   const paxCount = Math.min(20, Math.max(1, Number(pax) || 2));
   const totalUsd = p.adult_price_usd * paxCount;
+  const exchangeRate = await getUsdToIdrRate();
 
   return (
     <>
@@ -87,6 +89,13 @@ export async function GiftPurchasePage({
           className="mt-6 flex flex-col gap-4 rounded-2xl border border-sand-deep bg-white p-6"
         >
           <input type="hidden" name="locale" value={locale} />
+          {/* Honeypot -- hidden from real visitors, most bots fill it in
+              anyway; see startGiftCheckoutAction for what happens if
+              it's non-empty. Same pattern as the Contact form. */}
+          <div className="absolute left-[-9999px] top-auto h-px w-px overflow-hidden" aria-hidden="true">
+            <label htmlFor="website">Website</label>
+            <input id="website" name="website" type="text" tabIndex={-1} autoComplete="off" />
+          </div>
           <div>
             <label className={labelClass} htmlFor="recipient_name">
               {dict.recipientNameLabel}
@@ -146,13 +155,13 @@ export async function GiftPurchasePage({
           <div className="mt-2 flex items-center justify-between border-t border-sand-deep pt-4">
             <span className="text-sm text-ink-soft">{dict.totalLabel}</span>
             <span className="font-serif text-xl font-bold text-ocean">
-              {formatUsd(totalUsd)} <span className="text-sm font-normal">({formatIdr(usdToIdr(totalUsd))})</span>
+              {formatUsd(totalUsd)} <span className="text-sm font-normal">({formatIdr(usdToIdr(totalUsd, exchangeRate))})</span>
             </span>
           </div>
 
           <button
             type="submit"
-            className="mt-2 rounded-lg bg-coral px-4 py-3 text-sm font-semibold text-white"
+            className="mt-2 rounded-lg bg-coral px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-coral-dark"
           >
             {dict.continueToPayment}
           </button>

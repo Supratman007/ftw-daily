@@ -111,7 +111,7 @@ export default async function AdminVouchersPage({
         </select>
         <button
           type="submit"
-          className="rounded-lg bg-coral px-4 py-2 text-sm font-semibold text-white"
+          className="rounded-lg bg-coral px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-coral-dark"
         >
           Filter
         </button>
@@ -212,7 +212,7 @@ export default async function AdminVouchersPage({
                     <input type="hidden" name="return_to" value={returnTo} />
                     <button
                       type="submit"
-                      className="rounded-lg bg-coral px-4 py-2 text-xs font-semibold text-white"
+                      className="rounded-lg bg-coral px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-coral-dark"
                     >
                       Approve refund ({formatIdr(v.value_amount_idr)})
                     </button>
@@ -288,7 +288,7 @@ export default async function AdminVouchersPage({
                 </div>
                 <button
                   type="submit"
-                  className="rounded-lg bg-coral px-4 py-2 text-xs font-semibold text-white"
+                  className="rounded-lg bg-coral px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-coral-dark"
                 >
                   Confirm &amp; create booking
                 </button>

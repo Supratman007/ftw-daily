@@ -3,9 +3,11 @@
  * separate /id/... web addresses so an Indonesian page is its own
  * shareable, bookmarkable, Google-indexable link -- English stays at
  * today's existing addresses (nothing already shared/bookmarked/
- * indexed breaks), Indonesian gets an /id prefix on top. A visitor's
- * browser language auto-selects which one they land on first (see
- * src/proxy.ts); a switcher lets them override it either way.
+ * indexed breaks), Indonesian gets an /id prefix on top. English is
+ * the site's language by default -- every first-time visitor lands on
+ * it regardless of their browser's language, and only switches to
+ * Indonesian when they explicitly pick it via the switcher (see
+ * src/proxy.ts), which then sticks for future visits.
  *
  * This is being built page by page, not all at once -- only pages
  * listed as "localized" somewhere (see proxy.ts's LOCALIZED_PATHS) have
@@ -19,6 +21,14 @@ export const DEFAULT_LOCALE: Locale = "en";
 export const LOCALE_LABELS: Record<Locale, string> = {
   en: "English",
   id: "Bahasa Indonesia",
+};
+
+/** Compact codes for the header's icon-style LocaleSwitcher -- the
+ * full names in LOCALE_LABELS above stay in use for aria-label/title
+ * text and anywhere else space isn't tight. */
+export const LOCALE_SHORT_LABELS: Record<Locale, string> = {
+  en: "EN",
+  id: "ID",
 };
 
 /** Remembers a visitor's explicit or detected language choice so it

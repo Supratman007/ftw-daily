@@ -65,7 +65,7 @@ export default async function AdminBookingsPage({
         </select>
         <button
           type="submit"
-          className="rounded-lg bg-coral px-4 py-2 text-sm font-semibold text-white"
+          className="rounded-lg bg-coral px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-coral-dark"
         >
           Filter
         </button>
@@ -79,7 +79,7 @@ export default async function AdminBookingsPage({
 
       <div className="mt-6 overflow-x-auto rounded-lg border border-sand-deep bg-white">
         <table className="w-full min-w-[900px] text-left text-sm">
-          <thead className="bg-sand text-xs uppercase text-ink-soft">
+          <thead className="bg-canvas text-xs uppercase text-ink-soft">
             <tr>
               <th className="px-4 py-2">Booking code</th>
               <th className="px-4 py-2">Trip</th>
@@ -94,7 +94,7 @@ export default async function AdminBookingsPage({
           </thead>
           <tbody>
             {bookings.map((b) => (
-              <tr key={b.id} className="border-t border-sand-deep align-top">
+              <tr key={b.id} className="border-t border-sand-deep align-top transition-colors hover:bg-sand">
                 <td className="px-4 py-2 font-mono text-xs font-medium text-ink">
                   {b.booking_code}
                 </td>

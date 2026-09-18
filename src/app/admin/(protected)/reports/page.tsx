@@ -203,7 +203,7 @@ export default async function AdminReportsPage({
             className="rounded-lg border border-sand-deep px-3 py-2 text-sm outline-none focus:border-teal"
           />
         </div>
-        <button type="submit" className="rounded-lg bg-coral px-4 py-2 text-sm font-semibold text-white">
+        <button type="submit" className="rounded-lg bg-coral px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-coral-dark">
           Custom range
         </button>
       </form>
@@ -230,7 +230,7 @@ export default async function AdminReportsPage({
       <h2 className="mt-8 font-serif text-lg font-semibold text-ink">Revenue by trip</h2>
       <div className="mt-2 overflow-x-auto rounded-lg border border-sand-deep bg-white">
         <table className="w-full min-w-[500px] text-left text-sm">
-          <thead className="bg-sand text-xs uppercase text-ink-soft">
+          <thead className="bg-canvas text-xs uppercase text-ink-soft">
             <tr>
               <th className="px-4 py-2">Trip</th>
               <th className="px-4 py-2">Bookings</th>
@@ -246,7 +246,7 @@ export default async function AdminReportsPage({
               </tr>
             ) : (
               revenueByProductRows.map((r) => (
-                <tr key={r.title} className="border-t border-sand-deep">
+                <tr key={r.title} className="border-t border-sand-deep transition-colors hover:bg-sand">
                   <td className="px-4 py-2 text-ink">{r.title}</td>
                   <td className="px-4 py-2">{r.count}</td>
                   <td className="px-4 py-2 font-semibold text-ink">{formatIdr(r.total)}</td>
@@ -261,7 +261,7 @@ export default async function AdminReportsPage({
       <p className="mt-1 text-xs text-ink-soft">Not scoped to the date range above -- every booking, as of now.</p>
       <div className="mt-2 overflow-x-auto rounded-lg border border-sand-deep bg-white">
         <table className="w-full min-w-[500px] text-left text-sm">
-          <thead className="bg-sand text-xs uppercase text-ink-soft">
+          <thead className="bg-canvas text-xs uppercase text-ink-soft">
             <tr>
               <th className="px-4 py-2">Status</th>
               <th className="px-4 py-2">Bookings</th>
@@ -273,7 +273,7 @@ export default async function AdminReportsPage({
               const row = statusBreakdown.get(status);
               if (!row) return null;
               return (
-                <tr key={status} className="border-t border-sand-deep">
+                <tr key={status} className="border-t border-sand-deep transition-colors hover:bg-sand">
                   <td className="px-4 py-2 text-ink">{BOOKING_STATUS_LABELS[status]}</td>
                   <td className="px-4 py-2">{row.count}</td>
                   <td className="px-4 py-2 font-semibold text-ink">{formatIdr(row.total)}</td>
@@ -325,7 +325,7 @@ export default async function AdminReportsPage({
       </div>
       <div className="mt-2 overflow-x-auto rounded-lg border border-sand-deep bg-white">
         <table className="w-full min-w-[800px] text-left text-sm">
-          <thead className="bg-sand text-xs uppercase text-ink-soft">
+          <thead className="bg-canvas text-xs uppercase text-ink-soft">
             <tr>
               <th className="px-4 py-2">Booking code</th>
               <th className="px-4 py-2">Trip</th>
@@ -344,7 +344,7 @@ export default async function AdminReportsPage({
               </tr>
             ) : (
               transactionRows.map((t) => (
-                <tr key={t.id} className="border-t border-sand-deep">
+                <tr key={t.id} className="border-t border-sand-deep transition-colors hover:bg-sand">
                   <td className="px-4 py-2 font-mono text-xs font-medium text-ink">{t.booking_code}</td>
                   <td className="px-4 py-2 text-ink">{t.products?.title ?? "—"}</td>
                   <td className="px-4 py-2 text-ink-soft">{t.customers?.name ?? "—"}</td>

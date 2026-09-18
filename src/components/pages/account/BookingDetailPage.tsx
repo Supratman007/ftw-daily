@@ -88,7 +88,7 @@ export async function BookingDetailPage({
           <form action={customerLogoutAction.bind(null, locale)} className="mt-6">
             <button
               type="submit"
-              className="rounded-lg bg-coral px-4 py-2 text-sm font-semibold text-white"
+              className="rounded-lg bg-coral px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-coral-dark"
             >
               {dict.logOut}
             </button>
@@ -357,7 +357,7 @@ export async function BookingDetailPage({
                 />
                 <button
                   type="submit"
-                  className="col-span-2 mt-1 self-start rounded-lg bg-coral px-3 py-1.5 text-xs font-semibold text-white"
+                  className="col-span-2 mt-1 self-start rounded-lg bg-coral px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-coral-dark"
                 >
                   {dict.saveNewPickupTime}
                 </button>
@@ -452,7 +452,7 @@ export async function BookingDetailPage({
         b.xendit_invoice_url && (
           <a
             href={b.xendit_invoice_url}
-            className="mt-6 inline-block rounded-lg bg-coral px-4 py-2 text-sm font-semibold text-white"
+            className="mt-6 inline-block rounded-lg bg-coral px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-coral-dark"
           >
             {dict.completePayment}
           </a>
@@ -548,7 +548,7 @@ export async function BookingDetailPage({
                       />
                       <button
                         type="submit"
-                        className="self-start rounded-lg bg-coral px-3 py-1.5 text-xs font-semibold text-white"
+                        className="self-start rounded-lg bg-coral px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-coral-dark"
                       >
                         {getDictionary(locale).account.bookings.submitRequest}
                       </button>
