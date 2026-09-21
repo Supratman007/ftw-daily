@@ -1,8 +1,10 @@
 import Link from "next/link";
+import Image from "next/image";
 import { ProductCardImage } from "@/components/ProductCardImage";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { formatUsd, formatIdr, usdToIdr } from "@/lib/currency";
 import { getUsdToIdrRate } from "@/lib/exchangeRate";
+import { getHeroContent } from "@/lib/heroSettings";
 import { PRODUCT_TYPE_LABELS } from "@/lib/products/types";
 import type { Product } from "@/lib/products/types";
 import { SiteHeader } from "@/components/SiteHeader";
@@ -40,6 +42,7 @@ export async function HomePage({
 }) {
   const dict = getDictionary(locale).home;
   const { q, type, location } = await searchParams;
+  const hero = await getHeroContent(locale);
 
   const supabase = await createSupabaseServerClient();
   const { data: products } = await supabase
@@ -80,8 +83,26 @@ export async function HomePage({
           section, on purpose: the headline's length varies by screen
           width and by language (Indonesian runs longer than English),
           so this is the one layout that can never put dark ink text
-          over the dark silhouette and lose contrast. */}
+          over the dark silhouette and lose contrast. Photo + text
+          colors both come from the admin-editable hero (see
+          getHeroContent() / /admin/settings) -- with no photo set this
+          renders exactly as before (illustrated teal background, dark
+          ink text); with one set, a dark scrim goes behind white text
+          instead so it stays readable over whatever photo was chosen. */}
       <section className="relative overflow-hidden bg-teal-light">
+        {hero.imageUrl && (
+          <>
+            <Image
+              src={hero.imageUrl}
+              alt=""
+              fill
+              priority
+              unoptimized
+              className="object-cover"
+            />
+            <div className="absolute inset-0 bg-ink/50" aria-hidden="true" />
+          </>
+        )}
         <svg
           viewBox="0 0 1440 200"
           preserveAspectRatio="none"
@@ -100,14 +121,26 @@ export async function HomePage({
         </svg>
 
         <div className="relative mx-auto max-w-5xl px-6 pb-20 pt-10 sm:pb-28 sm:pt-14">
-          <span className="inline-block rounded-full bg-white/75 px-3 py-1 font-mono text-[11px] uppercase tracking-widest text-ocean">
-            {dict.heroBadge}
+          <span
+            className={`inline-block rounded-full px-3 py-1 font-mono text-[11px] uppercase tracking-widest ${
+              hero.imageUrl ? "bg-white/20 text-white" : "bg-white/75 text-ocean"
+            }`}
+          >
+            {hero.badge}
           </span>
-          <h1 className="mt-4 max-w-xl font-serif text-3xl font-semibold leading-tight text-ocean sm:text-4xl md:text-5xl">
-            {dict.heroHeadline}
+          <h1
+            className={`mt-4 max-w-xl font-serif text-3xl font-semibold leading-tight sm:text-4xl md:text-5xl ${
+              hero.imageUrl ? "text-white" : "text-ocean"
+            }`}
+          >
+            {hero.headline}
           </h1>
-          <p className="mt-3 max-w-md text-base leading-relaxed text-ink sm:text-lg">
-            {dict.heroSubheadline}
+          <p
+            className={`mt-3 max-w-md text-base leading-relaxed sm:text-lg ${
+              hero.imageUrl ? "text-white/90" : "text-ink"
+            }`}
+          >
+            {hero.subheadline}
           </p>
         </div>
       </section>

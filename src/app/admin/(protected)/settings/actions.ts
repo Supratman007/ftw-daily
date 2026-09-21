@@ -32,3 +32,43 @@ export async function updateExchangeRateAction(formData: FormData) {
 
   redirect("/admin/settings?saved=1");
 }
+
+/**
+ * Self-service homepage hero -- same singleton row and reasoning as
+ * updateExchangeRateAction above, for the fields added in migration
+ * 0048_hero_settings.sql. Every field is optional: an empty string is
+ * stored as null (getHeroContent() then falls back to the built-in
+ * default copy/illustration for that field), so clearing a field and
+ * saving reverts just that one piece rather than needing a separate
+ * "reset" action.
+ */
+export async function updateHeroSettingsAction(formData: FormData) {
+  const admin = await requireAdminSection("settings");
+
+  function trimmedOrNull(field: string): string | null {
+    const value = String(formData.get(field) ?? "").trim();
+    return value || null;
+  }
+
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase
+    .from("app_settings")
+    .update({
+      hero_image_url: trimmedOrNull("hero_image_url"),
+      hero_badge_en: trimmedOrNull("hero_badge_en"),
+      hero_badge_id: trimmedOrNull("hero_badge_id"),
+      hero_headline_en: trimmedOrNull("hero_headline_en"),
+      hero_headline_id: trimmedOrNull("hero_headline_id"),
+      hero_subheadline_en: trimmedOrNull("hero_subheadline_en"),
+      hero_subheadline_id: trimmedOrNull("hero_subheadline_id"),
+      updated_at: new Date().toISOString(),
+      updated_by: admin.id,
+    })
+    .eq("id", true);
+
+  if (error) {
+    redirect(`/admin/settings?error=${encodeURIComponent(error.message)}`);
+  }
+
+  redirect("/admin/settings?heroSaved=1");
+}
