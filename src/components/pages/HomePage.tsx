@@ -153,43 +153,77 @@ export async function HomePage({
       </section>
 
       {/* Overlaps the hero's bottom edge on purpose (the search bar
-          people actually want, put where they'll see it first). */}
+          people actually want, put where they'll see it first). One
+          non-wrapping row at every width, search/filters/button always
+          side by side -- each field shrinks (flex-1 min-w-0) rather
+          than wrapping onto its own line, and the button drops its
+          label down to an icon-only square below the sm breakpoint so
+          four controls in a row still fits a phone's width instead of
+          getting cramped or overflowing. "Clear filters" sits on its
+          own line below since it's secondary and only shows up once a
+          search is active. */}
       <div className="mx-auto max-w-4xl px-6">
         <div className="relative -mt-10 rounded-2xl border border-sand-deep bg-white p-4 shadow-lg sm:-mt-14 sm:p-5">
-          <form method="GET" className="flex flex-wrap gap-3">
-            <input
-              type="text"
-              name="q"
-              defaultValue={q ?? ""}
-              placeholder={dict.searchPlaceholder}
-              className={`${inputClass} flex-1 basis-64`}
-            />
-            <select name="type" defaultValue={type ?? "all"} className={`${inputClass} w-auto`}>
-              <option value="all">{dict.allTypes}</option>
-              {Object.entries(PRODUCT_TYPE_LABELS).map(([value, label]) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
-            </select>
-            <select name="location" defaultValue={location ?? "all"} className={`${inputClass} w-auto`}>
-              <option value="all">{dict.allLocations}</option>
-              {locations.map((loc) => (
-                <option key={loc} value={loc}>
-                  {loc}
-                </option>
-              ))}
-            </select>
-            <button
-              type="submit"
-              className="rounded-lg bg-coral px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-coral-dark"
-            >
-              {dict.searchButton}
-            </button>
+          <form method="GET" className="flex flex-col gap-2">
+            <div className="flex flex-nowrap items-center gap-1.5 sm:gap-3">
+              <input
+                type="text"
+                name="q"
+                defaultValue={q ?? ""}
+                placeholder={dict.searchPlaceholder}
+                className={`${inputClass} min-w-0 flex-[1.5] px-2 sm:px-3`}
+              />
+              <select
+                name="type"
+                defaultValue={type ?? "all"}
+                className={`${inputClass} min-w-0 flex-1 px-2 sm:px-3`}
+              >
+                <option value="all">{dict.allTypes}</option>
+                {Object.entries(PRODUCT_TYPE_LABELS).map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+              <select
+                name="location"
+                defaultValue={location ?? "all"}
+                className={`${inputClass} min-w-0 flex-1 px-2 sm:px-3`}
+              >
+                <option value="all">{dict.allLocations}</option>
+                {locations.map((loc) => (
+                  <option key={loc} value={loc}>
+                    {loc}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="submit"
+                aria-label={dict.searchButton}
+                className="flex shrink-0 items-center gap-1.5 rounded-lg bg-coral px-2.5 py-2 text-sm font-semibold text-white transition-colors hover:bg-coral-dark sm:px-4"
+              >
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="shrink-0"
+                  aria-hidden="true"
+                >
+                  <circle cx="11" cy="11" r="7" />
+                  <path d="m21 21-4.3-4.3" />
+                </svg>
+                <span className="hidden sm:inline">{dict.searchButton}</span>
+              </button>
+            </div>
             {hasFilters && (
               <Link
                 href={locale === "en" ? "/" : "/id"}
-                className="flex items-center px-2 text-sm font-semibold text-teal hover:underline"
+                className="self-start text-sm font-semibold text-teal hover:underline"
               >
                 {dict.clear}
               </Link>
