@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { agentLoginAction } from "../actions";
-import { MinimalSiteHeader } from "@/components/MinimalSiteHeader";
+import { SiteHeader } from "@/components/SiteHeader";
 
 const inputClass =
   "rounded-lg border border-sand-deep px-3 py-2 text-sm outline-none focus:border-teal";
@@ -14,7 +14,7 @@ export default async function AgentLoginPage({
 
   return (
     <>
-      <MinimalSiteHeader />
+      <SiteHeader />
       <main className="mx-auto flex min-h-screen max-w-sm flex-col justify-center px-6">
         <p className="font-mono text-xs uppercase tracking-widest text-ink-soft">
           Adventure Lombok Booking

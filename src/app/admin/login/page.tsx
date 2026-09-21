@@ -1,5 +1,5 @@
 import { loginAction } from "./actions";
-import { MinimalSiteHeader } from "@/components/MinimalSiteHeader";
+import { SiteHeader } from "@/components/SiteHeader";
 
 const ERROR_MESSAGES: Record<string, string> = {
   invalid_credentials: "Couldn't sign you in — check your email and password.",
@@ -15,7 +15,7 @@ export default async function AdminLoginPage({
 
   return (
     <>
-      <MinimalSiteHeader />
+      <SiteHeader />
       <main className="mx-auto flex min-h-screen max-w-sm flex-col justify-center px-6">
         <p className="font-mono text-xs uppercase tracking-widest text-ink-soft">
           Adventure Lombok Booking
