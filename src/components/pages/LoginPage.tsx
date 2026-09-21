@@ -1,6 +1,9 @@
 import Link from "next/link";
 import { loginAction, signupAction } from "@/app/login/actions";
 import { PageViewTracker } from "@/components/PageViewTracker";
+import { SiteHeader } from "@/components/SiteHeader";
+import { SiteFooter } from "@/components/SiteFooter";
+import { SiteCookieNotice } from "@/components/SiteCookieNotice";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import type { Locale } from "@/lib/i18n/locales";
 
@@ -34,83 +37,93 @@ export async function LoginPage({
   const returnTo = return_to ?? (locale === "id" ? "/id" : "/");
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-sm flex-col justify-center px-6 py-12">
+    <>
       <PageViewTracker path={loginPath} locale={locale} />
-      <p className="font-mono text-xs uppercase tracking-widest text-ink-soft">
-        Adventure Lombok Booking
-      </p>
-      <h1 className="mt-1 font-serif text-2xl font-semibold text-ocean">
-        {isSignup ? dict.createAccountHeading : dict.welcomeBackHeading}
-      </h1>
-      <p className="mt-1 text-sm text-ink-soft">
-        {isSignup ? dict.createAccountSubtitle : dict.loginSubtitle}
-      </p>
-      {isSignup && email && <p className="mt-1 text-xs text-ink-soft">{dict.matchEmailNotice}</p>}
-
-      {notice && (
-        <p className="mt-4 rounded-lg border border-teal bg-[#E3F2F1] p-3 text-sm text-teal">
-          {notice}
+      {/* Without this, a customer who landed here (redirected mid-
+          checkout, or just clicked "Sign in" from the header) had no
+          logo or menu to get back to browsing -- a dead end if they
+          decided not to log in after all. Every other customer-facing
+          page already has this; this one had been missed. */}
+      <SiteHeader locale={locale} localeSwitcherBasePath="/login" />
+      <main className="mx-auto flex max-w-sm flex-col justify-center px-6 py-12">
+        <p className="font-mono text-xs uppercase tracking-widest text-ink-soft">
+          Adventure Lombok Booking
         </p>
-      )}
-      {error && (
-        <p className="mt-4 rounded-lg border border-coral bg-[#FCE6DD] p-3 text-sm text-coral-dark">
-          {error}
+        <h1 className="mt-1 font-serif text-2xl font-semibold text-ocean">
+          {isSignup ? dict.createAccountHeading : dict.welcomeBackHeading}
+        </h1>
+        <p className="mt-1 text-sm text-ink-soft">
+          {isSignup ? dict.createAccountSubtitle : dict.loginSubtitle}
         </p>
-      )}
+        {isSignup && email && <p className="mt-1 text-xs text-ink-soft">{dict.matchEmailNotice}</p>}
 
-      <form
-        action={isSignup ? signupAction : loginAction}
-        className="mt-6 flex flex-col gap-3"
-      >
-        <input type="hidden" name="return_to" value={returnTo} />
-        <input type="hidden" name="locale" value={locale} />
-        {isSignup && (
-          <>
-            <input name="full_name" required placeholder={dict.fullNamePlaceholder} className={inputClass} />
-            <input name="phone" placeholder={dict.phonePlaceholder} className={inputClass} />
-          </>
+        {notice && (
+          <p className="mt-4 rounded-lg border border-teal bg-[#E3F2F1] p-3 text-sm text-teal">
+            {notice}
+          </p>
         )}
-        <input
-          name="email"
-          type="email"
-          required
-          defaultValue={email}
-          placeholder={dict.emailPlaceholder}
-          className={inputClass}
-        />
-        <input
-          name="password"
-          type="password"
-          required
-          minLength={6}
-          placeholder={dict.passwordPlaceholder}
-          className={inputClass}
-        />
-        <button
-          type="submit"
-          className="mt-2 rounded-lg bg-coral px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-coral-dark"
-        >
-          {isSignup ? dict.createAccountButton : dict.loginButton}
-        </button>
-      </form>
+        {error && (
+          <p className="mt-4 rounded-lg border border-coral bg-[#FCE6DD] p-3 text-sm text-coral-dark">
+            {error}
+          </p>
+        )}
 
-      {!isSignup && (
-        <p className="mt-3 text-center text-sm">
-          <Link href={locale === "id" ? "/id/forgot-password" : "/forgot-password"} className="text-teal hover:underline">
-            {dict.forgotPassword}
+        <form
+          action={isSignup ? signupAction : loginAction}
+          className="mt-6 flex flex-col gap-3"
+        >
+          <input type="hidden" name="return_to" value={returnTo} />
+          <input type="hidden" name="locale" value={locale} />
+          {isSignup && (
+            <>
+              <input name="full_name" required placeholder={dict.fullNamePlaceholder} className={inputClass} />
+              <input name="phone" placeholder={dict.phonePlaceholder} className={inputClass} />
+            </>
+          )}
+          <input
+            name="email"
+            type="email"
+            required
+            defaultValue={email}
+            placeholder={dict.emailPlaceholder}
+            className={inputClass}
+          />
+          <input
+            name="password"
+            type="password"
+            required
+            minLength={6}
+            placeholder={dict.passwordPlaceholder}
+            className={inputClass}
+          />
+          <button
+            type="submit"
+            className="mt-2 rounded-lg bg-coral px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-coral-dark"
+          >
+            {isSignup ? dict.createAccountButton : dict.loginButton}
+          </button>
+        </form>
+
+        {!isSignup && (
+          <p className="mt-3 text-center text-sm">
+            <Link href={locale === "id" ? "/id/forgot-password" : "/forgot-password"} className="text-teal hover:underline">
+              {dict.forgotPassword}
+            </Link>
+          </p>
+        )}
+
+        <p className="mt-4 text-center text-sm text-ink-soft">
+          {isSignup ? dict.haveAccountPrompt : dict.newHerePrompt}
+          <Link
+            href={`${loginPath}?mode=${isSignup ? "login" : "signup"}&return_to=${encodeURIComponent(returnTo)}`}
+            className="font-semibold text-teal hover:underline"
+          >
+            {isSignup ? dict.loginLink : dict.signupLink}
           </Link>
         </p>
-      )}
-
-      <p className="mt-4 text-center text-sm text-ink-soft">
-        {isSignup ? dict.haveAccountPrompt : dict.newHerePrompt}
-        <Link
-          href={`${loginPath}?mode=${isSignup ? "login" : "signup"}&return_to=${encodeURIComponent(returnTo)}`}
-          className="font-semibold text-teal hover:underline"
-        >
-          {isSignup ? dict.loginLink : dict.signupLink}
-        </Link>
-      </p>
-    </main>
+      </main>
+      <SiteFooter locale={locale} />
+      <SiteCookieNotice locale={locale} />
+    </>
   );
 }
