@@ -27,6 +27,14 @@ export const en = {
     agentDashboard: "Agent dashboard",
     logout: "Log out",
     becomeAgent: "Become a Sales Agent",
+    // The header's Account dropdown trigger (see HeaderAccountMenu.tsx)
+    // and its two sign-in-adjacent entries -- distinct wording from
+    // `login` above ("Log in"), which is still used on the login page
+    // itself and inside the mobile hamburger panel.
+    accountMenuLabel: "Account",
+    signIn: "Sign in",
+    register: "Register",
+    needHelp: "Need help?",
     // The header's browse-by-category menu (hamburger on mobile, an
     // inline row on desktop -- see SiteNav.tsx). "Daily Tours"/"Daily
     // Activities"/"Car Hire" filter by the existing product_type field;

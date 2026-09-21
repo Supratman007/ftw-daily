@@ -6,10 +6,7 @@ import { getDictionary } from "@/lib/i18n/getDictionary";
 import { DEFAULT_LOCALE, type Locale } from "@/lib/i18n/locales";
 import { SiteNav, type SiteNavLink } from "@/components/SiteNav";
 import { LocaleSwitcher } from "@/components/LocaleSwitcher";
-
-const accountLinkClass = "font-semibold text-teal hover:underline";
-const accentLinkClass = "font-semibold text-coral-dark hover:underline";
-const mutedLinkClass = "text-xs text-ink-soft hover:text-teal hover:underline";
+import { HeaderAccountMenu, type AccountMenuItem } from "@/components/HeaderAccountMenu";
 
 /**
  * Compact top bar shared across every customer-facing page (homepage,
@@ -97,26 +94,47 @@ export async function SiteHeader({
   // as dashboardHref/becomeAgent below) -- without these, a staff
   // member or sales agent landing on the public site had no way to
   // find their sign-in page at all, only customers did.
+  const loginPath = locale === "en" ? "/login" : "/id/login";
   const redeemLink: SiteNavLink = { href: locale === "en" ? "/redeem" : "/id/redeem", label: dict.redeemVoucher };
+  const contactLink: SiteNavLink = { href: locale === "en" ? "/contact" : "/id/contact", label: dict.needHelp };
   const accountLinks: SiteNavLink[] = user
     ? [redeemLink, { href: dashboardHref, label: dashboardLabel }]
     : [
         redeemLink,
-        { href: locale === "en" ? "/login" : "/id/login", label: dict.login },
+        { href: loginPath, label: dict.login },
         { href: "/agent/register", label: dict.becomeAgent, variant: "accent" },
         { href: "/admin/login", label: dict.staffLogin, variant: "muted" },
         { href: "/agent/login", label: dict.agentLogin, variant: "muted" },
       ];
-  const logoutForm = user ? (
+
+  // The desktop-only Account dropdown's contents (HeaderAccountMenu
+  // below) -- a separate shape from accountLinks above (which still
+  // feeds the mobile hamburger panel as a flat list via SiteNav)
+  // because the dropdown groups related links with dividers rather
+  // than a bare wrapping row of five links, and splits "Log in" into
+  // its own Sign In / Register entries the way the reference header
+  // does.
+  const accountMenuItems: AccountMenuItem[] = user
+    ? [
+        { href: dashboardHref, label: dashboardLabel },
+        redeemLink,
+        { ...contactLink, dividerBefore: true },
+      ]
+    : [
+        { href: loginPath, label: dict.signIn },
+        { href: `${loginPath}?mode=signup`, label: dict.register },
+        redeemLink,
+        { href: "/agent/register", label: dict.becomeAgent, variant: "accent", dividerBefore: true },
+        { href: "/agent/login", label: dict.agentLogin, variant: "muted" },
+        { href: "/admin/login", label: dict.staffLogin, variant: "muted" },
+        { ...contactLink, dividerBefore: true },
+      ];
+
+  const logoutButtonClass =
+    "w-full rounded-lg px-2 py-2 text-left text-sm font-semibold text-coral-dark hover:bg-sand";
+  const logoutSlot = user ? (
     <form action={customerLogoutAction.bind(null, locale)}>
-      <button type="submit" className={accentLinkClass}>
-        {dict.logout}
-      </button>
-    </form>
-  ) : null;
-  const mobileLogoutSlot = user ? (
-    <form action={customerLogoutAction.bind(null, locale)}>
-      <button type="submit" className="w-full rounded-lg px-2 py-2 text-left text-sm font-semibold text-coral-dark hover:bg-sand">
+      <button type="submit" className={logoutButtonClass}>
         {dict.logout}
       </button>
     </form>
@@ -132,42 +150,25 @@ export async function SiteHeader({
 
   return (
     <header className="relative flex flex-col gap-3 border-b border-sand-deep bg-white px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
-      <div className="flex items-center justify-between gap-3 sm:justify-start sm:gap-6">
+      <div className="flex items-center justify-between gap-3 sm:justify-start sm:gap-8">
         <Link href={locale === "en" ? "/" : "/id"} className="flex shrink-0 items-center">
           <Image src="/logo.jpg" alt={dict.siteName} width={120} height={36} className="h-8 w-auto sm:h-9" preload />
         </Link>
         <SiteNav
           links={browseLinks}
           accountLinks={accountLinks}
-          logoutSlot={mobileLogoutSlot}
+          logoutSlot={logoutSlot}
           localeSwitcherSlot={localeSwitcher}
           openLabel={dict.openMenu}
           closeLabel={dict.closeMenu}
         />
       </div>
-      {/* Desktop only now -- phones reach these same links (and
-          logout) through the hamburger panel above instead, so the
-          mobile header is just the logo and one button. */}
-      <div className="hidden items-center gap-4 text-sm sm:flex">
+      {/* Desktop only -- phones reach the same links (and logout)
+          through the hamburger panel above instead, so the mobile
+          header stays just the logo and one button. */}
+      <div className="hidden items-center gap-1 sm:flex">
         {localeSwitcher}
-        <div className="flex flex-wrap items-center gap-3 text-ink-soft">
-          {accountLinks.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className={
-                link.variant === "accent"
-                  ? accentLinkClass
-                  : link.variant === "muted"
-                    ? mutedLinkClass
-                    : accountLinkClass
-              }
-            >
-              {link.label}
-            </Link>
-          ))}
-          {logoutForm}
-        </div>
+        <HeaderAccountMenu label={dict.accountMenuLabel} items={accountMenuItems} logoutSlot={logoutSlot} />
       </div>
     </header>
   );

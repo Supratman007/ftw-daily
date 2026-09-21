@@ -73,7 +73,7 @@ export function SiteNav({
   return (
     <>
       {/* Desktop: a plain inline row next to the logo. */}
-      <nav className="hidden flex-wrap items-center gap-x-5 gap-y-1 text-sm font-semibold text-ink-soft sm:flex">
+      <nav className="hidden flex-wrap items-center gap-x-7 gap-y-1 text-sm font-semibold text-ink sm:flex">
         {links.map((link) => (
           <Link key={link.href} href={link.href} className="hover:text-teal">
             {link.label}
