@@ -232,7 +232,14 @@ export async function HomePage({
         </div>
       </div>
 
-      <div className="mx-auto mt-10 flex max-w-5xl flex-wrap justify-center gap-x-8 gap-y-3 px-6 sm:mt-12">
+      {/* One badge per line on a phone (flex-col) rather than letting
+          them wrap two-per-row -- flex-wrap's justify-center centers
+          each wrapped line independently, so two differently-sized
+          lines of badges never share a left edge and read as
+          misaligned. Stacking one-per-line sidesteps that entirely;
+          from sm up there's room for the original single centered
+          row. */}
+      <div className="mx-auto mt-10 flex max-w-5xl flex-col items-center gap-3 px-6 sm:mt-12 sm:flex-row sm:flex-wrap sm:justify-center sm:gap-x-8 sm:gap-y-3">
         <div className="flex items-center gap-2 text-sm text-ink-soft">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#166e73" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6l7-3z" />
