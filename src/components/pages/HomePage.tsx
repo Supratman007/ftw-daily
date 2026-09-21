@@ -232,36 +232,40 @@ export async function HomePage({
         </div>
       </div>
 
-      {/* One badge per line on a phone (flex-col) rather than letting
-          them wrap two-per-row -- flex-wrap's justify-center centers
-          each wrapped line independently, so two differently-sized
-          lines of badges never share a left edge and read as
-          misaligned. Stacking one-per-line sidesteps that entirely;
-          from sm up there's room for the original single centered
-          row. */}
-      <div className="mx-auto mt-10 flex max-w-5xl flex-col items-center gap-3 px-6 sm:mt-12 sm:flex-row sm:flex-wrap sm:justify-center sm:gap-x-8 sm:gap-y-3">
-        <div className="flex items-center gap-2 text-sm text-ink-soft">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#166e73" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6l7-3z" />
-            <path d="M9 12l2 2 4-4" />
-          </svg>
-          {dict.trustLocal}
-        </div>
-        <div className="flex items-center gap-2 text-sm text-ink-soft">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#166e73" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <rect x="3" y="5" width="18" height="16" rx="2" />
-            <path d="M3 10h18" />
-            <path d="M8 3v4M16 3v4" />
-            <path d="M9 15l2 2 4-4" />
-          </svg>
-          {dict.trustAvailability}
-        </div>
-        <div className="flex items-center gap-2 text-sm text-ink-soft">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#166e73" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <rect x="5" y="11" width="14" height="9" rx="2" />
-            <path d="M8 11V8a4 4 0 018 0v3" />
-          </svg>
-          {dict.trustSecure}
+      {/* One badge per line on a phone rather than letting them wrap
+          two-per-row (flex-wrap's justify-center centers each wrapped
+          line independently, so differently-sized lines never share a
+          left edge). The stacked list itself is items-start -- so
+          every icon lines up at the same left edge, not re-centered
+          per line -- inside an outer justify-center that centers the
+          whole block on the page as one unit. From sm up this reverts
+          to the original single centered row, wide enough that all
+          three fit side by side. */}
+      <div className="mx-auto mt-10 flex max-w-5xl justify-center px-6 sm:mt-12">
+        <div className="flex flex-col items-start gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-8 sm:gap-y-3">
+          <div className="flex items-center gap-2 text-sm text-ink-soft">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#166e73" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6l7-3z" />
+              <path d="M9 12l2 2 4-4" />
+            </svg>
+            {dict.trustLocal}
+          </div>
+          <div className="flex items-center gap-2 text-sm text-ink-soft">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#166e73" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <rect x="3" y="5" width="18" height="16" rx="2" />
+              <path d="M3 10h18" />
+              <path d="M8 3v4M16 3v4" />
+              <path d="M9 15l2 2 4-4" />
+            </svg>
+            {dict.trustAvailability}
+          </div>
+          <div className="flex items-center gap-2 text-sm text-ink-soft">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#166e73" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <rect x="5" y="11" width="14" height="9" rx="2" />
+              <path d="M8 11V8a4 4 0 018 0v3" />
+            </svg>
+            {dict.trustSecure}
+          </div>
         </div>
       </div>
 
