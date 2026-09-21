@@ -98,7 +98,14 @@ export async function HomePage({
               fill
               priority
               unoptimized
-              className="object-cover"
+              // The hero section is much wider/shorter on desktop than
+              // on a phone, so object-cover's default center crop cuts
+              // off more of the photo's lower half there -- shifting
+              // the focal point down (object-[center_75%]) keeps
+              // whatever's near the bottom of the photo (e.g. a
+              // hammock) in frame on wide screens too, matching what
+              // was already visible on mobile's taller crop.
+              className="object-cover object-center sm:object-[center_75%]"
             />
             <div className="absolute inset-0 bg-ink/50" aria-hidden="true" />
           </>
