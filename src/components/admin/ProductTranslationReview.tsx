@@ -3,6 +3,7 @@ import {
   approveProductTranslationAction,
   retranslateProductAction,
 } from "@/app/admin/(protected)/products/actions";
+import { RichTextEditor } from "@/components/admin/RichTextEditor";
 
 const inputClass =
   "mt-1 w-full rounded-lg border border-sand-deep px-3 py-2 text-sm outline-none focus:border-teal";
@@ -75,16 +76,10 @@ export function ProductTranslationReview({ product }: { product: Product }) {
           />
         </div>
         <div>
-          <label className={labelClass} htmlFor="description_id">
-            Full description (Indonesian, optional)
-          </label>
-          <textarea
-            id="description_id"
-            name="description_id"
-            rows={6}
-            defaultValue={product.description_id ?? ""}
-            className={inputClass}
-          />
+          <label className={labelClass}>Full description (Indonesian, optional)</label>
+          <div className="mt-1">
+            <RichTextEditor name="description_id" defaultValue={product.description_id ?? ""} />
+          </div>
         </div>
         <div>
           <button type="submit" className="rounded-lg bg-teal px-4 py-2 text-sm font-semibold text-white">

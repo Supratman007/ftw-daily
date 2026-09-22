@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { compressImageFile } from "@/lib/image/compressImageFile";
 import type { TransportVehicleType } from "@/lib/cars/types";
 
 const inputClass =
@@ -33,8 +34,9 @@ export function TransportVehicleTypeForm({ action, vehicleType, error }: Transpo
     const supabase = createSupabaseBrowserClient();
     const uploaded: string[] = [];
     for (const file of Array.from(files)) {
-      const path = `${crypto.randomUUID()}-${file.name}`;
-      const { error: uploadErr } = await supabase.storage.from("product-images").upload(path, file);
+      const compressed = await compressImageFile(file);
+      const path = `${crypto.randomUUID()}-${compressed.name}`;
+      const { error: uploadErr } = await supabase.storage.from("product-images").upload(path, compressed);
       if (uploadErr) {
         setUploadError(`Couldn't upload ${file.name}: ${uploadErr.message}`);
         continue;
@@ -143,7 +145,7 @@ export function TransportVehicleTypeForm({ action, vehicleType, error }: Transpo
                 <button
                   type="button"
                   onClick={() => removeImage(url)}
-                  className="absolute -right-2 -top-2 rounded-full bg-coral px-1.5 text-xs text-white"
+                  className="absolute -right-2 -top-2 rounded-full bg-coral px-1.5 text-xs text-white transition-colors hover:bg-coral-dark"
                 >
                   ×
                 </button>
@@ -176,7 +178,7 @@ export function TransportVehicleTypeForm({ action, vehicleType, error }: Transpo
       <button
         type="submit"
         disabled={uploading}
-        className="mt-2 self-start rounded-lg bg-coral px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+        className="mt-2 self-start rounded-lg bg-coral px-4 py-2 text-sm font-semibold text-white disabled:opacity-50 transition-colors hover:bg-coral-dark disabled:hover:bg-coral"
       >
         {vehicleType ? "Save changes" : "Add vehicle/service type"}
       </button>

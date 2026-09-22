@@ -24,7 +24,7 @@ function BookingRow({
   viewDetails: string;
 }) {
   return (
-    <div className="flex items-center justify-between border-t border-sand-deep px-4 py-3 text-sm first:border-t-0">
+    <div className="flex items-center justify-between border-t border-sand-deep px-4 py-3 text-sm transition-colors first:border-t-0 hover:bg-sand">
       <div>
         <p className="font-semibold text-ink">{b.products?.title ?? "Trip"}</p>
         <p className="text-ink-soft">
@@ -91,7 +91,7 @@ export async function MyBookingsPage({
         <h1 className="font-serif text-2xl font-semibold text-ink">{dict.heading}</h1>
         <Link
           href={pathPrefix || "/"}
-          className="rounded-lg bg-coral px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
+          className="rounded-lg bg-coral px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-coral-dark"
         >
           {dict.bookATrip}
         </Link>
@@ -169,7 +169,7 @@ export async function MyBookingsPage({
           <h2 className="font-serif text-lg font-semibold text-ink">{dict.giftVouchersGiven}</h2>
           <div className="mt-2 rounded-lg border border-sand-deep bg-white">
             {purchasedVouchers.map((v) => (
-              <div key={v.id} className="border-t border-sand-deep px-4 py-3 text-sm first:border-t-0">
+              <div key={v.id} className="border-t border-sand-deep px-4 py-3 text-sm transition-colors first:border-t-0 hover:bg-sand">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="font-semibold text-ink">{v.products?.title ?? "Trip"}</p>
@@ -199,7 +199,7 @@ export async function MyBookingsPage({
                         />
                         <button
                           type="submit"
-                          className="self-start rounded-lg bg-coral px-3 py-1.5 text-xs font-semibold text-white"
+                          className="self-start rounded-lg bg-coral px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-coral-dark"
                         >
                           {dict.submitRequest}
                         </button>

@@ -70,7 +70,7 @@ export function CarPackageForm({ action, carPackage, error }: CarPackageFormProp
 
       <button
         type="submit"
-        className="mt-2 self-start rounded-lg bg-coral px-4 py-2 text-sm font-semibold text-white"
+        className="mt-2 self-start rounded-lg bg-coral px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-coral-dark"
       >
         {carPackage ? "Save changes" : "Add duration package"}
       </button>

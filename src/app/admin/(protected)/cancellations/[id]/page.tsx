@@ -200,7 +200,7 @@ export default async function AdminCancellationDetailPage({
               />
               <button
                 type="submit"
-                className="self-start rounded-lg bg-coral px-4 py-2 text-sm font-semibold text-white"
+                className="self-start rounded-lg bg-coral px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-coral-dark"
               >
                 Approve refund ({formatIdr(request.calculated_refund_amount_idr ?? 0)})
               </button>
@@ -229,7 +229,7 @@ export default async function AdminCancellationDetailPage({
             />
             <button
               type="submit"
-              className="self-start rounded-lg bg-coral px-4 py-2 text-sm font-semibold text-white"
+              className="self-start rounded-lg bg-coral px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-coral-dark"
             >
               Approve reschedule
             </button>

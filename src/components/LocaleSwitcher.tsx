@@ -1,5 +1,8 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { LOCALES, LOCALE_LABELS, type Locale } from "@/lib/i18n/locales";
+import { LOCALES, LOCALE_LABELS, LOCALE_SHORT_LABELS, type Locale } from "@/lib/i18n/locales";
 
 function hrefFor(locale: Locale, basePath: string): string {
   if (locale === "en") {
@@ -20,28 +23,91 @@ function hrefFor(locale: Locale, basePath: string): string {
  * a page that actually has both versions; linking to an /id page that
  * doesn't exist yet would just 404.
  *
- * Styled as a bordered pill group (own background, own border) rather
- * than plain text -- sitting right above a photo banner, plain text in
- * the page's ink color nearly disappeared against a busy image. A
- * solid-background pill stays legible over any photo, same reasoning
- * as the status-filter pills elsewhere in the admin.
+ * A click-to-open dropdown (globe icon + current code + chevron, same
+ * shape as the Account menu next to it in SiteHeader.tsx) rather than
+ * always-visible EN/ID buttons -- with only two locales the difference
+ * is cosmetic today, but it keeps the header down to two compact
+ * triggers instead of a always-expanded pill, matching the reference
+ * header this was asked to follow.
  */
 export function LocaleSwitcher({ locale, basePath }: { locale: Locale; basePath: string }) {
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function onClickOutside(e: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", onClickOutside);
+    return () => document.removeEventListener("mousedown", onClickOutside);
+  }, [open]);
+
   return (
-    <div className="inline-flex items-center gap-1 rounded-full border border-sand-deep bg-white p-1 text-xs font-semibold shadow-sm">
-      {LOCALES.map((l) => (
-        <Link
-          key={l}
-          href={hrefFor(l, basePath)}
-          className={
-            l === locale
-              ? "rounded-full bg-teal px-3 py-1 text-white"
-              : "rounded-full px-3 py-1 text-ink-soft hover:bg-sand hover:text-ink"
-          }
+    <div ref={containerRef} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        aria-haspopup="menu"
+        className="flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm font-semibold text-ink-soft hover:bg-sand hover:text-ink"
+      >
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="shrink-0"
+          aria-hidden="true"
         >
-          {LOCALE_LABELS[l]}
-        </Link>
-      ))}
+          <circle cx="12" cy="12" r="10" />
+          <path d="M2 12h20" />
+          <path d="M12 2a15 15 0 0 1 0 20 15 15 0 0 1 0-20" />
+        </svg>
+        {LOCALE_SHORT_LABELS[locale]}
+        <svg
+          width="12"
+          height="12"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className={`shrink-0 transition-transform ${open ? "rotate-180" : ""}`}
+          aria-hidden="true"
+        >
+          <path d="M6 9l6 6 6-6" />
+        </svg>
+      </button>
+
+      {open && (
+        <div
+          role="menu"
+          className="absolute right-0 top-full z-40 mt-2 w-44 rounded-xl border border-sand-deep bg-white py-1 shadow-lg"
+        >
+          {LOCALES.map((l) => (
+            <Link
+              key={l}
+              href={hrefFor(l, basePath)}
+              role="menuitem"
+              aria-current={l === locale ? "true" : undefined}
+              onClick={() => setOpen(false)}
+              className={`block px-3 py-2 text-sm ${
+                l === locale ? "font-semibold text-teal" : "text-ink-soft hover:bg-sand hover:text-ink"
+              }`}
+            >
+              {LOCALE_LABELS[l]}
+            </Link>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

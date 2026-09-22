@@ -123,7 +123,8 @@ export type AdminSection =
   | "agents"
   | "products"
   | "meeting_points"
-  | "discount_codes";
+  | "discount_codes"
+  | "settings";
 
 export const ADMIN_SECTION_ROLES: Record<AdminSection, AdminRole[]> = {
   dashboard: ["super_admin", "reservations", "accounting", "support"],
@@ -143,6 +144,11 @@ export const ADMIN_SECTION_ROLES: Record<AdminSection, AdminRole[]> = {
   products: ["super_admin", "reservations", "accounting"],
   meeting_points: ["super_admin", "reservations"],
   discount_codes: ["super_admin", "reservations", "accounting"],
+  // The exchange rate feeds every USD->IDR price and checkout total on
+  // the site -- same "Super Admin only" restriction as commission_tiers,
+  // for the same reason: not something a Reservations/Support/
+  // Accounting role should be able to move on their own.
+  settings: ["super_admin"],
 };
 
 export const requireAdminSection = cache(async (section: AdminSection): Promise<AdminUser> => {
