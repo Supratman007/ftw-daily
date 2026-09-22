@@ -23,6 +23,7 @@ import { TransportProductSection } from "@/components/TransportProductSection";
 import { startCheckoutAction, startCarHireCheckoutAction, startTransportCheckoutAction } from "@/app/p/[slug]/actions";
 import { earliestBookableDate } from "@/lib/products/leadTime";
 import { ProductReviews, type ProductReviewSummary } from "@/components/ProductReviews";
+import { JsonLd } from "@/components/JsonLd";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import type { Locale } from "@/lib/i18n/locales";
 
@@ -112,6 +113,10 @@ export async function ProductPage({
   const displayTitle = locale === "id" && p.translation_status === "approved" && p.title_id ? p.title_id : p.title;
   const displayDescription =
     locale === "id" && p.translation_status === "approved" && p.description_id ? p.description_id : p.description;
+  // Plain-text summary (no HTML, unlike displayDescription above) for
+  // structured data and meta descriptions -- same locale-fallback rule
+  // as displayTitle/displayDescription.
+  const displayExcerpt = locale === "id" && p.translation_status === "approved" && p.excerpt_id ? p.excerpt_id : p.excerpt;
   // Keeps the date picker itself from ever offering a date the server
   // would reject -- see src/lib/products/leadTime.ts.
   const minDate = earliestBookableDate(p.min_lead_hours);
@@ -395,9 +400,48 @@ export async function ProductPage({
     );
   })();
 
+  // Product structured data -- tells Google the price, currency and
+  // (once there are published reviews) star rating to show directly in
+  // search results, instead of a plain blue link. `image` is whatever
+  // real photo the admin uploaded (cover, else the gallery's first
+  // shot) -- never a placeholder. aggregateRating only appears once
+  // there's at least one published review, matching what a visitor
+  // actually sees on this same page (reviews computed above).
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+  const productImage = p.cover_image_url ?? p.gallery_urls[0] ?? null;
+  const productJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: displayTitle,
+    ...(displayExcerpt ? { description: displayExcerpt } : {}),
+    ...(productImage ? { image: productImage } : {}),
+    url: `${siteUrl}${locale === "en" ? `/p/${slug}` : `/id/p/${slug}`}`,
+    ...(p.adult_price_usd != null
+      ? {
+          offers: {
+            "@type": "Offer",
+            price: p.adult_price_usd,
+            priceCurrency: "USD",
+            availability: p.is_bookable ? "https://schema.org/InStock" : "https://schema.org/PreOrder",
+            url: `${siteUrl}${locale === "en" ? `/p/${slug}` : `/id/p/${slug}`}`,
+          },
+        }
+      : {}),
+    ...(reviews.length > 0 && averageRating != null
+      ? {
+          aggregateRating: {
+            "@type": "AggregateRating",
+            ratingValue: Number(averageRating.toFixed(1)),
+            reviewCount: reviews.length,
+          },
+        }
+      : {}),
+  };
+
   return (
     <>
       <PageViewTracker path={locale === "en" ? `/p/${slug}` : `/id/p/${slug}`} locale={locale} />
+      <JsonLd data={productJsonLd} />
       <SiteHeader locale={locale} localeSwitcherBasePath={`/p/${p.slug}`} />
       <main
         className={`mx-auto max-w-4xl px-6 py-10 ${

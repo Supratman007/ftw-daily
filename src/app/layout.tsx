@@ -24,6 +24,13 @@ const plexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
+  // Lets every page's own openGraph/twitter `images` (see
+  // src/lib/i18n/metadata.ts's pageMetadata()) use a path relative to
+  // the site's real domain instead of every page needing to build a
+  // full URL by hand -- without this, Next can't resolve a relative
+  // image path and Open Graph/Twitter Card previews silently show no
+  // image at all.
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"),
   title: "Adventure Lombok Booking",
   description:
     "Book tours, activities, and more with Adventure Lombok Tour — secure online booking, real availability, local since 2006.",

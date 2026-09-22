@@ -1,9 +1,17 @@
 import type { Metadata } from "next";
 import { ContactPage } from "@/components/pages/ContactPage";
-import { localizedAlternates } from "@/lib/i18n/metadata";
+import { pageMetadata } from "@/lib/i18n/metadata";
 
 export function generateMetadata(): Metadata {
-  return { alternates: localizedAlternates("/contact", "/id/contact") };
+  return pageMetadata({
+    title: "Contact Us | Adventure Lombok Booking",
+    description:
+      "Get in touch with Adventure Lombok Booking -- questions about tours, activities, car hire, or an existing booking.",
+    path: "/contact",
+    enPath: "/contact",
+    idPath: "/id/contact",
+    imageUrl: "/logo.jpg",
+  });
 }
 
 /** Thin English entrypoint -- see ContactPage for the real

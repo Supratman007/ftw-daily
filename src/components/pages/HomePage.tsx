@@ -11,6 +11,8 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteCookieNotice } from "@/components/SiteCookieNotice";
 import { PageViewTracker } from "@/components/PageViewTracker";
+import { JsonLd } from "@/components/JsonLd";
+import { SUPPORT_EMAIL, WHATSAPP_NUMBER, INSTAGRAM_URL, FACEBOOK_URL, TIKTOK_URL } from "@/lib/contact";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import type { Locale } from "@/lib/i18n/locales";
 
@@ -73,9 +75,33 @@ export async function HomePage({
 
   const hasFilters = Boolean(q || (type && type !== "all") || (location && location !== "all"));
 
+  // Organization/TravelAgency structured data -- tells Google this is
+  // a real local business (name, contact, social profiles) rather than
+  // an anonymous page, which is what makes rich results (a knowledge
+  // panel, a phone/WhatsApp link in search) possible at all. Every
+  // field here already exists elsewhere in the app (lib/contact.ts) --
+  // nothing invented, and sameAs only lists a social profile that's
+  // actually configured via env var.
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+  const sameAs = [INSTAGRAM_URL, FACEBOOK_URL, TIKTOK_URL].filter((url): url is string => Boolean(url));
+  const organizationJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "TravelAgency",
+    name: "Adventure Lombok Booking",
+    url: siteUrl,
+    logo: `${siteUrl}/logo.jpg`,
+    image: hero.imageUrl ?? `${siteUrl}/logo.jpg`,
+    description:
+      "Local Lombok tour operator since 2006 -- day tours, activities, Mount Rinjani treks, Gili Islands and Komodo trips, and car hire.",
+    email: SUPPORT_EMAIL,
+    ...(WHATSAPP_NUMBER ? { telephone: `+${WHATSAPP_NUMBER}` } : {}),
+    ...(sameAs.length > 0 ? { sameAs } : {}),
+  };
+
   return (
     <>
       <PageViewTracker path={locale === "id" ? "/id" : "/"} locale={locale} />
+      <JsonLd data={organizationJsonLd} />
       <SiteHeader locale={locale} localeSwitcherBasePath="/" />
 
       {/* Full-width hero -- the mountain/wave strip is pinned to the

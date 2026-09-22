@@ -1,9 +1,17 @@
 import type { Metadata } from "next";
 import { AboutPage } from "@/components/pages/AboutPage";
-import { localizedAlternates } from "@/lib/i18n/metadata";
+import { pageMetadata } from "@/lib/i18n/metadata";
 
 export function generateMetadata(): Metadata {
-  return { alternates: localizedAlternates("/about", "/id/about") };
+  return pageMetadata({
+    title: "Tentang Kami | Adventure Lombok Booking",
+    description:
+      "Adventure Lombok adalah operator tur lokal Lombok yang menjalankan tur harian, trekking Gunung Rinjani, tur Gili Islands dan Komodo, serta sewa mobil sejak 2006.",
+    path: "/id/about",
+    enPath: "/about",
+    idPath: "/id/about",
+    imageUrl: "/logo.jpg",
+  });
 }
 
 /** Thin Indonesian entrypoint -- see AboutPage for the real
