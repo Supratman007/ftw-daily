@@ -33,6 +33,7 @@ export const id = {
     trustLocal: "Operator lokal Lombok, sejak 2006",
     trustAvailability: "Ketersediaan real-time",
     trustSecure: "Pembayaran online aman",
+    popularTripsKicker: "Pilihan pengalaman terbaik",
     popularTrips: "Trip populer",
     searchPlaceholder: "Cari trip, aktivitas, lokasi…",
     allTypes: "Semua jenis",
@@ -43,6 +44,8 @@ export const id = {
     noProductsYet: "Belum ada trip yang dipublikasikan — silakan cek lagi nanti.",
     noResults: "Tidak ada trip yang cocok dengan filter ini — coba hapus salah satu filter dan cari lagi.",
     photoComingSoon: "Foto segera hadir",
+    testimonialsKicker: "Trip nyata, wisatawan nyata",
+    testimonialsHeading: "Kata para wisatawan",
   },
   product: {
     perPerson: "/ orang",

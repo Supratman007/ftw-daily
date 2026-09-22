@@ -11,6 +11,7 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteCookieNotice } from "@/components/SiteCookieNotice";
 import { PageViewTracker } from "@/components/PageViewTracker";
+import { HomeTestimonials } from "@/components/HomeTestimonials";
 import { JsonLd } from "@/components/JsonLd";
 import { SUPPORT_EMAIL, WHATSAPP_NUMBER, INSTAGRAM_URL, FACEBOOK_URL, TIKTOK_URL } from "@/lib/contact";
 import { getDictionary } from "@/lib/i18n/getDictionary";
@@ -55,6 +56,34 @@ export async function HomePage({
 
   const allItems = (products ?? []) as Product[];
   const exchangeRate = await getUsdToIdrRate();
+
+  // Real, published reviews across every trip -- the site's actual
+  // social proof (see HomeTestimonials.tsx). Best-rated, most-recent
+  // first; capped at 6 so this stays a highlight reel, not a full
+  // review archive (that's what each trip's own page is for).
+  const { data: reviewRows } = await supabase
+    .from("reviews")
+    .select("id, rating, title, body, products(title, title_id, translation_status, slug)")
+    .eq("status", "published")
+    .order("rating", { ascending: false })
+    .order("published_at", { ascending: false })
+    .limit(6);
+  const testimonials = (reviewRows ?? [])
+    .map((r) => {
+      const product = r.products as unknown as {
+        title: string;
+        title_id: string | null;
+        translation_status: "none" | "draft" | "approved";
+        slug: string;
+      } | null;
+      if (!product) return null;
+      const productTitle =
+        locale === "id" && product.translation_status === "approved" && product.title_id
+          ? product.title_id
+          : product.title;
+      return { id: r.id, rating: r.rating, title: r.title, body: r.body, productTitle, productSlug: product.slug };
+    })
+    .filter((r): r is NonNullable<typeof r> => r !== null);
 
   const locations = Array.from(new Set(allItems.map((p) => p.location).filter((l): l is string => !!l))).sort();
 
@@ -303,6 +332,8 @@ export async function HomePage({
         </div>
       </div>
 
+      <HomeTestimonials reviews={testimonials} locale={locale} />
+
       <main className="mx-auto max-w-5xl px-6 py-10">
         {hasFilters && <p className="text-sm text-ink-soft">{dict.resultsFound(items.length)}</p>}
 
@@ -313,28 +344,35 @@ export async function HomePage({
         ) : (
           <>
             {!hasFilters && (
-              <p className="font-serif text-2xl font-semibold text-ocean">{dict.popularTrips}</p>
+              <>
+                <p className="font-mono text-xs uppercase tracking-widest text-ink-soft">{dict.popularTripsKicker}</p>
+                <p className="mt-1 font-serif text-2xl font-semibold text-ocean">{dict.popularTrips}</p>
+              </>
             )}
-            <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {items.map((p) => (
                 <Link
                   key={p.id}
                   href={locale === "en" ? `/p/${p.slug}` : `/id/p/${p.slug}`}
-                  className="flex flex-col overflow-hidden rounded-2xl border border-sand-deep bg-white transition hover:shadow-md"
+                  className="group flex flex-col overflow-hidden rounded-2xl border border-sand-deep bg-white transition-all duration-200 hover:-translate-y-1 hover:border-teal/40 hover:shadow-lg"
                 >
-                  <ProductCardImage
-                    src={p.cover_image_url}
-                    alt=""
-                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                    comingSoonLabel={dict.photoComingSoon}
-                    className="h-40"
-                  />
-                  <div className="flex flex-1 flex-col gap-1 p-4">
+                  <div className="overflow-hidden">
+                    <div className="transition-transform duration-300 group-hover:scale-105">
+                      <ProductCardImage
+                        src={p.cover_image_url}
+                        alt=""
+                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                        comingSoonLabel={dict.photoComingSoon}
+                        className="h-52"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex flex-1 flex-col gap-1.5 p-5">
                     <p className="font-mono text-[11px] uppercase tracking-widest text-ink-soft">
                       {PRODUCT_TYPE_LABELS[p.product_type]}
                       {p.location ? ` · ${p.location}` : ""}
                     </p>
-                    <h2 className="font-serif text-lg font-semibold text-ink">
+                    <h2 className="font-serif text-xl font-semibold text-ink">
                       {locale === "id" && p.translation_status === "approved" && p.title_id
                         ? p.title_id
                         : p.title}

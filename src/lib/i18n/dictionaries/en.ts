@@ -56,6 +56,7 @@ export const en = {
     trustLocal: "Local Lombok operator, since 2006",
     trustAvailability: "Real-time availability",
     trustSecure: "Secure online payment",
+    popularTripsKicker: "Handpicked experiences",
     popularTrips: "Popular trips",
     searchPlaceholder: "Search trips, activities, locations…",
     allTypes: "All types",
@@ -66,6 +67,12 @@ export const en = {
     noProductsYet: "No trips published yet — check back soon.",
     noResults: "No trips match those filters — try clearing one and searching again.",
     photoComingSoon: "Photo coming soon",
+    // The homepage testimonials section (real, published reviews
+    // pulled across every trip -- see HomeTestimonials.tsx). Renders
+    // nothing at all until there's at least one published review, same
+    // "no empty placeholder" rule as the per-trip reviews section.
+    testimonialsKicker: "Real trips, real travelers",
+    testimonialsHeading: "What travelers say",
   },
   product: {
     perPerson: "/ person",
