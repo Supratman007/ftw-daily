@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { compressImageFile } from "@/lib/image/compressImageFile";
 
 /**
  * The homepage hero photo's upload widget, on /admin/settings. Same
@@ -23,9 +24,10 @@ export function HeroImageUploader({ initialUrl }: { initialUrl: string | null })
     if (!file) return;
     setUploading(true);
     setUploadError(null);
+    const compressed = await compressImageFile(file);
     const supabase = createSupabaseBrowserClient();
-    const path = `hero/${crypto.randomUUID()}-${file.name}`;
-    const { error } = await supabase.storage.from("product-images").upload(path, file);
+    const path = `hero/${crypto.randomUUID()}-${compressed.name}`;
+    const { error } = await supabase.storage.from("product-images").upload(path, compressed);
     if (error) {
       setUploadError(`Couldn't upload ${file.name}: ${error.message}`);
       setUploading(false);

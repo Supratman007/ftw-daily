@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { compressImageFile } from "@/lib/image/compressImageFile";
 import type { TransportVehicleType } from "@/lib/cars/types";
 
 const inputClass =
@@ -33,8 +34,9 @@ export function TransportVehicleTypeForm({ action, vehicleType, error }: Transpo
     const supabase = createSupabaseBrowserClient();
     const uploaded: string[] = [];
     for (const file of Array.from(files)) {
-      const path = `${crypto.randomUUID()}-${file.name}`;
-      const { error: uploadErr } = await supabase.storage.from("product-images").upload(path, file);
+      const compressed = await compressImageFile(file);
+      const path = `${crypto.randomUUID()}-${compressed.name}`;
+      const { error: uploadErr } = await supabase.storage.from("product-images").upload(path, compressed);
       if (uploadErr) {
         setUploadError(`Couldn't upload ${file.name}: ${uploadErr.message}`);
         continue;

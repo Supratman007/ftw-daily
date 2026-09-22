@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { compressImageFile } from "@/lib/image/compressImageFile";
 import { PRODUCT_TYPE_LABELS, type Product, type ProductType } from "@/lib/products/types";
 import { DEFAULT_MIN_LEAD_HOURS } from "@/lib/products/leadTime";
 import { RichTextEditor } from "@/components/admin/RichTextEditor";
@@ -60,10 +61,11 @@ export function ProductForm({ action, product, error }: ProductFormProps) {
     const supabase = createSupabaseBrowserClient();
     const uploaded: string[] = [];
     for (const file of Array.from(files)) {
-      const path = `${crypto.randomUUID()}-${file.name}`;
+      const compressed = await compressImageFile(file);
+      const path = `${crypto.randomUUID()}-${compressed.name}`;
       const { error: uploadErr } = await supabase.storage
         .from("product-images")
-        .upload(path, file);
+        .upload(path, compressed);
       if (uploadErr) {
         setUploadError(`Couldn't upload ${file.name}: ${uploadErr.message}`);
         continue;
