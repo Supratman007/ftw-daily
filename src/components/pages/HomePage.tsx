@@ -128,8 +128,16 @@ export async function HomePage({
         </svg>
 
         <div className="relative mx-auto max-w-5xl px-6 pb-20 pt-10 sm:pb-28 sm:pt-14">
+          {/* Smaller font + tighter tracking on mobile than on a wider
+              screen -- at the original text-[11px]/tracking-widest
+              size, the default badge copy ("Local Lombok tour operator
+              · since 2006") was just wide enough to wrap onto a second
+              line on a phone, turning the rounded-full pill into an
+              oversized stretched box. whitespace-nowrap plus the
+              smaller mobile size keeps it on one line and the pill
+              shape intact; sm and up goes back to the original size. */}
           <span
-            className={`inline-block rounded-full px-3 py-1 font-mono text-[11px] uppercase tracking-widest ${
+            className={`inline-block whitespace-nowrap rounded-full px-2.5 py-1 font-mono text-[9px] uppercase tracking-wide sm:px-3 sm:text-[11px] sm:tracking-widest ${
               hero.imageUrl ? "bg-white/20 text-white" : "bg-white/75 text-ocean"
             }`}
           >
