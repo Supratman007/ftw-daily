@@ -85,6 +85,16 @@ export async function HomePage({
     })
     .filter((r): r is NonNullable<typeof r> => r !== null);
 
+  // TEMP DEMO DATA -- shows what the testimonials section looks like
+  // with real reviews in place. No reviews exist yet, so this section
+  // normally renders nothing. Will be removed once the preview has
+  // been checked -- never meant to reach production.
+  testimonials.push(
+    { id: "demo-r1", rating: 5, title: "Best trek of our trip", body: "Our guide was incredible and the sunrise summit view made every step worth it. Highly recommend booking early.", productTitle: "Mount Rinjani 3-Day Summit Trek", productSlug: "rinjani-trek" },
+    { id: "demo-r2", rating: 5, title: "Smooth and easy booking", body: "Everything was arranged perfectly, pickup was on time and the snorkeling spots were beautiful.", productTitle: "Gili Islands Snorkeling Day Trip", productSlug: "gili-snorkel" },
+    { id: "demo-r3", rating: 4, title: "Reliable and on time", body: "Driver was professional and the car was clean and comfortable for the airport run.", productTitle: "Private Airport Transfer", productSlug: "airport-transfer" },
+  );
+
   const locations = Array.from(new Set(allItems.map((p) => p.location).filter((l): l is string => !!l))).sort();
 
   const query = (q ?? "").trim().toLowerCase();
