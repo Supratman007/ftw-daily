@@ -10,7 +10,7 @@
  * Park" matches "Komodo"). Add a new destination here as the founder
  * starts selling trips there -- no other code change needed.
  */
-export const EXTENSION_TRIP_DESTINATIONS = ["Bali", "Komodo", "Sumba", "Java", "Borneo", "Sumatra"];
+export const EXTENSION_TRIP_DESTINATIONS = ["Bali", "Komodo", "Flores", "Sumba", "Java", "Borneo", "Sumatra"];
 
 export function isExtensionTripLocation(location: string | null): boolean {
   if (!location) return false;

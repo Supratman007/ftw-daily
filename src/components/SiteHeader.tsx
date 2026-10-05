@@ -69,7 +69,7 @@ export async function SiteHeader({
   // no "trip category" column, just free-text location/category), so
   // it filters by location instead -- any product whose location
   // mentions an Indonesian destination beyond Lombok (Bali, Komodo,
-  // Sumba, Java, Borneo, Sumatra -- see extensionDestinations.ts).
+  // Flores, Sumba, Java, Borneo, Sumatra -- see extensionDestinations.ts).
   // No separate "Home" link -- the logo already goes there.
   const basePath = locale === "en" ? "/" : "/id";
   const browseLinks: SiteNavLink[] = [
