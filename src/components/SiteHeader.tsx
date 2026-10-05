@@ -65,20 +65,17 @@ export async function SiteHeader({
   }
 
   // Daily Tours/Daily Activities/Car Hire map onto the existing
-  // product_type filter. Extension Trip doesn't have a dedicated field
-  // yet -- there's no "trip category" column, just free-text location/
-  // category -- so it searches by keyword instead via the homepage's
-  // existing `q` text search (which already matches title, location
-  // and category). It'll show "no trips found" until products with
-  // matching location/category/title text exist, which is honest today
-  // and starts working the moment that content is added, rather than a
-  // dead link or a filter UI for a category that doesn't exist yet.
+  // product_type filter. Extension Trip isn't a product_type (there's
+  // no "trip category" column, just free-text location/category), so
+  // it filters by location instead -- any product whose location
+  // mentions an Indonesian destination beyond Lombok (Bali, Komodo,
+  // Sumba, Java, Borneo, Sumatra -- see extensionDestinations.ts).
   // No separate "Home" link -- the logo already goes there.
   const basePath = locale === "en" ? "/" : "/id";
   const browseLinks: SiteNavLink[] = [
     { href: `${basePath}?type=tour`, label: dict.navDailyTours },
     { href: `${basePath}?type=activity`, label: dict.navDailyActivities },
-    { href: `${basePath}?q=${encodeURIComponent("Extension")}`, label: dict.navExtensionTrip },
+    { href: `${basePath}?category=extension`, label: dict.navExtensionTrip },
     { href: `${basePath}?type=car_hire`, label: dict.navCarHire },
   ];
 

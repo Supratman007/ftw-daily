@@ -7,6 +7,7 @@ import { getUsdToIdrRate } from "@/lib/exchangeRate";
 import { getHeroContent } from "@/lib/heroSettings";
 import { PRODUCT_TYPE_LABELS } from "@/lib/products/types";
 import type { Product } from "@/lib/products/types";
+import { isExtensionTripLocation } from "@/lib/products/extensionDestinations";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteCookieNotice } from "@/components/SiteCookieNotice";
@@ -40,11 +41,11 @@ export async function HomePage({
   searchParams,
   locale,
 }: {
-  searchParams: Promise<{ q?: string; type?: string; location?: string }>;
+  searchParams: Promise<{ q?: string; type?: string; location?: string; category?: string }>;
   locale: Locale;
 }) {
   const dict = getDictionary(locale).home;
-  const { q, type, location } = await searchParams;
+  const { q, type, location, category } = await searchParams;
   const hero = await getHeroContent(locale);
 
   const supabase = await createSupabaseServerClient();
@@ -101,6 +102,11 @@ export async function HomePage({
   const items = allItems.filter((p) => {
     if (type && type !== "all" && p.product_type !== type) return false;
     if (location && location !== "all" && p.location !== location) return false;
+    // "Extension Trips" (the header nav link) means a trip to an
+    // Indonesian destination beyond Lombok itself -- see
+    // extensionDestinations.ts for why this matches on `location`
+    // rather than a dedicated field.
+    if (category === "extension" && !isExtensionTripLocation(p.location)) return false;
     if (query) {
       // Matches on the Indonesian title too (when approved) so a
       // customer searching in Indonesian on /id still finds trips
@@ -112,7 +118,9 @@ export async function HomePage({
     return true;
   });
 
-  const hasFilters = Boolean(q || (type && type !== "all") || (location && location !== "all"));
+  const hasFilters = Boolean(
+    q || (type && type !== "all") || (location && location !== "all") || category === "extension"
+  );
 
   // Organization/TravelAgency structured data -- tells Google this is
   // a real local business (name, contact, social profiles) rather than
