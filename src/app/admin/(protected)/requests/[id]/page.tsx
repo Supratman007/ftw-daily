@@ -5,6 +5,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/service";
 import { formatIdr } from "@/lib/currency";
 import { BOOKING_STATUS_LABELS, type Booking, type Traveler } from "@/lib/bookings/types";
+import { getPassportAccessLog, recordPassportAccess } from "@/lib/bookings/passportAccessLog";
 import { confirmRequestAction, declineRequestAction, saveAdminNotesAction } from "../actions";
 
 type RequestDetail = Booking & {
@@ -26,7 +27,7 @@ export default async function AdminRequestDetailPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ error?: string; confirmed?: string; declined?: string; notes_saved?: string }>;
 }) {
-  await requireAdminSection("requests");
+  const admin = await requireAdminSection("requests");
   const { id } = await params;
   const { error, confirmed, declined, notes_saved: notesSaved } = await searchParams;
 
@@ -59,6 +60,16 @@ export default async function AdminRequestDetailPage({
         : Promise.resolve(null)
     )
   );
+
+  // A signed URL being handed to this admin is the real access event
+  // (see migration 0051) -- log it here, then pull the full trail back
+  // so each traveler can show who's viewed their passport, including
+  // this visit.
+  const viewedTravelerIds = travelers
+    .filter((t, i) => passportUrls[i]?.data?.signedUrl)
+    .map((t) => t.id);
+  await recordPassportAccess(supabase, admin.id, viewedTravelerIds);
+  const accessLog = await getPassportAccessLog(supabase, viewedTravelerIds);
 
   return (
     <div className="max-w-2xl">
@@ -184,6 +195,12 @@ export default async function AdminRequestDetailPage({
                 ? `Park insurance (${formatIdr(t.insurance_fee_idr)})`
                 : `Own insurance -- ${t.insurance_company ?? "—"} (${t.insurance_number ?? "—"})`}
             </p>
+            {accessLog[t.id] && accessLog[t.id].length > 0 && (
+              <p className="mt-2 text-xs text-ink-soft">
+                Passport viewed {accessLog[t.id].length} time{accessLog[t.id].length === 1 ? "" : "s"} -- last by{" "}
+                {accessLog[t.id][0].adminName} on {new Date(accessLog[t.id][0].viewedAt).toLocaleString()}
+              </p>
+            )}
           </div>
         ))}
         {travelers.length === 0 && (
