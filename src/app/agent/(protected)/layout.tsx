@@ -11,7 +11,7 @@ export default async function ProtectedAgentLayout({
   const agent = await requireAgent();
 
   return (
-    <div className="min-h-screen bg-sand">
+    <div className="min-h-screen bg-canvas">
       <header className="flex flex-col gap-3 border-b border-sand-deep bg-white px-6 py-4 sm:flex-row sm:items-center sm:justify-between print:hidden">
         <div>
           <Link href="/agent" className="flex shrink-0 items-center gap-2">

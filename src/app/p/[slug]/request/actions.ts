@@ -6,7 +6,8 @@ import { requireCustomer } from "@/lib/customers/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/service";
 import { generateBookingCode } from "@/lib/bookings/booking-code";
-import { usdToIdr, USD_TO_IDR_RATE } from "@/lib/currency";
+import { usdToIdr } from "@/lib/currency";
+import { getUsdToIdrRate } from "@/lib/exchangeRate";
 import { PARK_INSURANCE_FEE_IDR } from "@/lib/bookings/types";
 import { REFERRAL_COOKIE_NAME } from "@/lib/agents/referralCookie";
 import { sendBookingRequestReceivedEmail, sendNewBookingRequestStaffEmail } from "@/lib/email/resend";
@@ -15,6 +16,7 @@ import type { Product } from "@/lib/products/types";
 import type { InsuranceType } from "@/lib/bookings/types";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import { recordReferralAttribution } from "@/lib/agents/referralAttribution";
+import { checkRateLimit } from "@/lib/rateLimit";
 
 const MAX_PASSPORT_BYTES = 5 * 1024 * 1024; // 5MB
 const PASSPORT_EXT_BY_MIME: Record<string, string> = {
@@ -56,16 +58,32 @@ export async function submitBookingRequestAction(
   const dict = getDictionary(locale).checkoutErrors;
 
   const returnTo = `${pathPrefix}/p/${slug}/request?date=${encodeURIComponent(date)}&pax=${pax}`;
-  const customer = await requireCustomer(returnTo);
 
   const hotelName = String(formData.get("hotel_name") ?? "").trim();
   const roomNumber = String(formData.get("room_number") ?? "").trim();
+  const website = String(formData.get("website") ?? "").trim();
+
+  // Honeypot -- hidden from real visitors with CSS (see RequestPage.tsx)
+  // but visible to most bots. Drops the submission silently -- no
+  // login redirect, no booking row, no passport upload -- same
+  // pattern as the Contact form and startCheckoutAction.
+  if (website) {
+    redirect(returnTo);
+  }
 
   function fail(message: string): never {
     redirect(
       `${pathPrefix}/p/${slug}/request?date=${encodeURIComponent(date)}&pax=${pax}&error=${encodeURIComponent(message)}`
     );
   }
+
+  // Caps how many request attempts one IP can make against this
+  // product in a 10-minute window -- see src/lib/rateLimit.ts.
+  if (!(await checkRateLimit("booking_request", 8, 10))) {
+    fail(dict.tooManyAttempts);
+  }
+
+  const customer = await requireCustomer(returnTo);
 
   if (!date || Number.isNaN(Date.parse(date))) {
     fail(dict.invalidDate);
@@ -178,14 +196,15 @@ export async function submitBookingRequestAction(
     referredByAgentId = agentRow?.id ?? null;
   }
 
+  const rate = await getUsdToIdrRate();
   const subtotalUsd = p.adult_price_usd * pax;
   const parkInsuranceCount = travelers.filter((t) => t.insuranceType === "park_provided").length;
   const insuranceTotalIdr = PARK_INSURANCE_FEE_IDR * parkInsuranceCount;
-  const totalIdr = usdToIdr(subtotalUsd) + insuranceTotalIdr;
+  const totalIdr = usdToIdr(subtotalUsd, rate) + insuranceTotalIdr;
   // Reference figure only (spec §9: USD is "estimated," IDR is what's
   // actually charged) -- folds the flat IDR insurance fee back into an
   // approximate USD equivalent so the two totals stay consistent.
-  const totalUsd = subtotalUsd + insuranceTotalIdr / USD_TO_IDR_RATE;
+  const totalUsd = subtotalUsd + insuranceTotalIdr / rate;
 
   const bookingCode = generateBookingCode();
   const bookingId = crypto.randomUUID();

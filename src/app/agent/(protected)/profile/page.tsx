@@ -124,7 +124,7 @@ export default async function AgentProfilePage({
 
         <button
           type="submit"
-          className="self-start rounded-lg bg-coral px-4 py-2 text-sm font-semibold text-white"
+          className="self-start rounded-lg bg-coral px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-coral-dark"
         >
           Save details
         </button>

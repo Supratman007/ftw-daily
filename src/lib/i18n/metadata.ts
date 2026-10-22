@@ -24,3 +24,57 @@ export function localizedAlternates(enPath: string, idPath: string): Metadata["a
     },
   };
 }
+
+/**
+ * Builds a full per-page Metadata object -- title, description,
+ * hreflang alternates (via localizedAlternates above), Open Graph, and
+ * a matching Twitter Card -- so every page gets its own search-result
+ * and link-preview text instead of every page on the site sharing
+ * root layout.tsx's one static title/description (the gap this was
+ * written to close). `path` is this specific page's own full path
+ * (e.g. "/id/about"); `enPath`/`idPath` are both locale versions' full
+ * paths, same as localizedAlternates expects. `imageUrl` is optional
+ * and can be relative (resolved against layout.tsx's metadataBase) or
+ * absolute -- omit it entirely rather than pointing at a placeholder
+ * when a page has no real photo yet.
+ */
+export function pageMetadata({
+  title,
+  description,
+  path,
+  enPath,
+  idPath,
+  imageUrl,
+}: {
+  title: string;
+  description: string;
+  path: string;
+  enPath: string;
+  idPath: string;
+  imageUrl?: string | null;
+}): Metadata {
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+  const images = imageUrl ? [{ url: imageUrl }] : undefined;
+  const isIndonesian = path === idPath;
+
+  return {
+    title,
+    description,
+    alternates: localizedAlternates(enPath, idPath),
+    openGraph: {
+      title,
+      description,
+      url: `${siteUrl}${path}`,
+      siteName: "Adventure Lombok Booking",
+      locale: isIndonesian ? "id_ID" : "en_US",
+      type: "website",
+      images,
+    },
+    twitter: {
+      card: images ? "summary_large_image" : "summary",
+      title,
+      description,
+      images,
+    },
+  };
+}

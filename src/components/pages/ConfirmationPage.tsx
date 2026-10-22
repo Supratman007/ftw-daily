@@ -96,7 +96,7 @@ export async function ConfirmationPage({
           <form action={customerLogoutAction.bind(null, locale)} className="mt-6">
             <button
               type="submit"
-              className="rounded-lg bg-coral px-4 py-2 text-sm font-semibold text-white"
+              className="rounded-lg bg-coral px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-coral-dark"
             >
               {dict.logout}
             </button>
@@ -178,7 +178,7 @@ export async function ConfirmationPage({
         {product?.slug && (
           <Link
             href={locale === "en" ? `/p/${product.slug}` : `/id/p/${product.slug}`}
-            className="mt-6 rounded-lg bg-coral px-4 py-2 text-sm font-semibold text-white"
+            className="mt-6 rounded-lg bg-coral px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-coral-dark"
           >
             {dict.backToTrip}
           </Link>
@@ -264,7 +264,7 @@ export async function ConfirmationPage({
 
       <Link
         href={locale === "en" ? "/" : "/id"}
-        className="mt-6 rounded-lg bg-coral px-4 py-2 text-sm font-semibold text-white"
+        className="mt-6 rounded-lg bg-coral px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-coral-dark"
       >
         {dict.browseMore}
       </Link>

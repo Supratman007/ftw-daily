@@ -36,7 +36,7 @@ export default async function AdminCommissionTiersPage({
         <h1 className="font-serif text-2xl font-semibold text-ink">Commission tiers</h1>
         <Link
           href="/admin/commissions/tiers/new"
-          className="rounded-lg bg-coral px-4 py-2 text-sm font-semibold text-white"
+          className="rounded-lg bg-coral px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-coral-dark"
         >
           + Add tier
         </Link>
@@ -60,7 +60,7 @@ export default async function AdminCommissionTiersPage({
 
       <div className="mt-6 overflow-x-auto rounded-lg border border-sand-deep bg-white">
         <table className="w-full min-w-[480px] text-left text-sm">
-          <thead className="bg-sand text-xs uppercase text-ink-soft">
+          <thead className="bg-canvas text-xs uppercase text-ink-soft">
             <tr>
               <th className="px-4 py-2">Tier</th>
               <th className="px-4 py-2">Qualifies at</th>
@@ -70,7 +70,7 @@ export default async function AdminCommissionTiersPage({
           </thead>
           <tbody>
             {tiers.map((t) => (
-              <tr key={t.id} className="border-t border-sand-deep">
+              <tr key={t.id} className="border-t border-sand-deep transition-colors hover:bg-sand">
                 <td className="px-4 py-2 font-semibold text-ink">{t.name}</td>
                 <td className="px-4 py-2 text-ink-soft">{t.min_referrals}+ referrals</td>
                 <td className="px-4 py-2 text-ink">{t.commission_percent}%</td>

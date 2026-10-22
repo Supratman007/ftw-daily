@@ -71,7 +71,15 @@ const ROW_LABELS: Record<Locale, {
  * Never throws -- a failed email should never block or undo a
  * successful payment. Logs the failure for later attention instead.
  */
-async function sendEmail(params: { to: string; subject: string; html: string }): Promise<void> {
+async function sendEmail(params: {
+  to: string;
+  subject: string;
+  html: string;
+  /** Set so clicking "Reply" in the inbox goes straight to this
+   * address instead of the shared sender -- only the Contact form
+   * (sendContactFormEmail) uses this today. */
+  replyTo?: string;
+}): Promise<void> {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) {
     console.error("RESEND_API_KEY is not configured -- skipping email:", params.subject);
@@ -91,6 +99,7 @@ async function sendEmail(params: { to: string; subject: string; html: string }):
         to: [params.to],
         subject: params.subject,
         html: params.html,
+        ...(params.replyTo ? { reply_to: params.replyTo } : {}),
       }),
       signal: AbortSignal.timeout(15_000),
     });
@@ -1837,6 +1846,41 @@ export async function sendErrorAlertEmail(params: ErrorAlertEmailParams): Promis
     to: params.toEmail,
     subject: `⚠️ Site error — ${params.routePath ?? "unknown page"}`,
     html,
+  });
+}
+
+interface ContactFormEmailParams {
+  toEmail: string;
+  name: string;
+  fromEmail: string;
+  message: string;
+}
+
+/** The public Contact page's only effect -- see
+ * src/app/contact/actions.ts. Goes to SUPPORT_EMAIL (lib/contact.ts),
+ * not a per-admin fan-out like sendNewBookingRequestStaffEmail --
+ * this is a general inbox message, not an operational alert every
+ * admin needs to see. `fromEmail` is the visitor's own address so
+ * whoever reads this can just hit reply. */
+export async function sendContactFormEmail(params: ContactFormEmailParams): Promise<void> {
+  const html = `
+    <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
+      <h1 style="color: #0F3A3D;">New message from the Contact page</h1>
+      <table style="width: 100%; border-collapse: collapse; margin: 16px 0;">
+        <tr><td style="padding: 6px 0; color: #4B5854;">Name</td><td style="padding: 6px 0; text-align: right;">${escapeHtml(params.name)}</td></tr>
+        <tr><td style="padding: 6px 0; color: #4B5854;">Email</td><td style="padding: 6px 0; text-align: right;">${escapeHtml(params.fromEmail)}</td></tr>
+      </table>
+      <p style="color: #4B5854;">Message:</p>
+      <p style="background: #F5F1EA; padding: 12px; border-radius: 8px; white-space: pre-wrap; word-break: break-word; color: #1A231F;">${escapeHtml(params.message)}</p>
+      <p style="color: #4B5854; font-size: 13px;">Reply directly to this email to answer ${escapeHtml(params.name)}.</p>
+    </div>
+  `;
+
+  await sendEmail({
+    to: params.toEmail,
+    subject: `New contact form message from ${params.name}`,
+    html,
+    replyTo: params.fromEmail,
   });
 }
 

@@ -174,7 +174,7 @@ export default async function AgentBookingsPage({
         </label>
         <button
           type="submit"
-          className="rounded-lg bg-coral px-4 py-2 text-sm font-semibold text-white"
+          className="rounded-lg bg-coral px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-coral-dark"
         >
           Filter
         </button>
@@ -189,7 +189,7 @@ export default async function AgentBookingsPage({
       {/* Screen: condensed columns, one "View" per row for the rest. */}
       <div className="mt-6 overflow-x-auto rounded-lg border border-sand-deep bg-white print:hidden">
         <table className="w-full min-w-[720px] text-left text-sm">
-          <thead className="bg-sand text-xs uppercase text-ink-soft">
+          <thead className="bg-canvas text-xs uppercase text-ink-soft">
             <tr>
               <th className="px-4 py-2">Purchase date</th>
               <th className="px-4 py-2">Booking code</th>
@@ -203,7 +203,7 @@ export default async function AgentBookingsPage({
           </thead>
           <tbody>
             {rows.map((r) => (
-              <tr key={r.id} className="border-t border-sand-deep">
+              <tr key={r.id} className="border-t border-sand-deep transition-colors hover:bg-sand">
                 <td className="px-4 py-2 text-ink-soft">{r.created_at.slice(0, 10)}</td>
                 <td className="px-4 py-2 font-mono text-xs text-ink">{r.booking_code}</td>
                 <td className="px-4 py-2 text-ink">{r.products?.title ?? "—"}</td>
@@ -266,7 +266,7 @@ export default async function AgentBookingsPage({
           </thead>
           <tbody>
             {rows.map((r) => (
-              <tr key={r.id} className="border-t border-sand-deep">
+              <tr key={r.id} className="border-t border-sand-deep transition-colors hover:bg-sand">
                 <td className="px-4 py-2 text-ink-soft">{r.created_at.slice(0, 10)}</td>
                 <td className="px-4 py-2 font-mono text-xs text-ink">{r.booking_code}</td>
                 <td className="px-4 py-2 text-ink">{r.products?.title ?? "—"}</td>

@@ -1,5 +1,6 @@
 import "server-only";
 import { translateToIndonesian } from "./googleTranslate";
+import { sanitizeDescriptionHtmlOrNull } from "@/lib/products/sanitizeDescriptionHtml";
 
 export interface ProductTranslationFields {
   title_id: string | null;
@@ -50,7 +51,7 @@ export async function maybeRetranslateProduct(
     return {
       title_id: titleId || null,
       excerpt_id: excerptId || null,
-      description_id: descriptionId || null,
+      description_id: sanitizeDescriptionHtmlOrNull(descriptionId),
       translation_status: "draft",
       translated_from_title: english.title,
       translated_from_excerpt: english.excerpt,

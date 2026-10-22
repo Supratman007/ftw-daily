@@ -1,9 +1,16 @@
 import type { Metadata } from "next";
 import { RedeemPage } from "@/components/pages/RedeemPage";
-import { localizedAlternates } from "@/lib/i18n/metadata";
+import { pageMetadata } from "@/lib/i18n/metadata";
 
 export function generateMetadata(): Metadata {
-  return { alternates: localizedAlternates("/redeem", "/id/redeem") };
+  return pageMetadata({
+    title: "Tukarkan Voucher Hadiah | Adventure Lombok Booking",
+    description: "Tukarkan voucher hadiah untuk perjalanan bersama Adventure Lombok Booking.",
+    path: "/id/redeem",
+    enPath: "/redeem",
+    idPath: "/id/redeem",
+    imageUrl: "/logo.jpg",
+  });
 }
 
 /** Thin Indonesian entrypoint -- see RedeemPage for the real

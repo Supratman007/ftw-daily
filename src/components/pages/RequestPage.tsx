@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { requireCustomer } from "@/lib/customers/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { formatIdr, formatUsd, usdToIdr } from "@/lib/currency";
+import { getUsdToIdrRate } from "@/lib/exchangeRate";
 import { PARK_INSURANCE_FEE_IDR } from "@/lib/bookings/types";
 import type { Product } from "@/lib/products/types";
 import { SiteHeader } from "@/components/SiteHeader";
@@ -59,7 +60,7 @@ export async function RequestPage({
 
   const adultPriceUsd = p.adult_price_usd ?? 0;
   const subtotalUsd = adultPriceUsd * pax;
-  const estimate = `${formatUsd(subtotalUsd)} (${formatIdr(usdToIdr(subtotalUsd))})`;
+  const estimate = `${formatUsd(subtotalUsd)} (${formatIdr(usdToIdr(subtotalUsd, await getUsdToIdrRate()))})`;
 
   return (
     <>
@@ -82,6 +83,13 @@ export async function RequestPage({
           className="mt-6 flex flex-col gap-8"
         >
           <input type="hidden" name="locale" value={locale} />
+          {/* Honeypot -- hidden from real visitors, most bots fill it in
+              anyway; see submitBookingRequestAction for what happens if
+              it's non-empty. Same pattern as the Contact form. */}
+          <div className="absolute left-[-9999px] top-auto h-px w-px overflow-hidden" aria-hidden="true">
+            <label htmlFor="website">Website</label>
+            <input id="website" name="website" type="text" tabIndex={-1} autoComplete="off" />
+          </div>
           {Array.from({ length: pax }).map((_, i) => (
             <fieldset key={i} className="rounded-2xl border border-sand-deep bg-white p-5">
               <legend className="px-1 font-serif text-lg font-semibold text-ink">
@@ -168,7 +176,7 @@ export async function RequestPage({
 
           <button
             type="submit"
-            className="self-start rounded-lg bg-coral px-6 py-3 text-sm font-semibold text-white"
+            className="self-start rounded-lg bg-coral px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-coral-dark"
           >
             {dict.submit}
           </button>

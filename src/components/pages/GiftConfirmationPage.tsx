@@ -69,7 +69,7 @@ export async function GiftConfirmationPage({
           </h1>
           <p className="mt-2 text-sm text-ink-soft">{dict.wrongAccountBody(customer.email)}</p>
           <form action={customerLogoutAction.bind(null, locale)} className="mt-6">
-            <button type="submit" className="rounded-lg bg-coral px-4 py-2 text-sm font-semibold text-white">
+            <button type="submit" className="rounded-lg bg-coral px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-coral-dark">
               {dict.logout}
             </button>
           </form>
@@ -106,7 +106,7 @@ export async function GiftConfirmationPage({
         {product?.slug && (
           <Link
             href={locale === "en" ? `/p/${product.slug}/gift` : `/id/p/${product.slug}/gift`}
-            className="mt-6 rounded-lg bg-coral px-4 py-2 text-sm font-semibold text-white"
+            className="mt-6 rounded-lg bg-coral px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-coral-dark"
           >
             {dict.backToTrip}
           </Link>
@@ -146,7 +146,7 @@ export async function GiftConfirmationPage({
 
       <Link
         href={locale === "en" ? "/" : "/id"}
-        className="mt-6 rounded-lg bg-coral px-4 py-2 text-sm font-semibold text-white"
+        className="mt-6 rounded-lg bg-coral px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-coral-dark"
       >
         {dict.browseMore}
       </Link>

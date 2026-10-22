@@ -1,9 +1,16 @@
 import type { Metadata } from "next";
 import { RedeemPage } from "@/components/pages/RedeemPage";
-import { localizedAlternates } from "@/lib/i18n/metadata";
+import { pageMetadata } from "@/lib/i18n/metadata";
 
 export function generateMetadata(): Metadata {
-  return { alternates: localizedAlternates("/redeem", "/id/redeem") };
+  return pageMetadata({
+    title: "Redeem a Gift Voucher | Adventure Lombok Booking",
+    description: "Redeem a gift voucher for a trip with Adventure Lombok Booking.",
+    path: "/redeem",
+    enPath: "/redeem",
+    idPath: "/id/redeem",
+    imageUrl: "/logo.jpg",
+  });
 }
 
 /** Thin English entrypoint -- see RedeemPage for the real

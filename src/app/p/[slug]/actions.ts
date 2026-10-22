@@ -8,12 +8,14 @@ import { createSupabaseServiceRoleClient } from "@/lib/supabase/service";
 import { createXenditInvoice } from "@/lib/xendit/client";
 import { generateBookingCode } from "@/lib/bookings/booking-code";
 import { idrToUsd, usdToIdr } from "@/lib/currency";
+import { getUsdToIdrRate } from "@/lib/exchangeRate";
 import { REFERRAL_COOKIE_NAME } from "@/lib/agents/referralCookie";
 import { OTHER_MEETING_POINT_VALUE, type CarPackage, type CarType, type MeetingPoint } from "@/lib/cars/types";
 import { hasEnoughLeadTime, pickupDatetimeInBusinessTimezone, tripStartFromDate } from "@/lib/products/leadTime";
 import type { Product } from "@/lib/products/types";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import { recordReferralAttribution } from "@/lib/agents/referralAttribution";
+import { checkRateLimit } from "@/lib/rateLimit";
 
 export async function startCheckoutAction(productId: string, slug: string, formData: FormData) {
   const date = String(formData.get("date") ?? "");
@@ -22,6 +24,7 @@ export async function startCheckoutAction(productId: string, slug: string, formD
   const discountCodeInput = String(formData.get("discount_code") ?? "").trim();
   const hotelName = String(formData.get("hotel_name") ?? "").trim();
   const roomNumber = String(formData.get("room_number") ?? "").trim();
+  const website = String(formData.get("website") ?? "").trim();
   // A hidden field on the checkout form (see ProductPage.tsx) rather
   // than anything the customer picks here -- just carries forward
   // whichever locale they were already browsing in, so every redirect
@@ -39,7 +42,16 @@ export async function startCheckoutAction(productId: string, slug: string, formD
   const referralCodeInput = cookieStore.get(REFERRAL_COOKIE_NAME)?.value?.trim() ?? "";
 
   const returnTo = `${pathPrefix}/p/${slug}?date=${encodeURIComponent(date)}&pax=${pax}`;
-  const customer = await requireCustomer(returnTo);
+
+  // Honeypot -- hidden from real visitors with CSS (see the matching
+  // form in ProductPage.tsx) but visible to most bots that blindly
+  // fill in every field. A non-empty value here means it's very
+  // likely a bot, so this drops the submission silently -- no error,
+  // no login redirect, no Xendit invoice, no booking row -- rather
+  // than let it reach any of that. Same pattern as the Contact form.
+  if (website) {
+    redirect(returnTo);
+  }
 
   function fail(message: string): never {
     const params = new URLSearchParams({ date, pax: String(pax), error: message });
@@ -48,6 +60,16 @@ export async function startCheckoutAction(productId: string, slug: string, formD
     if (roomNumber) params.set("room_number", roomNumber);
     redirect(`${pathPrefix}/p/${slug}?${params.toString()}`);
   }
+
+  // Caps how many checkout attempts one IP can make against this
+  // product in a 10-minute window -- catches a scripted flood that
+  // fills the real fields directly and so never trips the honeypot
+  // above. See src/lib/rateLimit.ts.
+  if (!(await checkRateLimit("checkout", 8, 10))) {
+    fail(dict.tooManyAttempts);
+  }
+
+  const customer = await requireCustomer(returnTo);
 
   if (!date || Number.isNaN(Date.parse(date))) {
     fail(dict.invalidDate);
@@ -154,7 +176,7 @@ export async function startCheckoutAction(productId: string, slug: string, formD
   }
 
   const finalSubtotalUsd = Math.max(0, subtotalUsd - discountAmountUsd);
-  const totalIdr = usdToIdr(finalSubtotalUsd);
+  const totalIdr = usdToIdr(finalSubtotalUsd, await getUsdToIdrRate());
   const bookingCode = generateBookingCode();
   const bookingId = crypto.randomUUID();
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
@@ -247,6 +269,7 @@ export async function startCarHireCheckoutAction(productId: string, slug: string
   const pickupDate = String(formData.get("pickup_date") ?? "");
   const pickupTime = String(formData.get("pickup_time") ?? "");
   const discountCodeInput = String(formData.get("discount_code") ?? "").trim();
+  const website = String(formData.get("website") ?? "").trim();
 
   // Hidden field on the form (see CarHireBookingForm) -- same
   // "carries whichever locale the customer was already browsing in"
@@ -260,11 +283,21 @@ export async function startCarHireCheckoutAction(productId: string, slug: string
   const cookieStore = await cookies();
   const referralCodeInput = cookieStore.get(REFERRAL_COOKIE_NAME)?.value?.trim() ?? "";
 
-  const customer = await requireCustomer(`${pathPrefix}/p/${slug}`);
+  // Honeypot -- same pattern as startCheckoutAction above.
+  if (website) {
+    redirect(`${pathPrefix}/p/${slug}`);
+  }
 
   function fail(message: string): never {
     redirect(`${pathPrefix}/p/${slug}?${new URLSearchParams({ error: message }).toString()}`);
   }
+
+  // Same per-IP flood cap as startCheckoutAction -- see rateLimit.ts.
+  if (!(await checkRateLimit("car_hire_checkout", 8, 10))) {
+    fail(dict.tooManyAttempts);
+  }
+
+  const customer = await requireCustomer(`${pathPrefix}/p/${slug}`);
 
   const isOtherMeetingPoint = meetingPointIdInput === OTHER_MEETING_POINT_VALUE;
   if (!isOtherMeetingPoint && !meetingPointIdInput) {
@@ -370,7 +403,8 @@ export async function startCarHireCheckoutAction(productId: string, slug: string
     fail(dict.noPriceForCombination);
   }
 
-  const subtotalUsd = idrToUsd(priceIdr);
+  const rate = await getUsdToIdrRate();
+  const subtotalUsd = idrToUsd(priceIdr, rate);
   const serviceClient = createSupabaseServiceRoleClient();
 
   let discountCodeId: string | null = null;
@@ -410,7 +444,7 @@ export async function startCarHireCheckoutAction(productId: string, slug: string
   // exact IDR price) when a discount actually changed the amount --
   // the common no-discount case charges precisely what the price grid
   // says.
-  const totalIdr = discountAmountUsd > 0 ? usdToIdr(finalSubtotalUsd) : priceIdr;
+  const totalIdr = discountAmountUsd > 0 ? usdToIdr(finalSubtotalUsd, rate) : priceIdr;
   const bookingCode = generateBookingCode();
   const bookingId = crypto.randomUUID();
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
@@ -501,6 +535,7 @@ export async function startTransportCheckoutAction(productId: string, slug: stri
   const pickupDate = String(formData.get("pickup_date") ?? "");
   const pickupTime = String(formData.get("pickup_time") ?? "");
   const discountCodeInput = String(formData.get("discount_code") ?? "").trim();
+  const website = String(formData.get("website") ?? "").trim();
 
   // Same previously-missing hidden-field fix as startCarHireCheckoutAction
   // above.
@@ -511,11 +546,21 @@ export async function startTransportCheckoutAction(productId: string, slug: stri
   const cookieStore = await cookies();
   const referralCodeInput = cookieStore.get(REFERRAL_COOKIE_NAME)?.value?.trim() ?? "";
 
-  const customer = await requireCustomer(`${pathPrefix}/p/${slug}`);
+  // Honeypot -- same pattern as startCheckoutAction above.
+  if (website) {
+    redirect(`${pathPrefix}/p/${slug}`);
+  }
 
   function fail(message: string): never {
     redirect(`${pathPrefix}/p/${slug}?${new URLSearchParams({ error: message }).toString()}`);
   }
+
+  // Same per-IP flood cap as startCheckoutAction -- see rateLimit.ts.
+  if (!(await checkRateLimit("transport_checkout", 8, 10))) {
+    fail(dict.tooManyAttempts);
+  }
+
+  const customer = await requireCustomer(`${pathPrefix}/p/${slug}`);
 
   const isOtherMeetingPoint = meetingPointIdInput === OTHER_MEETING_POINT_VALUE;
   if (!isOtherMeetingPoint && !meetingPointIdInput) {
@@ -629,7 +674,8 @@ export async function startTransportCheckoutAction(productId: string, slug: stri
     fail(dict.noPriceForRoute);
   }
 
-  const subtotalUsd = idrToUsd(priceIdr);
+  const rate = await getUsdToIdrRate();
+  const subtotalUsd = idrToUsd(priceIdr, rate);
   const serviceClient = createSupabaseServiceRoleClient();
 
   let discountCodeId: string | null = null;
@@ -665,7 +711,7 @@ export async function startTransportCheckoutAction(productId: string, slug: stri
   }
 
   const finalSubtotalUsd = Math.max(0, subtotalUsd - discountAmountUsd);
-  const totalIdr = discountAmountUsd > 0 ? usdToIdr(finalSubtotalUsd) : priceIdr;
+  const totalIdr = discountAmountUsd > 0 ? usdToIdr(finalSubtotalUsd, rate) : priceIdr;
   const bookingCode = generateBookingCode();
   const bookingId = crypto.randomUUID();
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";

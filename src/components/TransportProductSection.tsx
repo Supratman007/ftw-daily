@@ -7,9 +7,14 @@ import type { MeetingPoint, TransportPrice, TransportVehicleType } from "@/lib/c
 
 interface TransportProductSectionProps {
   title: string;
-  location: string | null;
-  durationLabel: string | null;
   description: string | null;
+  /** The "Trip essentials" quick-facts panel, built by the parent page
+   * (it needs product fields the parent already has) -- rendered here,
+   * in the left column ABOVE the description, so it sits next to the
+   * floating booking card the same way GetYourGuide's does, instead of
+   * spanning the full page width above this section or sitting below
+   * the description. */
+  essentialsPanel?: React.ReactNode;
   action: (formData: FormData) => void | Promise<void>;
   vehicleTypes: TransportVehicleType[];
   prices: TransportPrice[];
@@ -38,9 +43,8 @@ interface TransportProductSectionProps {
  * the title, not stacked inside the booking card. */
 export function TransportProductSection({
   title,
-  location,
-  durationLabel,
   description,
+  essentialsPanel,
   action,
   vehicleTypes,
   prices,
@@ -59,14 +63,12 @@ export function TransportProductSection({
   return (
     <div className="grid gap-8 md:grid-cols-[1.4fr_1fr]">
       <div>
-        <p className="font-mono text-xs uppercase tracking-widest text-ink-soft">
-          {location} {durationLabel ? `· ${durationLabel}` : ""}
-        </p>
-        <h1 className="mt-1 font-serif text-3xl font-semibold text-ink">{title}</h1>
+        {essentialsPanel}
         {description && (
-          <p className="mt-4 whitespace-pre-wrap text-sm leading-relaxed text-ink-soft">
-            {description}
-          </p>
+          <div
+            className={`rich-content break-words text-sm text-ink-soft ${essentialsPanel ? "mt-6" : ""}`}
+            dangerouslySetInnerHTML={{ __html: description }}
+          />
         )}
 
         {selectedVehicleType && (

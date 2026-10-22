@@ -69,7 +69,7 @@ export function CookieNotice({
         <button
           type="button"
           onClick={dismiss}
-          className="shrink-0 rounded-lg bg-coral px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
+          className="shrink-0 rounded-lg bg-coral px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-coral-dark"
         >
           {acceptLabel}
         </button>

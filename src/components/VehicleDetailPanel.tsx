@@ -35,12 +35,19 @@ export function VehicleDetailPanel({
   return (
     <div className="overflow-hidden rounded-2xl border border-sand-deep bg-white">
       {activePhoto ? (
+        // unoptimized -- same reasoning as ProductCardImage.tsx: this
+        // is the raw file an admin uploaded, and Vercel's Image
+        // Optimization step was silently failing on the larger ones.
+        // The thumbnail strip below already sidesteps this with a
+        // plain <img>; this does the same via next/image's own escape
+        // hatch instead, to keep fill/sizes.
         <div className="relative h-48 w-full">
           <Image
             src={activePhoto}
             alt={name}
             fill
             sizes="(max-width: 768px) 100vw, 400px"
+            unoptimized
             className="object-cover"
           />
         </div>
@@ -70,8 +77,11 @@ export function VehicleDetailPanel({
 
       <div className="p-4">
         <div className="flex items-baseline justify-between gap-2">
-          <p className="font-serif text-lg font-semibold text-ink">{name}</p>
-          {capacityLabel && <span className="text-xs text-ink-soft">{capacityLabel}</span>}
+          {/* min-w-0 so a long car/vehicle name wraps instead of
+              pushing capacityLabel (or the panel) wider than the
+              page -- same flex-item-shrinking issue as elsewhere. */}
+          <p className="min-w-0 font-serif text-lg font-semibold text-ink">{name}</p>
+          {capacityLabel && <span className="flex-shrink-0 text-xs text-ink-soft">{capacityLabel}</span>}
         </div>
 
         {recommendedFor && (
@@ -79,7 +89,7 @@ export function VehicleDetailPanel({
         )}
 
         {description && (
-          <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-ink-soft">
+          <p className="mt-2 whitespace-pre-wrap break-words text-sm leading-relaxed text-ink-soft">
             {description}
           </p>
         )}

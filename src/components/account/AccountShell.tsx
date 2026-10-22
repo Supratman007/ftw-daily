@@ -27,7 +27,7 @@ export async function AccountShell({
   const nav = dict.account.nav;
 
   return (
-    <div className="min-h-screen bg-sand">
+    <div className="min-h-screen bg-canvas">
       <header className="flex flex-col gap-3 border-b border-sand-deep bg-white px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <Link href={pathPrefix || "/"} className="flex shrink-0 items-center">
