@@ -30,7 +30,12 @@ interface XenditInvoice {
  * customer is redirected straight to invoice_url.
  */
 export async function createXenditInvoice(params: CreateInvoiceParams): Promise<XenditInvoice> {
-  const secretKey = process.env.XENDIT_SECRET_KEY;
+  // Trimmed because a copy-paste into Vercel's env var UI very easily
+  // picks up an invisible trailing space or newline -- that then rides
+  // along into the Basic Auth header below and Xendit rejects the
+  // whole thing as "invalid API key", which looks identical to an
+  // actually-wrong key and is a real dead end to debug without this.
+  const secretKey = process.env.XENDIT_SECRET_KEY?.trim();
   if (!secretKey) {
     throw new Error("XENDIT_SECRET_KEY is not configured");
   }
